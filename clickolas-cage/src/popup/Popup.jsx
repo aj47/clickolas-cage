@@ -3,6 +3,7 @@ import logo from '../assets/logo.png'
 import './Popup.css'
 import OpenAI from 'openai'
 
+
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY, // defaults to process.env[""]
   dangerouslyAllowBrowser: true,
@@ -110,6 +111,7 @@ const Popup = () => {
     // chrome.runtime.sendMessage("test");
   }
 
+  const htmlFileUrl = chrome.runtime.getURL('sandbox.html');
   return (
     <div className="App">
       <header className="App-header">
