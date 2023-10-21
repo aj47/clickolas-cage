@@ -71,12 +71,12 @@ const Popup = () => {
 
   useEffect(() => {
     // console.log(chrome.extension.getBackgroundPage());
-    // const storedPrompt = localStorage.getItem('click-cage-prompt')
-    // console.log(storedPrompt)
-    // if (storedPrompt !== initialPrompt) {
-    //   setInitialPrompt(storedPrompt)
-    //   runFlow(storedPrompt)
-    // }
+    const storedPrompt = localStorage.getItem('click-cage-prompt')
+    console.log(storedPrompt)
+    if (storedPrompt !== initialPrompt) {
+      setInitialPrompt(storedPrompt)
+      runFlow(storedPrompt)
+    }
   }, [initialPrompt])
 
   const runFlow = async (prompt) => {
@@ -121,7 +121,7 @@ const Popup = () => {
             <input
               onClick={async () => {
                 localStorage.setItem('click-cage-prompt', promptRef.current.value)
-                chrome.tabs.create({ url: 'newtab.html' })
+                chrome.tabs.create({ url: 'Tab.html' })
                 return
               }}
               type="button"
@@ -136,4 +136,4 @@ const Popup = () => {
   )
 }
 
-export default Popup
+export default Tab
