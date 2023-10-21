@@ -35769,7 +35769,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _assets_img_logo_svg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../assets/img/logo.svg */ "./src/assets/img/logo.svg");
+/* harmony import */ var _assets_img_logo_png__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../assets/img/logo.png */ "./src/assets/img/logo.png");
 /* harmony import */ var _Newtab_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Newtab.css */ "./src/pages/Newtab/Newtab.css");
 /* harmony import */ var _Newtab_scss__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./Newtab.scss */ "./src/pages/Newtab/Newtab.scss");
 /* provided dependency */ var __react_refresh_utils__ = __webpack_require__(/*! ./node_modules/@pmmmwh/react-refresh-webpack-plugin/lib/runtime/RefreshUtils.js */ "./node_modules/@pmmmwh/react-refresh-webpack-plugin/lib/runtime/RefreshUtils.js");
@@ -35786,7 +35786,7 @@ var Newtab = function Newtab() {
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("header", {
     className: "App-header"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
-    src: _assets_img_logo_svg__WEBPACK_IMPORTED_MODULE_1__,
+    src: _assets_img_logo_png__WEBPACK_IMPORTED_MODULE_1__,
     className: "App-logo",
     alt: "logo"
   }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, "Edit ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("code", null, "src/pages/Newtab/Newtab.js"), " and save to reload."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
@@ -44634,14 +44634,14 @@ module.exports.formatError = function (err) {
 
 /***/ }),
 
-/***/ "./src/assets/img/logo.svg":
+/***/ "./src/assets/img/logo.png":
 /*!*********************************!*\
-  !*** ./src/assets/img/logo.svg ***!
+  !*** ./src/assets/img/logo.png ***!
   \*********************************/
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
 "use strict";
-module.exports = __webpack_require__.p + "103b5fa18196d5665a7e.svg";
+module.exports = __webpack_require__.p + "eed9e92f432f26242211.png";
 
 /***/ }),
 
@@ -51491,7 +51491,7 @@ module.exports = path.URL;
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("e287e7e2cda215cef7c8")
+/******/ 		__webpack_require__.h = () => ("59943050e6fb684c1076")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
