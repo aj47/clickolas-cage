@@ -1,0 +1,38 @@
+{
+  "name": "clickolas-cage",
+  "displayName": "clickolas-cage",
+  "version": "0.0.0",
+  "author": "techfren",
+  "description": "",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "chrome-extension",
+    "react",
+    "vite",
+    "create-chrome-ext"
+  ],
+  "engines": {
+    "node": ">=14.18.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "fmt": "prettier --write '**/*.{jsx,js,json,css,scss,md}'"
+  },
+  "dependencies": {
+    "openai": "^4.12.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.19",
+    "@types/react": "^18.2.28",
+    "@types/react-dom": "^18.2.13",
+    "@vitejs/plugin-react": "^4.1.0",
+    "glob": "^10.3.10",
+    "prettier": "^3.0.3",
+    "vite": "^4.4.11"
+  }
+}
