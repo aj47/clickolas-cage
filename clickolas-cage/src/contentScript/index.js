@@ -2,6 +2,17 @@ import OpenAI from 'openai'
 
 console.info('contentScript is running')
 
+let div = document.createElement('div')
+div.id = 'test-div'
+div.style.position = 'absolute'
+div.style.bottom = '100px'
+div.style.minWidth = '100px'
+div.style.maxWidth = '500px'
+div.style.minHeight = '100px'
+div.style.position = 'sticky'
+div.style.backgroundColor = 'grey'
+document.body.appendChild(div)
+
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY, // defaults to process.env[""]
   dangerouslyAllowBrowser: true,
@@ -51,9 +62,10 @@ const sendPromptToPlanner = async (prompt) => {
         2. Click a button (Codename: CLICKBTN({buttonId}))
         3. Input text (Codename: INPUT({fieldId},{textToInput}))
         4. Select an option in a form (Codename: SELECT({fieldId},{option}))
-        6. Wait for page load and inspect contents of page
-        5. Ask the user for more information
-        given a prompt from the user provide a step by step plan to execute it in a web browser only utilizing the 5 functions above using the relative codenames.`,
+        5. Wait for page load and inspect contents of page (Codename: WAITLOAD())
+        6. Ask the user for more information (Codename: ASKUSER({question})
+        given a prompt from the user provide a step by step plan to execute it in a web browser only utilizing the 6 functions above using the relative codenames.
+        if you are unsure of URL, Ask the user. if you are unsure of IDs wait for page load.`,
       },
       {
         role: 'user',
@@ -100,8 +112,57 @@ const sendPromptToOpenAI = async (prompt) => {
   // return chatCompletion.choices[0].text.strip()
 }
 
+const executePlan = async (plan) => {
+  const actions = plan.split('\n')
+  for (let i = 0; i < actions.length; i++) {
+    const action = actions[i]
+    console.log(action, "action");
+    const actionParts = action.split('(')
+    const actionParams = actionParts[1]?.slice(0, -1).split(',')
+    const keywords = ['NAVURL', 'CLICKBTN', 'INPUT', 'SELECT', 'WAITLOAD', 'ASKUSER']
+    const regex = new RegExp(keywords.join('|'), 'g')
+    const matches = action.match(regex)
+    const actionName = matches[0];
+
+    switch (actionName) {
+      case 'NAVURL':
+        console.log(`Navigating to URL: ${actionParams[0]}`)
+        window.location.href = actionParams[0]
+        await new Promise((r) => (window.onload = r))
+        break
+      case 'CLICKBTN':
+        console.log(`Clicking button with ID: ${actionParams[0]}`)
+        document.getElementById(actionParams[0]).click()
+        await new Promise((r) => (window.onload = r))
+        break
+      case 'INPUT':
+        console.log(`Inputting text: ${actionParams[1]} into field with ID: ${actionParams[0]}`)
+        document.getElementById(actionParams[0]).value = actionParams[1]
+        await new Promise((r) => (window.onload = r))
+        break
+      case 'SELECT':
+        console.log(`Selecting option: ${actionParams[1]} in field with ID: ${actionParams[0]}`)
+        document.getElementById(actionParams[0]).value = actionParams[1]
+        await new Promise((r) => (window.onload = r))
+        break
+      case 'WAITLOAD':
+        console.log('Waiting for page to load')
+        await new Promise((r) => (window.onload = r))
+        console.log('Page is fully loaded')
+        break
+      case 'ASKUSER':
+        console.log(`Asking user the following question: ${actionParams[0]}`)
+        prompt(actionParams[0])
+        break
+      default:
+        console.log('Unknown action: ' + actionName)
+    }
+  }
+}
+
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   // This block will handle incoming messages
   console.log('Received message:', request)
-  console.log(await sendPromptToPlanner(request.prompt))
+  div.innerText = 'Thinking...'
+  executePlan(await sendPromptToPlanner(request.prompt))
 })
