@@ -27,6 +27,7 @@ const Popup = () => {
             <input ref={promptRef} type="text" placeholder="Add event x to my google calendar" />
             <input
               onClick={async () => {
+                console.log("hello?");
                 if (promptRef.current.value.length === 0) return
                 chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
                   chrome.tabs.sendMessage(tabs[0].id, { prompt: promptRef.current.value })
