@@ -1,6 +1,14 @@
 # clickolas-cage
 
-> a chrome extension tools built with Vite + React, and Manifest v3
+> a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using GPT-4 as a brain).
+
+## Structure
+- Popup.jsx
+	- contains the popup shown when the extension is clicked
+- Content script
+	- this should execute DOM actions
+- Background.js 
+	- this should hold the execution plan and history.
 
 ## Installing
 
