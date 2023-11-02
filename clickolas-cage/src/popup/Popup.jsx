@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
+import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../helpers'
 const Popup = () => {
   const promptRef = useRef(null)
   const [LLMThoughts, setLLMThoughts] = useState(null)
@@ -27,11 +28,13 @@ const Popup = () => {
             <input ref={promptRef} type="text" placeholder="Add event x to my google calendar" />
             <input
               onClick={async () => {
-                console.log("hello?");
+                console.log('hello?')
                 if (promptRef.current.value.length === 0) return
-                chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                  chrome.tabs.sendMessage(tabs[0].id, { prompt: promptRef.current.value })
-                })
+
+                // chrome.runtime.sendMessage({ type: 'goal', prompt: promptRef.current.value }, function (response) {
+                //   console.log(response)
+                // })
+                sendMessageToBackgroundScript({ type: 'goal', prompt: promptRef.current.value })
               }}
               type="button"
               value="Submit"

@@ -5,10 +5,38 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true,
 })
 
+export const getNextAction = (plan, currentStep) => {
+  console.log(plan, currentStep)
+  try {
+    let currentTask = plan.split('\n')[currentStep]
+    const actionParts = currentTask.split('(')
+    const actionParams = actionParts[1]?.slice(0, -1).split(',')
+    const keywords = ['NAVURL', 'CLICKBTN', 'INPUT', 'SELECT', 'WAITLOAD', 'ASKUSER']
+    const regex = new RegExp(keywords.join('|'), 'g')
+    const matches = currentTask.match(regex)
+    if (matches) return { actionName: matches[0], actionParams, currentTask }
+    else getNextAction(plan, currentStep + 1)
+  } catch (e) {
+    getNextAction(plan, currentStep + 1);
+  }
+}
+
+export const sendMessageToBackgroundScript = async (prompt) => {
+  chrome.runtime.sendMessage(prompt, function (response) {
+    console.log(response)
+  })
+}
+
+export const sendMessageToContentScript = async (prompt, tabId = null) => {
+  console.log('send message to CS', prompt)
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    console.log(tabs, 'tabs')
+    chrome.tabs.sendMessage(tabs[0].id, prompt)
+  })
+}
+
 export const sendPromptToPlanner = async (prompt) => {
-  console.log(prompt)
-  console.log('thinking...')
-  return;
+  console.log('thinking about it...')
   const chatCompletion = await openai.chat.completions.create({
     model: 'gpt-4',
     messages: [
@@ -35,7 +63,6 @@ export const sendPromptToPlanner = async (prompt) => {
       // },
     ],
   })
-  console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
   // return chatCompletion.choices[0].text.strip()
 }
