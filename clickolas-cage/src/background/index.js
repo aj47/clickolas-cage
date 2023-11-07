@@ -7,8 +7,16 @@ let targetTab = null
 let currentStep = 0
 chrome.runtime.onMessage.addListener(async (request) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
-
-  if (request.type === 'goal') {
+  console.log(request.type, 'request.type')
+  if (request.type === 'completed_task') {
+    checkTabReady(targetTab, async function () {
+      console.log(targetTab, 'targetTab')
+      console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
+      await sendMessageToTab(targetTab, currentPlan[currentStep])
+      currentStep++
+    })
+  } else if (request.type === 'goal') {
+    currentStep = 0
     console.log('received request in background', request.prompt)
     currentPlan = await sendPromptToPlanner(request.prompt)
     console.log(currentPlan, 'currentPlan')
@@ -18,8 +26,8 @@ chrome.runtime.onMessage.addListener(async (request) => {
     currentPlan = currentPlan.plan
     // Assumed first step is always NAVURL,
     // TODO: handle the case where it isn't
-    console.log(currentStep, "currentStep");
-    console.log("navigate to URL: ", currentPlan[currentStep].param)
+    console.log(currentStep, 'currentStep')
+    console.log('navigate to URL: ', currentPlan[currentStep].param)
     chrome.tabs.create({ url: currentPlan[currentStep].param }, async function (tab) {
       targetTab = tab.id // Store the tab ID for later use
       currentStep++
