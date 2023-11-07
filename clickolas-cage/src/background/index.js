@@ -18,9 +18,9 @@ chrome.runtime.onMessage.addListener(async (request) => {
     currentPlan = currentPlan.plan
     // Assumed first step is always NAVURL,
     // TODO: handle the case where it isn't
-
+    console.log(currentStep, "currentStep");
+    console.log("navigate to URL: ", currentPlan[currentStep].param)
     chrome.tabs.create({ url: currentPlan[currentStep].param }, async function (tab) {
-      console.log(tab)
       targetTab = tab.id // Store the tab ID for later use
       currentStep++
       // await sendMessageToTab(targetTab, currentPlan[currentStep])

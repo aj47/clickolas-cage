@@ -12,8 +12,8 @@ console.info('contentScript is running')
 // document.body.appendChild(div)
 
 const executeAction = async (actionName, param1, param2) => {
-  console.log("executing action...");
-  switch ((actionName, targetTab)) {
+  console.log("executing action...", actionName);
+  switch ((actionName)) {
     case 'NAVURL':
       console.log(`Navigating to URL: ${param1}`)
       window.location.href = param1
@@ -56,5 +56,6 @@ const executeAction = async (actionName, param1, param2) => {
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
   console.log(request, "request");
   await executeAction(request.action, request.param, request.inputParam);
+  console.log("action executed");
   sendResponse("complete");
 })
