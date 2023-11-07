@@ -5,23 +5,6 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true,
 })
 
-export const getNextAction = (plan, currentStep) => {
-  console.log(plan, currentStep)
-  try {
-    if (currentStep > plan.split('\n').length) return null
-    let currentTask = plan.split('\n')[currentStep]
-    const actionParts = currentTask.split('(')
-    const actionParams = actionParts[1]?.slice(0, -1).split(',')
-    const keywords = ['NAVURL', 'CLICKBTN', 'INPUT', 'SELECT', 'WAITLOAD', 'ASKUSER']
-    const regex = new RegExp(keywords.join('|'), 'g')
-    const matches = currentTask.match(regex)
-    if (matches) return { actionName: matches[0], actionParams, currentTask, currentStep }
-    else getNextAction(plan, currentStep + 1)
-  } catch (e) {
-    getNextAction(plan, currentStep + 1)
-  }
-}
-
 export const sendMessageToBackgroundScript = async (prompt) => {
   chrome.runtime.sendMessage(prompt, function (response) {
     console.log(response)
@@ -35,7 +18,6 @@ export const sendMessageToContentScript = async (prompt, tabId = null) => {
     chrome.tabs.sendMessage(tabs[0].id, prompt)
   })
 }
-
 export const sendPromptToPlanner = async (prompt) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
   console.log('thinking about it...')
@@ -51,8 +33,7 @@ export const sendPromptToPlanner = async (prompt) => {
         {
           plan: [ {
             action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
-            param: "url" | "divId" | "question"
-            param2?: "optionToSelect" | "textToInput"
+            param: "url" | "divId" | "question" | "inputId-textToInput" | "optionId-optionToSelect"
           },...]
         }
         `,
@@ -63,6 +44,7 @@ export const sendPromptToPlanner = async (prompt) => {
       },
     ],
   })
+  console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
   // return chatCompletion.choices[0].text.strip()
 }
