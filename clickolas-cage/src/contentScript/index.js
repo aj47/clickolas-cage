@@ -1,15 +1,15 @@
 console.info('contentScript is running')
 
-let div = document.createElement('div')
-div.id = 'test-div'
-div.style.position = 'absolute'
-div.style.bottom = '100px'
-div.style.minWidth = '100px'
-div.style.maxWidth = '100px'
-div.style.minHeight = '100px'
-div.style.position = 'sticky'
-div.style.backgroundColor = 'grey'
-document.body.appendChild(div)
+// let div = document.createElement('div')
+// div.id = 'test-div'
+// div.style.position = 'absolute'
+// div.style.bottom = '100px'
+// div.style.minWidth = '100px'
+// div.style.maxWidth = '100px'
+// div.style.minHeight = '100px'
+// div.style.position = 'sticky'
+// div.style.backgroundColor = 'grey'
+// document.body.appendChild(div)
 
 const executeAction = async (action) => {
   console.log(action, 'action')
@@ -20,7 +20,7 @@ const executeAction = async (action) => {
   const matches = action.match(regex)
   const actionName = matches[0]
 
-  switch (actionName) {
+  switch (actionName, targetTab) {
     case 'NAVURL':
       console.log(`Navigating to URL: ${actionParams[0]}`)
       window.location.href = actionParams[0]
@@ -58,5 +58,5 @@ const executeAction = async (action) => {
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   console.log('Received message:', request.prompt)
   div.innerText = 'Thinking...'
-  executeAction(request.prompt)
+  executeAction(request.prompt, request.targetTab)
 })

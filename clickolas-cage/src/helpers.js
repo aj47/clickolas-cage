@@ -8,13 +8,14 @@ const openai = new OpenAI({
 export const getNextAction = (plan, currentStep) => {
   console.log(plan, currentStep)
   try {
+    if(currentStep > plan.split('\n').length) return null;
     let currentTask = plan.split('\n')[currentStep]
     const actionParts = currentTask.split('(')
     const actionParams = actionParts[1]?.slice(0, -1).split(',')
     const keywords = ['NAVURL', 'CLICKBTN', 'INPUT', 'SELECT', 'WAITLOAD', 'ASKUSER']
     const regex = new RegExp(keywords.join('|'), 'g')
     const matches = currentTask.match(regex)
-    if (matches) return { actionName: matches[0], actionParams, currentTask }
+    if (matches) return { actionName: matches[0], actionParams, currentTask, currentStep }
     else getNextAction(plan, currentStep + 1)
   } catch (e) {
     getNextAction(plan, currentStep + 1);
@@ -50,7 +51,8 @@ export const sendPromptToPlanner = async (prompt) => {
         5. Wait for page load and inspect contents of page (Codename: WAITLOAD())
         6. Ask the user for more information (Codename: ASKUSER({question})
         given a prompt from the user provide a step by step plan to execute it in a web browser only utilizing the 6 functions above using the relative codenames.
-        if you are unsure of URL, Ask the user. if you are unsure of IDs wait for page load.`,
+        if you are unsure of URL, Ask the user. if you are unsure of IDs wait for page load.
+        ALWAYS start with NAVURL.`,
       },
       {
         role: 'user',
