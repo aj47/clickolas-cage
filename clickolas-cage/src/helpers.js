@@ -18,6 +18,41 @@ export const sendMessageToContentScript = async (prompt, tabId = null) => {
     chrome.tabs.sendMessage(tabs[0].id, prompt)
   })
 }
+
+export const sendPromptToElementLocator = async (
+  originalPrompt,
+  originalPlan,
+  currentStep,
+  textOptions,
+) => {
+  const chatCompletion = await openai.chat.completions.create({
+    model: 'gpt-4-1106-preview',
+    response_format: { type: 'json_object' },
+    messages: [
+      {
+        role: 'system',
+        content: `you are an expert web browsing AI. you were given the prompt:"${originalPrompt}"
+        you came up with the plan:
+        "${originalPlan}
+        We are at this step of the plan :
+        ${currentStep}
+          but have encountered an issue finding the specified ID.
+          given an array of text elements, select one element which could be ID we are looking for.
+        provide a response with this JSON schema:
+        {
+          selectedText: "textOptionSelected"
+        } `,
+      },
+      {
+        role: 'user',
+        content: `options: ${textOptions}`,
+      },
+    ],
+  })
+  console.log(chatCompletion.choices[0].message.content)
+  return chatCompletion.choices[0].message.content
+}
+
 export const sendPromptToPlanner = async (prompt) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
   console.log('thinking about it...')

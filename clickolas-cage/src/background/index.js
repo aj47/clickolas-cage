@@ -5,24 +5,30 @@ console.log('help :(')
 let currentPlan = null
 let targetTab = null
 let currentStep = 0
+let originalPrompt = ''
 chrome.runtime.onMessage.addListener(async (request) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
   console.log(request.type, 'request.type')
   if (request.type === 'completed_task') {
-    checkTabReady(targetTab, async function () {
-      console.log(targetTab, 'targetTab')
-      console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
-      await sendMessageToTab(targetTab, currentPlan[currentStep])
-      currentStep++
-    })
+    console.log('inside completed task')
+    console.log(targetTab, 'targetTab')
+    console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
+    const messagePayload = {
+      currentStep: currentPlan[currentStep],
+      originalPlan: currentPlan,
+      originalPrompt,
+    }
+    await sendMessageToTab(targetTab, messagePayload)
+    currentStep++
   } else if (request.type === 'goal') {
     currentStep = 0
+    console.log(JSON.stringify(request))
     console.log('received request in background', request.prompt)
+    originalPrompt = request.prompt
     currentPlan = await sendPromptToPlanner(request.prompt)
     console.log(currentPlan, 'currentPlan')
     console.log(typeof currentPlan, 'currentPlan')
     currentPlan = JSON.parse(currentPlan)
-    console.log(currentPlan, 'currentPlan')
     currentPlan = currentPlan.plan
     // Assumed first step is always NAVURL,
     // TODO: handle the case where it isn't
@@ -31,12 +37,16 @@ chrome.runtime.onMessage.addListener(async (request) => {
     chrome.tabs.create({ url: currentPlan[currentStep].param }, async function (tab) {
       targetTab = tab.id // Store the tab ID for later use
       currentStep++
-      // await sendMessageToTab(targetTab, currentPlan[currentStep])
       // Check if the tab is completely loaded before sending a message
       checkTabReady(targetTab, async function () {
         console.log(targetTab, 'targetTab')
         console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
-        await sendMessageToTab(targetTab, currentPlan[currentStep])
+        const messagePayload = {
+          currentStep: currentPlan[currentStep],
+          originalPlan: currentPlan,
+          originalPrompt,
+        }
+        await sendMessageToTab(targetTab, messagePayload)
         currentStep++
       })
     })
@@ -65,6 +75,7 @@ async function sendMessageToTab(tabId, message) {
 }
 
 function checkTabReady(tabId, callback) {
+  console.log('waiting tab ready...')
   chrome.tabs.onUpdated.addListener(function listener(tabIdUpdated, changeInfo, tab) {
     if (tabIdUpdated === tabId && changeInfo.status === 'complete') {
       // Remove the listener after we found the right tab and it has finished loading

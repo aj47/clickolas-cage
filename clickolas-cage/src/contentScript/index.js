@@ -1,4 +1,9 @@
+import { sendPromptToElementLocator } from '../helpers'
+
 console.info('contentScript is running')
+let originalPlan = ''
+let originalPrompt = ''
+let currentStep = ''
 
 // let div = document.createElement('div')
 // div.id = 'test-div'
@@ -23,10 +28,48 @@ function waitForWindowLoad() {
   })
 }
 
+const getPathTo = (element) => {
+  if (element.id) return `#${element.id}`;
+  if (element === document.body) return element.tagName.toLowerCase();
+
+  const siblings = Array.from(element.parentNode.childNodes).filter(e => e.nodeType === 1);
+  const nodeIndex = siblings.indexOf(element);
+  const tagName = element.tagName.toLowerCase();
+  const nthChild = nodeIndex >= 0 ? `:nth-child(${nodeIndex + 1})` : '';
+
+  return `${getPathTo(element.parentNode)} > ${tagName}${nthChild}`;
+};
+
+//Given an initial guess id (likely hallucinated) find the correct selector
+const locateCorrectElement = async (initialId) => {
+  if (document.getElementById(initialId)) return '#' + initialId
+  const clickableElements = document.querySelectorAll('[jsaction]')
+  const clickableElementsText = []
+  clickableElements.forEach((e) => {
+    clickableElementsText.push(e.innerText.slice(0, 10))
+  })
+  //Removes duplicates and empty text elements
+  const cleanedArray = [...new Set(clickableElementsText.filter((e) => e !== ''))]
+  const response = await sendPromptToElementLocator(
+    originalPrompt,
+    JSON.stringify(originalPlan),
+    JSON.stringify(currentStep),
+    cleanedArray.toString(),
+  )
+  console.log(response, "response");
+  const selectedText = JSON.parse(response).selectedText
+  for (const el of clickableElements) {
+    console.log(el.innerText.slice(0,10), selectedText);
+    if (el.innerText.slice(0,10) === selectedText) {
+      console.log(getPathTo(el))
+      return getPathTo(el)
+    }
+  }
+}
+
 const executeAction = async (actionName, param1, param2) => {
-  debugger;
-  console.log("executing action...", actionName);
-  switch ((actionName)) {
+  console.log('executing action...', actionName)
+  switch (actionName) {
     case 'NAVURL':
       console.log(`Navigating to URL: ${param1}`)
       window.location.href = param1
@@ -34,7 +77,7 @@ const executeAction = async (actionName, param1, param2) => {
       return
     case 'CLICKBTN':
       console.log(`Clicking button with ID: ${param1}`)
-      document.getElementById(param1).click()
+      document.querySelector(await locateCorrectElement(param1)).click()
       await waitForWindowLoad()
       return
     case 'INPUT':
@@ -67,11 +110,14 @@ const executeAction = async (actionName, param1, param2) => {
 //   executeAction(request.prompt, request.targetTab)
 // })
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-  console.log(request, "request");
-  await executeAction(request.action, request.param, request.inputParam);
-  sendResponse("complete");
-  console.log("completed action")
-  chrome.runtime.sendMessage({type: "completed_task"}, function (response) {
+  console.log(request, 'request')
+  currentStep = request.currentStep
+  originalPlan = request.originalPlan
+  originalPrompt = request.originalPrompt
+  await executeAction(currentStep.action, currentStep.param, currentStep.inputParam)
+  sendResponse('complete')
+  console.log('completed action')
+  chrome.runtime.sendMessage({ type: 'completed_task' }, function (response) {
     console.log(response)
   })
 })
