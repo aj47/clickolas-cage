@@ -1,4 +1,4 @@
-import { sendMessageToContentScript, sendPromptToPlanner } from '../helpers'
+import { sendMessageToContentScript, sendPromptToPlanner } from '../utils'
 console.log('background is running')
 console.log('help :(')
 
@@ -9,6 +9,18 @@ let originalPrompt = ''
 chrome.runtime.onMessage.addListener(async (request) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
   console.log(request.type, 'request.type')
+  if (request.type === 'new_plan') {
+    console.log('new plan received')
+    currentPlan = request.data.plan
+    currentStep = 0
+    const messagePayload = {
+      currentStep: currentPlan[currentStep],
+      originalPlan: currentPlan,
+      originalPrompt,
+    }
+    await sendMessageToTab(targetTab, messagePayload)
+    currentStep++
+  }
   if (request.type === 'completed_task') {
     console.log('inside completed task')
     console.log(targetTab, 'targetTab')
