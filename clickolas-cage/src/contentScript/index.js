@@ -105,7 +105,10 @@ const executeAction = async (actionName, label, param) => {
       return
     case 'CLICKBTN':
       console.log(`Clicking button with label: ${label}`)
-      document.querySelector(selector).click()
+      // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
+      const element = document.querySelector(selector)
+      element.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, view: window }));
+      element.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, view: window }));
       await waitForWindowLoad()
       return
     case 'INPUT':
