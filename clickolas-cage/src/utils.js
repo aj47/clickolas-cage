@@ -74,8 +74,8 @@ export const sendPromptToElementLocator = async (
         We are at this current step of the plan :
         ${currentStep}
           but have encountered an issue finding the specified aria-label.
-          given an array of aria-labels elements on the page come up with a revised plan from the current step.
-          provide a response with this JSON schema:
+          provide a revised plan continuing from the current step ONLY using the user provided aria-labels
+          the response should be in this JSON schema:
         {
           plan: [ {
             action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
@@ -86,7 +86,7 @@ export const sendPromptToElementLocator = async (
       },
       {
         role: 'user',
-        content: `options: ${textOptions}`,
+        content: `aria-labels: [${textOptions}]`,
       },
     ],
   })

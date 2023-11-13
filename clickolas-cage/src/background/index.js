@@ -8,7 +8,6 @@ let currentStep = 0
 let originalPrompt = ''
 chrome.runtime.onMessage.addListener(async (request) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
-  console.log(request.type, 'request.type')
   if (request.type === 'new_plan') {
     console.log('new plan received')
     currentPlan = request.data.plan
@@ -20,8 +19,24 @@ chrome.runtime.onMessage.addListener(async (request) => {
     }
     await sendMessageToTab(targetTab, messagePayload)
     currentStep++
-  }
-  if (request.type === 'completed_task') {
+  } else if (request.type === 'nav_url') {
+    chrome.tabs.create({ url: request.url }, async function (tab) {
+      targetTab = tab.id // Store the tab ID for later use
+      currentStep++
+      // Check if the tab is completely loaded before sending a message
+      checkTabReady(targetTab, async function () {
+        console.log(targetTab, 'targetTab')
+        console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
+        const messagePayload = {
+          currentStep: currentPlan[currentStep],
+          originalPlan: currentPlan,
+          originalPrompt,
+        }
+        await sendMessageToTab(targetTab, messagePayload)
+        currentStep++
+      })
+    })
+  } else if (request.type === 'completed_task') {
     console.log('inside completed task')
     console.log(targetTab, 'targetTab')
     console.log(currentPlan[currentStep], 'currentPlan[currentStep]')

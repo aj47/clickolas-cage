@@ -1,4 +1,8 @@
-import { sendMessageToBackgroundScript, sendPromptToElementLocator, sendPromptWithFeedback } from '../utils'
+import {
+  sendMessageToBackgroundScript,
+  sendPromptToElementLocator,
+  sendPromptWithFeedback,
+} from '../utils'
 
 console.info('contentScript is running')
 let originalPlan = ''
@@ -16,14 +20,15 @@ let currentStep = ''
 // div.style.backgroundColor = 'grey'
 // document.body.appendChild(div)
 //
+// waits minimum 500ms
 function waitForWindowLoad() {
   return new Promise((resolve) => {
     // If the document is already loaded, resolve the promise immediately.
     if (document.readyState === 'complete') {
-      resolve()
+      setTimeout(resolve, 500)
     } else {
       // Otherwise, attach an event listener for the load event.
-      window.addEventListener('load', resolve, { once: true })
+      window.addEventListener('load', () => setTimeout(resolve, 500), { once: true })
     }
   })
 }
@@ -48,7 +53,9 @@ const locateCorrectElement = async (initialLabel) => {
     if (
       node.tagName === 'BUTTON' ||
       node.onclick ||
-      node.hasAttribute('jsaction') ||
+      (node.hasAttribute('jsaction') &&
+        (node.getAttribute('jsaction').includes('click') ||
+          node.getAttribute('jsaction').includes('mousedown'))) ||
       node.hasAttribute('onclick') ||
       node.getAttribute('role') === 'button'
     ) {
@@ -66,12 +73,12 @@ const locateCorrectElement = async (initialLabel) => {
     }
   }
   //Removes duplicates and empty text elements
-  // const cleanedArray = [...new Set(clickableElementsText.filter((e) => e !== ''))]
+  const cleanedArray = [...new Set(clickableElementLabels.filter((e) => e !== '' && e !== null))]
   const response = await sendPromptToElementLocator(
     originalPrompt,
     JSON.stringify(originalPlan),
     JSON.stringify(currentStep),
-    clickableElementLabels.toString(),
+    cleanedArray.toString(),
   )
   console.log(response, 'response')
   sendMessageToBackgroundScript({ type: 'new_plan', data: JSON.parse(response) })
@@ -88,10 +95,10 @@ const locateCorrectElement = async (initialLabel) => {
 
 const executeAction = async (actionName, label, param) => {
   console.log('executing action...', actionName)
-  debugger;
+  debugger
   let selector = ''
   if (actionName === 'CLICKBTN' && !label) label = param
-  if (label) {
+  if (label && actionName !== 'ASKUSER' && actionName !== 'NAVURL') {
     selector = await locateCorrectElement(label)
     console.log(selector, 'selector')
     if (!selector) return
@@ -100,15 +107,17 @@ const executeAction = async (actionName, label, param) => {
   switch (actionName) {
     case 'NAVURL':
       console.log(`Navigating to URL: ${param}`)
-      window.location.href = param
-      await waitForWindowLoad()
-      return
+      chrome.runtime.sendMessage({ type: 'nav_url', url: param }, function (response) {})
     case 'CLICKBTN':
       console.log(`Clicking button with label: ${label}`)
       // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
       const element = document.querySelector(selector)
-      element.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, view: window }));
-      element.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, view: window }));
+      element.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }),
+      )
+      element.dispatchEvent(
+        new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }),
+      )
       await waitForWindowLoad()
       return
     case 'INPUT':
@@ -128,7 +137,7 @@ const executeAction = async (actionName, label, param) => {
       return
     case 'ASKUSER':
       console.log(`Asking user the following question: ${param}`)
-      const answer = prompt(param)
+      const answer = prompt(param || label)
       const response = await sendPromptWithFeedback(
         originalPrompt,
         JSON.stringify(originalPlan),
