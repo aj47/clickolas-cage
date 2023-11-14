@@ -32,19 +32,19 @@ export const sendPromptWithFeedback = async (
       {
         role: 'system',
         content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
-        you came up with the plan:
-        "${originalPlan}
-        We are at this current step of the plan :
-        ${currentStep}
-          given user feedback, come up with a revised plan from the current step.
-          Provide a response with this JSON schema:
-        {
-          plan: [ {
-            action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
-            ariaLabel: "labelName",
-            param?: "url" | "inputOption" | "inputText"
-          },...]
-        } `,
+you originally came up with the plan:
+${originalPlan}
+We currently just tried to execute step of the plan :
+${currentStep}
+  given user feedback, come up with a revised plan from the current step.
+  Provide a response with this JSON schema:
+{
+  plan: [ {
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
+    ariaLabel: "labelName",
+    param?: "url" | "inputOption" | "inputText"
+  },...]
+} `,
       },
       {
         role: 'user',
@@ -56,7 +56,7 @@ export const sendPromptWithFeedback = async (
   return chatCompletion.choices[0].message.content
 }
 
-export const sendPromptToElementLocator = async (
+export const sendPromptToPlanReviser = async (
   originalPrompt,
   originalPlan,
   currentStep,
@@ -64,29 +64,33 @@ export const sendPromptToElementLocator = async (
 ) => {
   const chatCompletion = await openai.chat.completions.create({
     model: 'gpt-4-1106-preview',
+    temperature: 0,
+    seed: 1,
     response_format: { type: 'json_object' },
     messages: [
       {
         role: 'system',
         content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
-        you came up with the plan:
-        "${originalPlan}
-        We are at this current step of the plan :
-        ${currentStep}
-          but have encountered an issue finding the specified aria-label.
-          provide a revised plan continuing from the current step ONLY using the user provided aria-labels
-          the response should be in this JSON schema:
-        {
-          plan: [ {
-            action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
-            ariaLabel: "labelName",
-            param?: "url" | "inputOption" | "inputText"
-          },...]
-        } `,
+you originally came up with the plan:
+  ${originalPlan}
+We currently just tried to execute step of the plan:
+  ${currentStep}
+but have encountered an issue finding the specified node with aria-label.
+provide a revised plan continuing from the current step
+the response should be in this JSON schema:
+{
+  plan: [ {
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
+    ariaLabel: "labelName",
+    param?: "url" | "inputOption" | "inputText"
+  },...]
+}
+ONLY use the following user provided nodes aria-labels:
+`,
       },
       {
         role: 'user',
-        content: `aria-labels: [${textOptions}]`,
+        content: `nodes: [${textOptions}]`,
       },
     ],
   })
@@ -99,21 +103,23 @@ export const sendPromptToPlanner = async (prompt) => {
   console.log('thinking about it...')
   const chatCompletion = await openai.chat.completions.create({
     model: 'gpt-4-1106-preview',
+    temperature: 0,
+    seed: 1,
     response_format: { type: 'json_object' },
     messages: [
       {
         role: 'system',
         content: `you are an expert web browsing AI given a prompt from the user provide a step by step plan to execute it in a web browser.
-        if you are unsure of URL, Ask the user. if you are unsure of IDs wait for page load.
-        ALWAYS start with NAVURL. Provide response with this JSON schema:
-        {
-          plan: [ {
-            action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
-            ariaLabel: "labelName",
-            param?: "url" | "inputOption" | "inputText"
-          },...]
-        }
-        `,
+if you are unsure of URL, Ask the user. if you are unsure of IDs wait for page load.
+ALWAYS start with NAVURL. Provide response with this JSON schema:
+{
+  plan: [ {
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
+    ariaLabel: "labelName",
+    param?: "url" | "inputOption" | "inputText"
+  },...]
+}
+`,
       },
       {
         role: 'user',

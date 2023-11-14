@@ -11,14 +11,13 @@ chrome.runtime.onMessage.addListener(async (request) => {
   if (request.type === 'new_plan') {
     console.log('new plan received')
     currentPlan = request.data.plan
-    currentStep = 0
+    currentStep = 1
     const messagePayload = {
-      currentStep: currentPlan[currentStep],
+      currentStep: 0,
       originalPlan: currentPlan,
       originalPrompt,
     }
     await sendMessageToTab(targetTab, messagePayload)
-    currentStep++
   } else if (request.type === 'nav_url') {
     chrome.tabs.create({ url: request.url }, async function (tab) {
       targetTab = tab.id // Store the tab ID for later use
@@ -27,26 +26,26 @@ chrome.runtime.onMessage.addListener(async (request) => {
       checkTabReady(targetTab, async function () {
         console.log(targetTab, 'targetTab')
         console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
+        currentStep++
         const messagePayload = {
-          currentStep: currentPlan[currentStep],
+          currentStep: currentStep - 1,
           originalPlan: currentPlan,
           originalPrompt,
         }
         await sendMessageToTab(targetTab, messagePayload)
-        currentStep++
       })
     })
   } else if (request.type === 'completed_task') {
     console.log('inside completed task')
     console.log(targetTab, 'targetTab')
     console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
+    currentStep++
     const messagePayload = {
-      currentStep: currentPlan[currentStep],
+      currentStep: currentStep - 1,
       originalPlan: currentPlan,
       originalPrompt,
     }
     await sendMessageToTab(targetTab, messagePayload)
-    currentStep++
   } else if (request.type === 'goal') {
     currentStep = 0
     console.log(JSON.stringify(request))
@@ -68,13 +67,13 @@ chrome.runtime.onMessage.addListener(async (request) => {
       checkTabReady(targetTab, async function () {
         console.log(targetTab, 'targetTab')
         console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
+        currentStep++
         const messagePayload = {
-          currentStep: currentPlan[currentStep],
+          currentStep: currentStep - 1,
           originalPlan: currentPlan,
           originalPrompt,
         }
         await sendMessageToTab(targetTab, messagePayload)
-        currentStep++
       })
     })
     // let { actionName, actionParams, currentTask, currentStep } = getNextAction(currentPlan, currentStep)

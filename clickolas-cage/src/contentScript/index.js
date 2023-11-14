@@ -1,6 +1,6 @@
 import {
   sendMessageToBackgroundScript,
-  sendPromptToElementLocator,
+  sendPromptToPlanReviser,
   sendPromptWithFeedback,
 } from '../utils'
 
@@ -8,6 +8,25 @@ console.info('contentScript is running')
 let originalPlan = ''
 let originalPrompt = ''
 let currentStep = ''
+let currentStepNumber = 0
+let newNodes = []
+
+// Callback function to execute when mutations are observed
+// gets called every time a node changes
+const callback = function (mutationsList, observer) {
+  for (const mutation of mutationsList) {
+    if (mutation.type === 'childList' && mutation.addedNodes?.length > 0) {
+      newNodes.push({ nodes: mutation.addedNodes, step: currentStepNumber })
+      console.log('A child node has been added.')
+    }
+  }
+}
+
+// Create an instance of MutationObserver with the callback
+const observer = new MutationObserver(callback)
+
+// Start observing the the whole dom for changes
+observer.observe(document.documentElement, { attributes: true, childList: true, subtree: true })
 
 // let div = document.createElement('div')
 // div.id = 'test-div'
@@ -44,14 +63,14 @@ const getPathTo = (element) => {
   return `${getPathTo(element.parentNode)} > ${tagName}${nthChild}`
 }
 
-//Given an initial guess id (likely hallucinated) find the correct selector
+//Given an initial guess label (likely hallucinated) find the correct selector or update plan
 const locateCorrectElement = async (initialLabel) => {
-  // if (document.getElementById(initialId)) return '#' + initialId
-  // const clickableElements = document.querySelectorAll('[jsaction]')
   const clickableElements = []
+  // Add all clickable elements in DOM to clickableElements array
   document.querySelectorAll('*').forEach(function (node) {
     if (
       node.tagName === 'BUTTON' ||
+      node.tagName === 'INPUT' ||
       node.onclick ||
       (node.hasAttribute('jsaction') &&
         (node.getAttribute('jsaction').includes('click') ||
@@ -60,36 +79,44 @@ const locateCorrectElement = async (initialLabel) => {
       node.getAttribute('role') === 'button'
     ) {
       clickableElements.push(node)
-      // console.log(node, 'ARIA Label:', node.getAttribute('aria-label'))
     }
   })
   const clickableElementLabels = []
+  // Construct array of aria-labels and roles for each element
   clickableElements.forEach((e) => {
-    clickableElementLabels.push(e.getAttribute('aria-label'))
+    let renderedAtStep = 0
+    //cringe at this n^3 complexity
+    for (const newNode of newNodes) {
+      for (const node of newNode.nodes) {
+        if (node.contains(e)) renderedAtStep = newNode.step
+      }
+    }
+    clickableElementLabels.push({
+      role: e.getAttribute('role') || e.tagName,
+      ariaLabel: e.getAttribute('aria-label'),
+      renderedAtStep,
+    })
   })
+  // If an element matches the initialLabel, return the path to the element
   for (const el of clickableElements) {
     if (el.getAttribute('aria-label') === initialLabel) {
       return getPathTo(el)
     }
   }
-  //Removes duplicates and empty text elements
-  const cleanedArray = [...new Set(clickableElementLabels.filter((e) => e !== '' && e !== null))]
-  const response = await sendPromptToElementLocator(
+  // Remove duplicates and empty text elements from the clickableElementLabels array
+  const cleanedArray = [
+    ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
+  ]
+  // Send a prompt to the element locator and await the response
+  const response = await sendPromptToPlanReviser(
     originalPrompt,
     JSON.stringify(originalPlan),
     JSON.stringify(currentStep),
-    cleanedArray.toString(),
+    JSON.stringify(cleanedArray),
   )
   console.log(response, 'response')
+  // Send a message to the background script with the new plan
   sendMessageToBackgroundScript({ type: 'new_plan', data: JSON.parse(response) })
-  // const selectedText = JSON.parse(response).selectedText
-  // for (const el of clickableElements) {
-  //   console.log(el.innerText.slice(0, 10), selectedText)
-  //   if (el.innerText.slice(0, 10) === selectedText) {
-  //     console.log(getPathTo(el))
-  //     return getPathTo(el)
-  //   }
-  // }
   return false
 }
 
@@ -101,13 +128,16 @@ const executeAction = async (actionName, label, param) => {
   if (label && actionName !== 'ASKUSER' && actionName !== 'NAVURL') {
     selector = await locateCorrectElement(label)
     console.log(selector, 'selector')
-    if (!selector) return
+    if (!selector) return false
   }
-
   switch (actionName) {
+    case 'WAITLOAD':
+      await waitForWindowLoad()
+      return true
     case 'NAVURL':
       console.log(`Navigating to URL: ${param}`)
       chrome.runtime.sendMessage({ type: 'nav_url', url: param }, function (response) {})
+      return true
     case 'CLICKBTN':
       console.log(`Clicking button with label: ${label}`)
       // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
@@ -119,22 +149,17 @@ const executeAction = async (actionName, label, param) => {
         new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }),
       )
       await waitForWindowLoad()
-      return
+      return true
     case 'INPUT':
       console.log(`Inputting text: ${param} into field with label: ${label}`)
       document.querySelector(selector).value = param
       await waitForWindowLoad()
-      return
+      return true
     case 'SELECT':
       console.log(`Selecting option: ${param} in field with ID: ${label}`)
       document.querySelector(selector).value = param
       await waitForWindowLoad()
-      return
-    case 'WAITLOAD':
-      console.log('Waiting for page to load')
-      await waitForWindowLoad()
-      console.log('Page is fully loaded')
-      return
+      return true
     case 'ASKUSER':
       console.log(`Asking user the following question: ${param}`)
       const answer = prompt(param || label)
@@ -145,7 +170,7 @@ const executeAction = async (actionName, label, param) => {
         answer,
       )
       sendMessageToBackgroundScript({ type: 'new_plan', data: JSON.parse(response) })
-      return
+      return false
     default:
       console.log('Unknown action: ' + actionName)
   }
@@ -158,13 +183,19 @@ const executeAction = async (actionName, label, param) => {
 // })
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
   console.log(request, 'request')
-  currentStep = request.currentStep
+  currentStepNumber = request.currentStep
   originalPlan = request.originalPlan
+  currentStep = originalPlan[currentStepNumber]
   originalPrompt = request.originalPrompt
-  await executeAction(currentStep.action, currentStep.ariaLabel, currentStep.param)
+  const completedAction = await executeAction(
+    currentStep.action,
+    currentStep.ariaLabel,
+    currentStep.param,
+  )
   sendResponse('complete')
   console.log('completed action')
-  chrome.runtime.sendMessage({ type: 'completed_task' }, function (response) {
-    console.log(response)
-  })
+  if (completedAction)
+    chrome.runtime.sendMessage({ type: 'completed_task' }, function (response) {
+      console.log(response)
+    })
 })
