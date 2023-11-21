@@ -1,11 +1,64 @@
-import { sendMessageToContentScript, sendPromptToPlanner } from '../utils'
+import {
+  checkCandidatePrompts,
+  getDomain,
+  promptToFirstStep,
+  sendMessageToContentScript,
+  sendPromptToPlanner,
+  sendPromptToPlanner2,
+} from '../utils'
 console.log('background is running')
-console.log('help :(')
 
-let currentPlan = null
+let currentPlan = []
 let targetTab = null
 let currentStep = 0
 let originalPrompt = ''
+let currentURL = ''
+let recipes = null
+
+fetch(chrome.runtime.getURL('src/recipes.json'))
+  .then((response) => response.json()) // parse the JSON from the response
+  .then((jsonData) => {
+    recipes = jsonData
+  })
+  .catch((error) => {
+    console.error('Error:', error)
+  })
+
+const navURL = (url) => {
+  console.log(url, 'url')
+  currentURL = url
+  chrome.tabs.create({ url: url }, async function (tab) {
+    targetTab = tab.id // Store the tab ID for later use
+    currentStep++
+    // Check if the tab is completely loaded before sending a message
+    checkTabReady(targetTab, async function () {
+      console.log('tab ready')
+      if (currentStep >= currentPlan.length) {
+        const recipeCandidates = recipes[getDomain(url)]
+        let matchingRecipe = null
+        if (recipeCandidates) {
+          const response = await checkCandidatePrompts(
+            originalPrompt,
+            Object.keys(recipeCandidates),
+          )
+          const responseJSON = JSON.parse(response)
+          matchingRecipe = recipeCandidates[responseJSON.match]
+          console.log(matchingRecipe, 'matchingRecipe')
+        }
+        const response = await sendPromptToPlanner2(originalPrompt, url, matchingRecipe)
+        currentPlan = JSON.parse(response).plan
+        currentStep = 1
+      }
+      const messagePayload = {
+        currentStep: currentStep - 1,
+        originalPlan: currentPlan,
+        originalPrompt,
+      }
+      await sendMessageToTab(targetTab, messagePayload)
+    })
+  })
+}
+
 chrome.runtime.onMessage.addListener(async (request) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
   if (request.type === 'new_plan') {
@@ -19,27 +72,16 @@ chrome.runtime.onMessage.addListener(async (request) => {
     }
     await sendMessageToTab(targetTab, messagePayload)
   } else if (request.type === 'nav_url') {
-    chrome.tabs.create({ url: request.url }, async function (tab) {
-      targetTab = tab.id // Store the tab ID for later use
-      currentStep++
-      // Check if the tab is completely loaded before sending a message
-      checkTabReady(targetTab, async function () {
-        console.log(targetTab, 'targetTab')
-        console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
-        currentStep++
-        const messagePayload = {
-          currentStep: currentStep - 1,
-          originalPlan: currentPlan,
-          originalPrompt,
-        }
-        await sendMessageToTab(targetTab, messagePayload)
-      })
-    })
+    navURL(request.url)
   } else if (request.type === 'completed_task') {
     console.log('inside completed task')
     console.log(targetTab, 'targetTab')
     console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
     currentStep++
+    if (currentStep >= currentPlan.length) {
+      console.log('plan complete.')
+      return
+    }
     const messagePayload = {
       currentStep: currentStep - 1,
       originalPlan: currentPlan,
@@ -51,52 +93,42 @@ chrome.runtime.onMessage.addListener(async (request) => {
     console.log(JSON.stringify(request))
     console.log('received request in background', request.prompt)
     originalPrompt = request.prompt
-    currentPlan = await sendPromptToPlanner(request.prompt)
-    console.log(currentPlan, 'currentPlan')
-    console.log(typeof currentPlan, 'currentPlan')
-    currentPlan = JSON.parse(currentPlan)
-    currentPlan = currentPlan.plan
-    // Assumed first step is always NAVURL,
-    // TODO: handle the case where it isn't
-    console.log(currentStep, 'currentStep')
-    console.log('navigate to URL: ', currentPlan[currentStep].param)
-    chrome.tabs.create({ url: currentPlan[currentStep].param }, async function (tab) {
-      targetTab = tab.id // Store the tab ID for later use
-      currentStep++
-      // Check if the tab is completely loaded before sending a message
-      checkTabReady(targetTab, async function () {
-        console.log(targetTab, 'targetTab')
-        console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
-        currentStep++
-        const messagePayload = {
-          currentStep: currentStep - 1,
-          originalPlan: currentPlan,
-          originalPrompt,
-        }
-        await sendMessageToTab(targetTab, messagePayload)
-      })
-    })
-    // let { actionName, actionParams, currentTask, currentStep } = getNextAction(currentPlan, currentStep)
-    // console.log({ actionName, actionParams, currentTask, currentStep })
+    const response = await promptToFirstStep(request.prompt)
+    console.log(response, 'response')
+    const responseJSON = JSON.parse(response)
+    // {
+    //     "thought": "Creating an event in Google Calendar requires accessing the Google Calendar website.",
+    //     "action": "NAVURL",
+    //     "param": "https://calendar.google.com"
     // }
+    if (responseJSON.action === 'NAVURL') navURL(responseJSON.param)
+    else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
   }
   return true
 })
 
 async function sendMessageToTab(tabId, message) {
-  try {
-    const response = await new Promise((resolve, reject) => {
-      chrome.tabs.sendMessage(tabId, message, function (response) {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message))
-        } else {
-          resolve(response)
-        }
+  let retries = 3
+  while (retries > 0) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        console.log("sending message");
+        chrome.tabs.sendMessage(tabId, message, function (response) {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            resolve(response)
+          }
+        })
       })
-    })
-    console.log('Received response:', response)
-  } catch (error) {
-    console.error('Error in sending message:', error)
+      console.log('Received response:', response)
+      return;
+    } catch (error) {
+      console.error('Error in sending message:', error)
+      retries--
+      if (retries === 0) throw error
+      await new Promise((resolve) => setTimeout(resolve, 1000)) // Wait a bit before retrying
+    }
   }
 }
 

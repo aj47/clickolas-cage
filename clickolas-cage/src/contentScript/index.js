@@ -10,10 +10,11 @@ let originalPrompt = ''
 let currentStep = ''
 let currentStepNumber = 0
 let newNodes = []
+let observer = null
 
 // Callback function to execute when mutations are observed
 // gets called every time a node changes
-const callback = function (mutationsList, observer) {
+const nodeChangeCallback = function (mutationsList, observer) {
   for (const mutation of mutationsList) {
     if (mutation.type === 'childList' && mutation.addedNodes?.length > 0) {
       newNodes.push({ nodes: mutation.addedNodes, step: currentStepNumber })
@@ -21,12 +22,6 @@ const callback = function (mutationsList, observer) {
     }
   }
 }
-
-// Create an instance of MutationObserver with the callback
-const observer = new MutationObserver(callback)
-
-// Start observing the the whole dom for changes
-observer.observe(document.documentElement, { attributes: true, childList: true, subtree: true })
 
 // let div = document.createElement('div')
 // div.id = 'test-div'
@@ -42,12 +37,22 @@ observer.observe(document.documentElement, { attributes: true, childList: true, 
 // waits minimum 500ms
 function waitForWindowLoad() {
   return new Promise((resolve) => {
-    // If the document is already loaded, resolve the promise immediately.
+    let startTime = Date.now()
+
+    function delayResolve() {
+      let elapsedTime = Date.now() - startTime
+      let remainingTime = 1000 - elapsedTime
+      if (remainingTime > 0) {
+        setTimeout(resolve, remainingTime)
+      } else {
+        resolve()
+      }
+    }
+
     if (document.readyState === 'complete') {
-      setTimeout(resolve, 500)
+      delayResolve()
     } else {
-      // Otherwise, attach an event listener for the load event.
-      window.addEventListener('load', () => setTimeout(resolve, 500), { once: true })
+      window.addEventListener('load', delayResolve, { once: true })
     }
   })
 }
@@ -93,13 +98,13 @@ const locateCorrectElement = async (initialLabel) => {
     }
     clickableElementLabels.push({
       role: e.getAttribute('role') || e.tagName,
-      ariaLabel: e.getAttribute('aria-label'),
+      ariaLabel: e.getAttribute('aria-label') || e.innerText,
       renderedAtStep,
     })
   })
   // If an element matches the initialLabel, return the path to the element
   for (const el of clickableElements) {
-    if (el.getAttribute('aria-label') === initialLabel) {
+    if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
       return getPathTo(el)
     }
   }
@@ -125,7 +130,7 @@ const executeAction = async (actionName, label, param) => {
   debugger
   let selector = ''
   if (actionName === 'CLICKBTN' && !label) label = param
-  if (label && actionName !== 'ASKUSER' && actionName !== 'NAVURL') {
+  if (label && (actionName === 'CLICKBTN' || actionName === 'INPUT' || actionName === 'SELECT')) {
     selector = await locateCorrectElement(label)
     console.log(selector, 'selector')
     if (!selector) return false
@@ -142,6 +147,7 @@ const executeAction = async (actionName, label, param) => {
       console.log(`Clicking button with label: ${label}`)
       // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
       const element = document.querySelector(selector)
+      element.click()
       element.dispatchEvent(
         new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }),
       )
@@ -174,28 +180,33 @@ const executeAction = async (actionName, label, param) => {
     default:
       console.log('Unknown action: ' + actionName)
   }
+  return true
 }
 
-// chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-//   console.log('Received message:', request.prompt)
-//   div.innerText = 'Thinking...'
-//   executeAction(request.prompt, request.targetTab)
-// })
-chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (observer === null) {
+    // Create an instance of MutationObserver with the callback
+    observer = new MutationObserver(nodeChangeCallback)
+    // Start observing the the whole dom for changes
+    observer.observe(document.documentElement, { attributes: true, childList: true, subtree: true })
+  }
   console.log(request, 'request')
   currentStepNumber = request.currentStep
   originalPlan = request.originalPlan
   currentStep = originalPlan[currentStepNumber]
   originalPrompt = request.originalPrompt
-  const completedAction = await executeAction(
-    currentStep.action,
-    currentStep.ariaLabel,
-    currentStep.param,
-  )
-  sendResponse('complete')
-  console.log('completed action')
-  if (completedAction)
-    chrome.runtime.sendMessage({ type: 'completed_task' }, function (response) {
-      console.log(response)
+  executeAction(currentStep.action, currentStep.ariaLabel, currentStep.param)
+    .then((completedAction) => {
+      sendResponse('complete')
+      console.log('completed action')
+      if (completedAction)
+        chrome.runtime.sendMessage({ type: 'completed_task' }, function (response) {
+          console.log(response)
+        })
     })
+    .catch((error) => {
+      console.error('Error in executeAction:', error)
+      sendResponse({ error: error.message })
+    })
+  return true // This keeps the message channel open
 })
