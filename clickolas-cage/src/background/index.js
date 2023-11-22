@@ -77,11 +77,11 @@ chrome.runtime.onMessage.addListener(async (request) => {
     console.log('inside completed task')
     console.log(targetTab, 'targetTab')
     console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
-    currentStep++
     if (currentStep >= currentPlan.length) {
       console.log('plan complete.')
       return
     }
+    currentStep++
     const messagePayload = {
       currentStep: currentStep - 1,
       originalPlan: currentPlan,

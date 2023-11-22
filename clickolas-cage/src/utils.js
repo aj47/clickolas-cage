@@ -1,3 +1,4 @@
+
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
@@ -19,13 +20,25 @@ export const sendMessageToContentScript = async (prompt, tabId = null) => {
   })
 }
 
+async function openaiCallWithRetry(call, retryCount = 3) {
+  for (let i = 0; i < retryCount; i++) {
+    try {
+      const response = await call();
+      return response;
+    } catch (error) {
+      console.error(`Attempt ${i + 1} failed with error: ${error}`);
+      if (i === retryCount - 1) throw error;
+    }
+  }
+}
+
 export const sendPromptWithFeedback = async (
   originalPrompt,
   originalPlan,
   currentStep,
   feedback,
 ) => {
-  const chatCompletion = await openai.chat.completions.create({
+  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
     model: 'gpt-3.5-turbo-1106',
     seed: 1,
     response_format: { type: 'json_object' },
@@ -53,7 +66,7 @@ ${currentStep}
         content: `user has answered the question with ${feedback}`,
       },
     ],
-  })
+  }));
   console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
 }
@@ -64,7 +77,7 @@ export const sendPromptToPlanReviser = async (
   currentStep,
   textOptions,
 ) => {
-  const chatCompletion = await openai.chat.completions.create({
+  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
     model: 'gpt-4-1106-preview',
     seed: 1,
     temperature: 0,
@@ -96,15 +109,13 @@ ONLY use the following user provided nodes aria-labels:
         content: `nodes: [${textOptions}]`,
       },
     ],
-  })
+  }));
   console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
 }
 
 export const sendPromptToPlanner = async (prompt) => {
-  // make an event in my google calendar on friday 12pm labeled "hello world"
-  console.log('thinking about it...')
-  const chatCompletion = await openai.chat.completions.create({
+  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
     model: 'gpt-3.5-turbo-1106',
     seed: 1,
     temperature: 0,
@@ -130,17 +141,13 @@ ALWAYS start with NAVURL. Provide response with this JSON schema:
         content: `your first task is: ${prompt}`,
       },
     ],
-  })
+  }));
   console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
-  // return chatCompletion.choices[0].text.strip()
 }
 
 export const sendPromptToPlanner2 = async (prompt, url, matchingRecipe) => {
-  // make an event in my google calendar on friday 12pm labeled "hello world"
-  console.log('thinking about it...')
-  console.log(`${matchingRecipe && 'A working recipe is: ' + matchingRecipe}`)
-  const chatCompletion = await openai.chat.completions.create({
+  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
     model: 'gpt-3.5-turbo-1106',
     seed: 1,
     temperature: 0,
@@ -168,16 +175,13 @@ Provide the response with this JSON schema:
 ${matchingRecipe && 'A working recipe is: ' + matchingRecipe}`,
       },
     ],
-  })
+  }));
   console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
-  // return chatCompletion.choices[0].text.strip()
 }
 
 export const checkCandidatePrompts = async (prompt, candidates) => {
-  // make an event in my google calendar on friday 12pm labeled "hello world"
-  console.log('thinking about it...')
-  const chatCompletion = await openai.chat.completions.create({
+  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
     model: 'gpt-3.5-turbo-1106',
     seed: 1,
     temperature: 0,
@@ -200,16 +204,13 @@ Provide response in this JSON schema:
 candidate prompts: ${candidates}`,
       },
     ],
-  })
+  }));
   console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
-  // return chatCompletion.choices[0].text.strip()
 }
 
 export const promptToFirstStep = async (prompt) => {
-  // make an event in my google calendar on friday 12pm labeled "hello world"
-  console.log('thinking about it...')
-  const chatCompletion = await openai.chat.completions.create({
+  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
     model: 'gpt-3.5-turbo-1106',
     seed: 1,
     temperature: 0,
@@ -234,10 +235,9 @@ Provide response with this JSON schema:
         content: `user prompt: ${prompt}`,
       },
     ],
-  })
+  }));
   console.log(chatCompletion.choices[0].message.content)
   return chatCompletion.choices[0].message.content
-  // return chatCompletion.choices[0].text.strip()
 }
 
 export const getDomain = (url) => {

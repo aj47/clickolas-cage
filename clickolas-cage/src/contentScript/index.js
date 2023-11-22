@@ -34,7 +34,7 @@ const nodeChangeCallback = function (mutationsList, observer) {
 // div.style.backgroundColor = 'grey'
 // document.body.appendChild(div)
 //
-// waits minimum 500ms
+// waits minimum 1000ms
 function waitForWindowLoad() {
   return new Promise((resolve) => {
     let startTime = Date.now()
