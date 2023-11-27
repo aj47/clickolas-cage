@@ -11,6 +11,7 @@ let currentStep = ''
 let currentStepNumber = 0
 let newNodes = []
 let observer = null
+const delayBetweenKeystrokes = 12;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
