@@ -12,6 +12,10 @@ let currentStepNumber = 0
 let newNodes = []
 let observer = null
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function sendCommand(command, params) {
   if (command === 'MouseEvent') {
     const event = new MouseEvent(params.type, params);
