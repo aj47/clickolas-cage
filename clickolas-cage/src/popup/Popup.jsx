@@ -25,7 +25,7 @@ const Popup = () => {
         <p>HELLO! I AM CLICKOLAS CAGE!</p>
         {!initialPrompt && (
           <>
-            <input ref={promptRef} type="text" placeholder="Add event x to my google calendar" />
+            <input ref={promptRef} type="text" placeholder="Add event x to my google calendar" className="input-large" />
             <input
               onClick={async () => {
                 console.log('hello?')

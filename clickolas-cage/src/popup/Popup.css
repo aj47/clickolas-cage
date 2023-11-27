@@ -5,8 +5,10 @@
   right: 0px;
   text-align: center;
   height: 100%;
-  padding: 10px;
+  padding: 20px;
   background-color: #282c34;
+  width: 500px;
+  height: 500px;
 }
 
 .App-logo {
@@ -41,4 +43,9 @@
   to {
     transform: rotate(360deg);
   }
+}
+.input-large {
+  width: 80%;
+  height: 50px;
+  font-size: 20px;
 }
