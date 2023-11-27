@@ -49,4 +49,19 @@
   height: 50px;
   font-size: 20px;
   display: block;
+  background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff);
+  background-size: 1400% 1400%;
+  animation: rainbow 3s ease infinite;
+  cursor: pointer;
+  transition: transform .2s;
+}
+
+.input-large:hover {
+  transform: scale(1.1);
+}
+
+@keyframes rainbow {
+  0%{background-position:0% 82%}
+  50%{background-position:100% 19%}
+  100%{background-position:0% 82%}
 }
