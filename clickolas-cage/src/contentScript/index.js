@@ -12,16 +12,34 @@ let currentStepNumber = 0
 let newNodes = []
 let observer = null
 
+async function sendCommand(command, params) {
+  if (command === 'MouseEvent') {
+    const event = new MouseEvent(params.type, params);
+    document.dispatchEvent(event);
+  } else if (command === 'KeyEvent') {
+    const event = new KeyboardEvent(params.type, params);
+    document.dispatchEvent(event);
+  } else {
+    console.error(`Unknown command: ${command}`);
+  }
+}
+
 async function typeText(text) {
   for (const char of text) {
-    await sendCommand('Input.dispatchKeyEvent', {
-      type: 'keyDown',
-      text: char,
+    await sendCommand('KeyEvent', {
+      type: 'keydown',
+      key: char,
+      char: char,
+      keyCode: char.charCodeAt(0),
+      which: char.charCodeAt(0)
     });
     await sleep(delayBetweenKeystrokes / 2);
-    await sendCommand('Input.dispatchKeyEvent', {
-      type: 'keyUp',
-      text: char,
+    await sendCommand('KeyEvent', {
+      type: 'keyup',
+      key: char,
+      char: char,
+      keyCode: char.charCodeAt(0),
+      which: char.charCodeAt(0)
     });
     await sleep(delayBetweenKeystrokes / 2);
   }
