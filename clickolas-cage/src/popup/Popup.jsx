@@ -6,7 +6,7 @@ const Popup = () => {
   const promptRef = useRef(null)
   const [LLMThoughts, setLLMThoughts] = useState(null)
   const [LLMPlan, setLLMPlan] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [initialPrompt, setInitialPrompt] = useState(null)
 
   // useEffect(() => {
@@ -32,7 +32,7 @@ const Popup = () => {
                 console.log('hello?')
                 if (promptRef.current.value.length === 0) return
                 sendMessageToBackgroundScript({ type: 'goal', prompt: promptRef.current.value })
-                setIsLoading(false)
+                setIsLoading(true)
               }}
               type="button"
               value="Submit"
