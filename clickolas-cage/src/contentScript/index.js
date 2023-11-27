@@ -12,6 +12,20 @@ let currentStepNumber = 0
 let newNodes = []
 let observer = null
 
+async function typeText(text) {
+  for (const char of text) {
+    await sendCommand('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      text: char,
+    });
+    await sleep(delayBetweenKeystrokes / 2);
+    await sendCommand('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      text: char,
+    });
+    await sleep(delayBetweenKeystrokes / 2);
+  }
+
 // Callback function to execute when mutations are observed
 // gets called every time a node changes
 const nodeChangeCallback = function (mutationsList, observer) {
