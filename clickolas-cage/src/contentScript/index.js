@@ -195,9 +195,12 @@ const executeAction = async (actionName, label, param) => {
       return true
     case 'INPUT':
       console.log(`Inputting text: ${param} into field with label: ${label}`)
-      document.querySelector(selector).value = param
-      await waitForWindowLoad()
-      return true
+      const inputElement = document.querySelector(selector);
+      inputElement.focus();
+      await typeText(param);
+      inputElement.blur();
+      await waitForWindowLoad();
+      return true;
     case 'SELECT':
       console.log(`Selecting option: ${param} in field with ID: ${label}`)
       document.querySelector(selector).value = param
