@@ -11,43 +11,61 @@ let currentStep = ''
 let currentStepNumber = 0
 let newNodes = []
 let observer = null
-const delayBetweenKeystrokes = 12;
+const delayBetweenKeystrokes = 1000
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function sendCommand(command, params) {
-  if (command === 'MouseEvent') {
-    const event = new MouseEvent(params.type, params);
-    document.dispatchEvent(event);
-  } else if (command === 'KeyEvent') {
-    const event = new KeyboardEvent(params.type, params);
-    document.dispatchEvent(event);
-  } else {
-    console.error(`Unknown command: ${command}`);
-  }
+async function clickElement(selector) {
+  const element = document.querySelector(selector)
+  element.click()
+  element.dispatchEvent(
+    new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }),
+  )
+  element.dispatchEvent(
+    new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }),
+  )
 }
 
-async function typeText(text) {
+/**
+ * @function typeText
+ * @param {string} text - The string of text to be typed into an HTML element
+ * @param {HTMLElement} element - The target HTML element where the text will be typed
+ */
+async function typeText(text, element) {
   for (const char of text) {
-    await sendCommand('KeyEvent', {
-      type: 'keydown',
-      key: char,
-      char: char,
-      keyCode: char.charCodeAt(0),
-      which: char.charCodeAt(0)
-    });
-    await sleep(delayBetweenKeystrokes / 2);
-    await sendCommand('KeyEvent', {
-      type: 'keyup',
-      key: char,
-      char: char,
-      keyCode: char.charCodeAt(0),
-      which: char.charCodeAt(0)
-    });
-    await sleep(delayBetweenKeystrokes / 2);
+    element.dispatchEvent(
+      new KeyboardEvent('KeyEvent', {
+        type: 'keydown',
+        key: char,
+        char: char,
+        keyCode: char.charCodeAt(0),
+        which: char.charCodeAt(0),
+      }),
+    )
+    element.dispatchEvent(
+      new KeyboardEvent('KeyEvent', {
+        type: 'keypress',
+        key: char,
+        char: char,
+        keyCode: char.charCodeAt(0),
+        which: char.charCodeAt(0),
+      }),
+    )
+    await sleep(delayBetweenKeystrokes / 2)
+    element.dispatchEvent(
+      new KeyboardEvent('KeyEvent', {
+        type: 'keyup',
+        key: char,
+        char: char,
+        keyCode: char.charCodeAt(0),
+        which: char.charCodeAt(0),
+      }),
+    )
+    await sleep(delayBetweenKeystrokes / 2)
   }
+}
 
 // Callback function to execute when mutations are observed
 // gets called every time a node changes
@@ -164,7 +182,6 @@ const locateCorrectElement = async (initialLabel) => {
 
 const executeAction = async (actionName, label, param) => {
   console.log('executing action...', actionName)
-  debugger
   let selector = ''
   if (actionName === 'CLICKBTN' && !label) label = param
   if (label && (actionName === 'CLICKBTN' || actionName === 'INPUT' || actionName === 'SELECT')) {
@@ -183,24 +200,15 @@ const executeAction = async (actionName, label, param) => {
     case 'CLICKBTN':
       console.log(`Clicking button with label: ${label}`)
       // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
-      const element = document.querySelector(selector)
-      element.click()
-      element.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }),
-      )
-      element.dispatchEvent(
-        new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }),
-      )
+      clickElement(selector)
       await waitForWindowLoad()
       return true
     case 'INPUT':
       console.log(`Inputting text: ${param} into field with label: ${label}`)
-      const inputElement = document.querySelector(selector);
-      inputElement.focus();
-      await typeText(param);
-      inputElement.blur();
-      await waitForWindowLoad();
-      return true;
+      clickElement(selector)
+      await typeText(param, document.querySelector(selector))
+      await waitForWindowLoad()
+      return true
     case 'SELECT':
       console.log(`Selecting option: ${param} in field with ID: ${label}`)
       document.querySelector(selector).value = param
