@@ -58,7 +58,7 @@
 }
 
 .input-large[type="button"] {
-  background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff);
+  background: linear-gradient(270deg, #000000, #3d3d3d, #7a7a7a, #b8b8b8, #ffffff);
   background-size: 1400% 1400%;
   animation: rainbow 3s ease infinite;
 }
