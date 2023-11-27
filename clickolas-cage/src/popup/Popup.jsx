@@ -24,7 +24,7 @@ const Popup = () => {
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>HELLO! I AM CLICKOLAS CAGE!</p>
-        {!initialPrompt && (
+        {!initialPrompt && !isLoading && (
           <>
             <input ref={promptRef} type="text" placeholder="Add event x to my google calendar" className="input-large" />
             <input
@@ -40,6 +40,7 @@ const Popup = () => {
             />
           </>
         )}
+        {isLoading && <p>Thinking...</p>}
       </header>
       <p>{LLMThoughts}</p>
       <p>{LLMPlan}</p>
