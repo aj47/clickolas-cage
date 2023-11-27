@@ -30,14 +30,11 @@ const Popup = () => {
               onClick={async () => {
                 console.log('hello?')
                 if (promptRef.current.value.length === 0) return
-
-                // chrome.runtime.sendMessage({ type: 'goal', prompt: promptRef.current.value }, function (response) {
-                //   console.log(response)
-                // })
                 sendMessageToBackgroundScript({ type: 'goal', prompt: promptRef.current.value })
               }}
               type="button"
               value="Submit"
+              className="input-large"
             />
           </>
         )}
