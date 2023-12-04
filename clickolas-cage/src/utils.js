@@ -1,10 +1,31 @@
-
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY, // defaults to process.env[""]
-  dangerouslyAllowBrowser: true,
+  dangerouslyAllowBrowser: true
 })
+
+const extractJsonObject = (str) => {
+  // Regular expression to match JSON objects
+  const jsonRegex = /{(?:[^{}]|{(?:[^{}]|{[^{}]*})*})*}/g
+
+  // Find the first match in the string
+  const match = str.match(jsonRegex)
+
+  if (match) {
+    try {
+      // Parse the matched string into a JSON object
+      return JSON.parse(match[0])
+    } catch (e) {
+      // Handle parsing error
+      console.error('Error parsing JSON: ', e)
+      return null
+    }
+  } else {
+    // No JSON found in the string
+    return null
+  }
+}
 
 export const sendMessageToBackgroundScript = async (prompt) => {
   chrome.runtime.sendMessage(prompt, function (response) {
@@ -23,11 +44,11 @@ export const sendMessageToContentScript = async (prompt, tabId = null) => {
 async function openaiCallWithRetry(call, retryCount = 3) {
   for (let i = 0; i < retryCount; i++) {
     try {
-      const response = await call();
-      return response;
+      const response = await call()
+      return response
     } catch (error) {
-      console.error(`Attempt ${i + 1} failed with error: ${error}`);
-      if (i === retryCount - 1) throw error;
+      console.error(`Attempt ${i + 1} failed with error: ${error}`)
+      if (i === retryCount - 1) throw error
     }
   }
 }
@@ -38,14 +59,15 @@ export const sendPromptWithFeedback = async (
   currentStep,
   feedback,
 ) => {
-  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
-    model: 'gpt-3.5-turbo-1106',
-    seed: 1,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
+  const chatCompletion = await openaiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-3.5-turbo-1106',
+      seed: 1,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
 you originally came up with the plan:
 ${originalPlan}
 We currently just tried to execute step of the plan :
@@ -60,15 +82,16 @@ ${currentStep}
     param?: "url" | "inputOption" | "inputText"
   },...]
 } `,
-      },
-      {
-        role: 'user',
-        content: `user has answered the question with ${feedback}`,
-      },
-    ],
-  }));
+        },
+        {
+          role: 'user',
+          content: `user has answered the question with ${feedback}`,
+        },
+      ],
+    }),
+  )
   console.log(chatCompletion.choices[0].message.content)
-  return chatCompletion.choices[0].message.content
+  return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 export const sendPromptToPlanReviser = async (
@@ -77,15 +100,16 @@ export const sendPromptToPlanReviser = async (
   currentStep,
   textOptions,
 ) => {
-  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
-    model: 'gpt-4-1106-preview',
-    seed: 1,
-    temperature: 0,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
+  const chatCompletion = await openaiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-4-1106-preview',
+      seed: 1,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
 you originally came up with the plan:
   ${originalPlan}
 We currently just tried to execute step of the plan:
@@ -103,27 +127,29 @@ the response should be in this JSON schema:
 }
 ONLY use the following user provided nodes aria-labels:
 `,
-      },
-      {
-        role: 'user',
-        content: `nodes: [${textOptions}]`,
-      },
-    ],
-  }));
+        },
+        {
+          role: 'user',
+          content: `nodes: [${textOptions}]`,
+        },
+      ],
+    }),
+  )
   console.log(chatCompletion.choices[0].message.content)
-  return chatCompletion.choices[0].message.content
+  return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 export const sendPromptToPlanner = async (prompt) => {
-  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
-    model: 'gpt-3.5-turbo-1106',
-    seed: 1,
-    temperature: 0,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: `you are an expert web browsing AI. given a prompt from the user provide a step by step plan to execute it in a web browser.
+  const chatCompletion = await openaiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-3.5-turbo-1106',
+      seed: 1,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `you are an expert web browsing AI. given a prompt from the user provide a step by step plan to execute it in a web browser.
 if you are unsure of URL, Ask the user. if you are unsure of IDs wait for page load.
 ALWAYS start with NAVURL. Provide response with this JSON schema:
 {
@@ -135,27 +161,29 @@ ALWAYS start with NAVURL. Provide response with this JSON schema:
   },...]
 }
 `,
-      },
-      {
-        role: 'user',
-        content: `your first task is: ${prompt}`,
-      },
-    ],
-  }));
+        },
+        {
+          role: 'user',
+          content: `your first task is: ${prompt}`,
+        },
+      ],
+    }),
+  )
   console.log(chatCompletion.choices[0].message.content)
-  return chatCompletion.choices[0].message.content
+  return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 export const sendPromptToPlanner2 = async (prompt, url, matchingRecipe) => {
-  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
-    model: 'gpt-3.5-turbo-1106',
-    seed: 1,
-    temperature: 0,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: `you are an expert web browsing AI.
+  const chatCompletion = await openaiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-3.5-turbo-1106',
+      seed: 1,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `you are an expert web browsing AI.
 given a user goal prompt devise a plan to achieve the goal.
 Assume we are already on the URL: ${url} and give the following steps.
 Provide the response with this JSON schema:
@@ -168,28 +196,30 @@ Provide the response with this JSON schema:
   },...]
 }
 `,
-      },
-      {
-        role: 'user',
-        content: `Your goal is: ${prompt}
+        },
+        {
+          role: 'user',
+          content: `Your goal is: ${prompt}
 ${matchingRecipe && 'A working recipe is: ' + matchingRecipe}`,
-      },
-    ],
-  }));
+        },
+      ],
+    }),
+  )
   console.log(chatCompletion.choices[0].message.content)
-  return chatCompletion.choices[0].message.content
+  return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 export const checkCandidatePrompts = async (prompt, candidates) => {
-  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
-    model: 'gpt-3.5-turbo-1106',
-    seed: 1,
-    temperature: 0,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: `Compare the following long goal prompt with the given list of smaller candidate prompts.
+  const chatCompletion = await openaiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-3.5-turbo-1106',
+      seed: 1,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `Compare the following long goal prompt with the given list of smaller candidate prompts.
 Determine if any of the smaller prompts match or closely align with the intention or key elements of the long goal prompt.
 If a match is found, identify and return the matching smaller prompt.
 Provide response in this JSON schema:
@@ -197,28 +227,30 @@ Provide response in this JSON schema:
   match: "candidate prompt" | ""
 }
 `,
-      },
-      {
-        role: 'user',
-        content: `goal prompt: ${prompt}
+        },
+        {
+          role: 'user',
+          content: `goal prompt: ${prompt}
 candidate prompts: ${candidates}`,
-      },
-    ],
-  }));
+        },
+      ],
+    }),
+  )
   console.log(chatCompletion.choices[0].message.content)
-  return chatCompletion.choices[0].message.content
+  return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 export const promptToFirstStep = async (prompt) => {
-  const chatCompletion = await openaiCallWithRetry(() => openai.chat.completions.create({
-    model: 'gpt-3.5-turbo-1106',
-    seed: 1,
-    temperature: 0,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content: `you are an expert web browsing AI. given a prompt from the user provide the first step into achieving the goal.
+  const chatCompletion = await openaiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-3.5-turbo-1106',
+      seed: 1,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `you are an expert web browsing AI. given a prompt from the user provide the first step into achieving the goal.
 This should be either the absolute URL if you are confident on the page the task should be completed on
 OR a google search URL ('www.google.com/search?q=your+search+here')
 alternatively you can ask the user for additional info if needed.
@@ -229,15 +261,16 @@ Provide response with this JSON schema:
     param?: "url" | "questionToAskUser"
 }
 `,
-      },
-      {
-        role: 'user',
-        content: `user prompt: ${prompt}`,
-      },
-    ],
-  }));
+        },
+        {
+          role: 'user',
+          content: `user prompt: ${prompt}`,
+        },
+      ],
+    }),
+  )
   console.log(chatCompletion.choices[0].message.content)
-  return chatCompletion.choices[0].message.content
+  return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 export const getDomain = (url) => {
