@@ -2,7 +2,7 @@ import OpenAI from 'openai'
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY, // defaults to process.env[""]
-  dangerouslyAllowBrowser: true
+  dangerouslyAllowBrowser: true,
 })
 
 const extractJsonObject = (str) => {
@@ -77,7 +77,7 @@ ${currentStep}
 {
   plan: [ {
     thought: "one sentence rationale",
-    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
     ariaLabel: "labelName",
     param?: "url" | "inputOption" | "inputText"
   },...]
@@ -120,7 +120,7 @@ the response should be in this JSON schema:
 {
   plan: [ {
     thought: "one sentence rationale",
-    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
     ariaLabel: "labelName",
     param?: "url" | "inputOption" | "inputText"
   },...]
@@ -139,41 +139,7 @@ ONLY use the following user provided nodes aria-labels:
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
-export const sendPromptToPlanner = async (prompt) => {
-  const chatCompletion = await openaiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: 'gpt-3.5-turbo-1106',
-      seed: 1,
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI. given a prompt from the user provide a step by step plan to execute it in a web browser.
-if you are unsure of URL, Ask the user. if you are unsure of IDs wait for page load.
-ALWAYS start with NAVURL. Provide response with this JSON schema:
-{
-  plan: [ {
-    thought: "one sentence rationale",
-    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
-    ariaLabel: "labelName",
-    param?: "url" | "inputOption" | "inputText"
-  },...]
-}
-`,
-        },
-        {
-          role: 'user',
-          content: `your first task is: ${prompt}`,
-        },
-      ],
-    }),
-  )
-  console.log(chatCompletion.choices[0].message.content)
-  return extractJsonObject(chatCompletion.choices[0].message.content)
-}
-
-export const sendPromptToPlanner2 = async (prompt, url, matchingRecipe) => {
+export const sendPromptToPlanner = async (prompt, url, matchingRecipe) => {
   const chatCompletion = await openaiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-3.5-turbo-1106',
@@ -190,7 +156,7 @@ Provide the response with this JSON schema:
 {
   plan: [ {
     thought: "one sentence rationale",
-    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" | "ASKUSER",
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
     ariaLabel: "labelName",
     param?: "url" | "inputOption" | "inputText"
   },...]

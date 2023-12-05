@@ -17,7 +17,6 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/*
 async function clickElement(selector) {
   const element = document.querySelector(selector)
   element.click()
@@ -34,72 +33,6 @@ async function clickElement(selector) {
     new MouseEvent('mouseReleased', { bubbles: true, cancelable: true, view: window }),
   )
 }
- */
-
-// const clickElement = async (selector, clickCount = 1) => {
-//   // Find the element using the given selector
-//   const element = document.querySelector(selector)
-//   if (element) {
-//     // Get the bounding rectangle of the element
-//     const rect = element.getBoundingClientRect()
-
-//     // Calculate the center coordinates of the element
-//     const x = rect.left + window.scrollX + rect.width / 2
-//     const y = rect.top + window.scrollY + rect.height / 2
-
-//     // Helper function to dispatch a mouse event
-//     const dispatchMouseEvent = (type, x, y) => {
-//       const mouseEvent = new MouseEvent(type, {
-//         view: window,
-//         bubbles: true,
-//         cancelable: true,
-//         clientX: x,
-//         clientY: y,
-//       })
-//       element.dispatchEvent(mouseEvent)
-//     }
-
-//     // Perform the specified number of clicks
-//     for (let i = 0; i < clickCount; i++) {
-//       dispatchMouseEvent('mousedown', x, y)
-//       dispatchMouseEvent('mouseup', x, y)
-//       // The standard DOM doesn't have 'mousepressed' and 'mousereleased' events,
-//       // so these are included for completeness but might not trigger any action.
-//       dispatchMouseEvent('mousepressed', x, y)
-//       dispatchMouseEvent('mousereleased', x, y)
-//       dispatchMouseEvent('click', x, y)
-//       await sleep(500)
-//     }
-
-//     console.log(`Performed mouse events on element at (${x}, ${y}) ${clickCount} times`)
-//   } else {
-//     console.log('Element not found')
-//   }
-// }
-
-const clickElement = async (selector) => {
-  // const element = document.querySelector(selector);
-  // console.log(element, "element");
-  const clickCount = 3
-  chrome.runtime.sendMessage({
-    action: 'DOM.getBoxModel',
-    type: 'click_element',
-    selector,
-    clickCount,
-  })
-  sleep(clickCount * 500)
-  // const [x1, y1, x2, y2, x3, y3, x4, y4] = model.border
-  // const x = (x1 + x3) / 2
-  // const y = (y1 + y3) / 2
-  // // Send a message to your background script with the coordinates
-  // chrome.runtime.sendMessage({
-  //   action: 'dispatchMouseEvent',
-  //   type: 'mouse_event',
-  //   x: x,
-  //   y: y,
-  //   clickCount: 3,
-  // })
-}
 
 /**
  * @function typeText
@@ -108,34 +41,22 @@ const clickElement = async (selector) => {
  */
 async function typeText(text, element) {
   for (const char of text) {
-    element.dispatchEvent(
-      new KeyboardEvent('KeyEvent', {
-        type: 'keydown',
-        key: char,
-        char: char,
-        keyCode: char.charCodeAt(0),
-        which: char.charCodeAt(0),
-      }),
-    )
-    element.dispatchEvent(
-      new KeyboardEvent('KeyEvent', {
-        type: 'keypress',
-        key: char,
-        char: char,
-        keyCode: char.charCodeAt(0),
-        which: char.charCodeAt(0),
-      }),
-    )
+    const charCode = char.charCodeAt(0)
+    const eventInitDict = {
+      key: char,
+      char: char,
+      keyCode: charCode,
+      which: charCode,
+      shiftKey: false,
+      ctrlKey: false,
+      altKey: false,
+      metaKey: false,
+    }
+
+    element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
+    // element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
     await sleep(delayBetweenKeystrokes / 2)
-    element.dispatchEvent(
-      new KeyboardEvent('KeyEvent', {
-        type: 'keyup',
-        key: char,
-        char: char,
-        keyCode: char.charCodeAt(0),
-        which: char.charCodeAt(0),
-      }),
-    )
+    element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
     await sleep(delayBetweenKeystrokes / 2)
   }
 }
@@ -277,6 +198,7 @@ const executeAction = async (actionName, label, param) => {
       await waitForWindowLoad()
       return true
     case 'INPUT':
+      debugger
       console.log(`Inputting text: ${param} into field with label: ${label}`)
       clickElement(selector)
       await typeText(param, document.querySelector(selector))
