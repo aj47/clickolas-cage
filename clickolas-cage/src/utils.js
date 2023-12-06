@@ -1,7 +1,8 @@
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // defaults to process.env[""]
+  apiKey: 'not-needed', // defaults to process.env[""]
+  // apiKey: import.meta.env.VITE_OPENAI_API_KEY, // defaults to process.env[""]
   baseURL: 'http://localhost:1234/v1',
   dangerouslyAllowBrowser: true,
 })
