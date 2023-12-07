@@ -40,8 +40,10 @@ async function clickElement(selector) {
  * @param {HTMLElement} element - The target HTML element where the text will be typed
  */
 async function typeText(text, element) {
+  element.focus(); // Ensure the element has focus before typing
+
   for (const char of text) {
-    const charCode = char.charCodeAt(0)
+    const charCode = char.charCodeAt(0);
     const eventInitDict = {
       key: char,
       char: char,
@@ -51,13 +53,15 @@ async function typeText(text, element) {
       ctrlKey: false,
       altKey: false,
       metaKey: false,
-    }
+    };
 
-    element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
-    // element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
-    await sleep(delayBetweenKeystrokes / 2)
-    element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
-    await sleep(delayBetweenKeystrokes / 2)
+    element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict));
+    element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict));
+    element.value += char;
+    element.dispatchEvent(new InputEvent('input', { inputType: 'insertText', ...eventInitDict }));
+    element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict));
+
+    await sleep(delayBetweenKeystrokes);
   }
 }
 
@@ -189,7 +193,7 @@ const executeAction = async (actionName, label, param) => {
       return true
     case 'NAVURL':
       console.log(`Navigating to URL: ${param}`)
-      chrome.runtime.sendMessage({ type: 'nav_url', url: param }, function (response) {})
+      chrome.runtime.sendMessage({ type: 'nav_url', url: param }, function (response) { })
       return true
     case 'CLICKBTN':
       console.log(`Clicking button with label: ${label}`)
@@ -200,6 +204,7 @@ const executeAction = async (actionName, label, param) => {
     case 'INPUT':
       debugger
       console.log(`Inputting text: ${param} into field with label: ${label}`)
+      console.log("Input selector: ", selector);
       clickElement(selector)
       await typeText(param, document.querySelector(selector))
       await waitForWindowLoad()
