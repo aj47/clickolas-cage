@@ -11,7 +11,7 @@ let currentStep = ''
 let currentStepNumber = 0
 let newNodes = []
 let observer = null
-const delayBetweenKeystrokes = 1000
+const delayBetweenKeystrokes = 100
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -40,29 +40,56 @@ async function clickElement(selector) {
  * @param {HTMLElement} element - The target HTML element where the text will be typed
  */
 async function typeText(text, element) {
-  element.focus(); // Ensure the element has focus before typing
+  return new Promise(async (resolve) => {
+    element.focus() // Ensure the element has focus before typing
 
-  for (const char of text) {
-    const charCode = char.charCodeAt(0);
-    const eventInitDict = {
-      key: char,
-      char: char,
-      keyCode: charCode,
-      which: charCode,
-      shiftKey: false,
-      ctrlKey: false,
-      altKey: false,
-      metaKey: false,
-    };
+    for (const char of text) {
+      const charCode = char.charCodeAt(0)
+      const eventInitDict = {
+        key: char,
+        char: char,
+        keyCode: charCode,
+        which: charCode,
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false,
+        metaKey: false,
+      }
 
-    element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict));
-    element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict));
-    element.value += char;
-    element.dispatchEvent(new InputEvent('input', { inputType: 'insertText', ...eventInitDict }));
-    element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict));
+      element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
+      element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
+      element.value += char
+      element.dispatchEvent(new InputEvent('input', { inputType: 'insertText', ...eventInitDict }))
+      element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
 
-    await sleep(delayBetweenKeystrokes);
+      await sleep(delayBetweenKeystrokes)
+    }
+    pressEnter(element)
+    resolve()
+  })
+}
+
+/**
+ * @param {HTMLElement} element - The target HTML element where the text will be typed
+ */
+async function pressEnter(element) {
+  debugger;
+  element.focus() // Ensure the element has focus before typing
+  const eventInitDict = {
+    key: 'Enter',
+    keyCode: 13,
+    which: 13,
+    bubbles: true,
+    shiftKey: false,
+    ctrlKey: false,
+    altKey: false,
+    metaKey: false,
   }
+
+  element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
+  element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
+  element.dispatchEvent(new InputEvent('input', { inputType: 'insertText', ...eventInitDict }))
+  element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
 }
 
 // Callback function to execute when mutations are observed
@@ -193,7 +220,7 @@ const executeAction = async (actionName, label, param) => {
       return true
     case 'NAVURL':
       console.log(`Navigating to URL: ${param}`)
-      chrome.runtime.sendMessage({ type: 'nav_url', url: param }, function (response) { })
+      chrome.runtime.sendMessage({ type: 'nav_url', url: param }, function (response) {})
       return true
     case 'CLICKBTN':
       console.log(`Clicking button with label: ${label}`)
@@ -202,9 +229,8 @@ const executeAction = async (actionName, label, param) => {
       await waitForWindowLoad()
       return true
     case 'INPUT':
-      debugger
       console.log(`Inputting text: ${param} into field with label: ${label}`)
-      console.log("Input selector: ", selector);
+      console.log('Input selector: ', selector)
       clickElement(selector)
       await typeText(param, document.querySelector(selector))
       await waitForWindowLoad()
