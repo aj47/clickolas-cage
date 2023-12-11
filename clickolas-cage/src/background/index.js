@@ -91,11 +91,18 @@ chrome.runtime.onMessage.addListener((request) => {
     console.log(JSON.stringify(request))
     console.log('received request in background', request.prompt)
     originalPrompt = request.prompt
-    promptToFirstStep(request.prompt).then((responseJSON) => {
-      console.log(responseJSON, 'response')
-      if (responseJSON.action === 'NAVURL') navURL(responseJSON.param)
-      else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
-    })
+    const response = await promptToFirstStep(request.prompt)
+    console.log(response, 'response')
+    const responseJSON = JSON.parse(response)
+    // {
+    //     "thought": "Creating an event in Google Calendar requires accessing the Google Calendar website.",
+    //     "action": "NAVURL",
+    //     "param": "https://calendar.google.com"
+    // }
+    if (responseJSON.action === 'NAVURL') navURL(responseJSON.param)
+    else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
+  } else if (request.type === 'click_element') {
+    clickElement(targetTab, request.selector);
   }
   return true
 })
@@ -134,4 +141,43 @@ function checkTabReady(tabId, callback) {
       callback(tab)
     }
   })
+}
+
+async function clickElement(tabId, selector) {
+    await new Promise((resolve, reject) => {
+      chrome.debugger.attach({ tabId: tabId, version: '1.2' }, () => {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError.message);
+          reject(chrome.runtime.lastError.message);
+        } else {
+          chrome.debugger.sendCommand({ tabId }, 'DOM.getDocument', {}, ({ root }) => {
+            chrome.debugger.sendCommand({ tabId }, 'DOM.querySelector', { nodeId: root.nodeId, selector }, ({ nodeId }) => {
+              chrome.debugger.sendCommand({ tabId }, 'DOM.resolveNode', { nodeId }, ({ object }) => {
+                chrome.debugger.sendCommand({ tabId }, 'Runtime.callFunctionOn', {
+                  functionDeclaration: 'function() { this.click(); }',
+                  objectId: object.objectId
+                }, () => {
+                  chrome.debugger.detach({ tabId: tabId }, resolve);
+                });
+              });
+            });
+          });
+        }
+      });
+    });
+}
+
+async function clickElement(tabId, selector) {
+  await new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand({ tabId }, 'DOM.getDocument', {}, ({ root }) => {
+      chrome.debugger.sendCommand({ tabId }, 'DOM.querySelector', { nodeId: root.nodeId, selector }, ({ nodeId }) => {
+        chrome.debugger.sendCommand({ tabId }, 'DOM.resolveNode', { nodeId }, ({ object }) => {
+          chrome.debugger.sendCommand({ tabId }, 'Runtime.callFunctionOn', {
+            functionDeclaration: 'function() { this.click(); }',
+            objectId: object.objectId
+          }, resolve);
+        });
+      });
+    });
+  });
 }
