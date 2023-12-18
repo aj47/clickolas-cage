@@ -18,6 +18,8 @@ function sleep(ms) {
 }
 
 async function clickElement(selector) {
+  sendMessageToBackgroundScript({ type: 'click_element', selector })
+  return
   const element = document.querySelector(selector)
   element.click()
   element.dispatchEvent(
@@ -73,7 +75,7 @@ async function typeText(text, element) {
  * @param {HTMLElement} element - The target HTML element where the text will be typed
  */
 async function pressEnter(element) {
-  debugger;
+  debugger
   element.focus() // Ensure the element has focus before typing
   const eventInitDict = {
     key: 'Enter',
@@ -182,12 +184,15 @@ const locateCorrectElement = async (initialLabel) => {
       renderedAtStep,
     })
   })
+  let returnEl = null
   // If an element matches the initialLabel, return the path to the element
   for (const el of clickableElements) {
     if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
-      return getPathTo(el)
+      console.log(el)
+      returnEl = getPathTo(el)
     }
   }
+  if (returnEl) return returnEl
   // Remove duplicates and empty text elements from the clickableElementLabels array
   const cleanedArray = [
     ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
@@ -227,7 +232,7 @@ const executeAction = async (actionName, label, param) => {
       // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
       clickElement(selector)
       await waitForWindowLoad()
-      return true
+      return false
     case 'INPUT':
       console.log(`Inputting text: ${param} into field with label: ${label}`)
       console.log('Input selector: ', selector)
