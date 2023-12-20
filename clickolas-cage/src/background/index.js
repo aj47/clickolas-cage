@@ -255,6 +255,12 @@ function sleep(ms) {
 async function clickElementAt(tabId, x, y) {
   await dispatchMouseEvent(tabId, 'mousePressed', x, y, 'left', 1)
   await dispatchMouseEvent(tabId, 'mouseReleased', x, y, 'left', 1)
+  const messagePayload = {
+    type: 'showClick',
+    x,
+    y,
+  }
+  sendMessageToTab(targetTab, messagePayload)
 }
 
 async function clickElement(tabId, selector) {
@@ -268,7 +274,7 @@ async function clickElement(tabId, selector) {
     const x = (content[0] + content[2]) / 2
     const y = (content[1] + content[5]) / 2
 
-    await callElementClick(tabId, nodeId)
+    // await callElementClick(tabId, nodeId)
     await clickElementAt(tabId, x, y)
     chrome.debugger.detach({ tabId })
     await sleep(2000)

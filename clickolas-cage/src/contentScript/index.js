@@ -66,7 +66,7 @@ async function typeText(text, element) {
 
       await sleep(delayBetweenKeystrokes)
     }
-    pressEnter(element)
+    // pressEnter(element)
     resolve()
   })
 }
@@ -105,17 +105,27 @@ const nodeChangeCallback = function (mutationsList, observer) {
   }
 }
 
-// let div = document.createElement('div')
-// div.id = 'test-div'
-// div.style.position = 'absolute'
-// div.style.bottom = '100px'
-// div.style.minWidth = '100px'
-// div.style.maxWidth = '100px'
-// div.style.minHeight = '100px'
-// div.style.position = 'sticky'
-// div.style.backgroundColor = 'grey'
-// document.body.appendChild(div)
-//
+async function createSquareAtLocation(x, y) {
+  console.log(x, 'x')
+  console.log(y, 'y')
+  // Create a div element
+  let square = document.createElement('div')
+
+  // Set its position and size
+  square.style.position = 'absolute'
+  square.style.left = x - 25 + 'px'
+  square.style.top = y - 25 + 'px'
+  square.style.width = '50px'
+  square.style.height = '50px'
+  square.style.zIndex = '9999'
+
+  // Set its color to red
+  square.style.backgroundColor = 'red'
+
+  // Append it to the body of the document
+  document.body.appendChild(square)
+}
+
 // waits minimum 1000ms
 function waitForWindowLoad() {
   return new Promise((resolve) => {
@@ -123,7 +133,7 @@ function waitForWindowLoad() {
 
     function delayResolve() {
       let elapsedTime = Date.now() - startTime
-      let remainingTime = 1000 - elapsedTime
+      let remainingTime = 2000 - elapsedTime
       if (remainingTime > 0) {
         setTimeout(resolve, remainingTime)
       } else {
@@ -189,10 +199,12 @@ const locateCorrectElement = async (initialLabel) => {
   for (const el of clickableElements) {
     if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
       console.log(el)
-      returnEl = getPathTo(el)
+      const boundingBox = el.getBoundingClientRect()
+      if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) returnEl = getPathTo(el)
     }
   }
   if (returnEl) return returnEl
+  else console.log('NO ELEMENT FOUND :(')
   // Remove duplicates and empty text elements from the clickableElementLabels array
   const cleanedArray = [
     ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
@@ -268,6 +280,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     observer = new MutationObserver(nodeChangeCallback)
     // Start observing the the whole dom for changes
     observer.observe(document.documentElement, { attributes: true, childList: true, subtree: true })
+  }
+  if (request.type === 'showClick') {
+    createSquareAtLocation(request.x, request.y)
+    return
   }
   console.log(request, 'request')
   currentStepNumber = request.currentStep
