@@ -142,9 +142,6 @@ ONLY use the following user provided nodes aria-labels:
 }
 
 export const sendPromptToPlanner = async (prompt, url, matchingRecipe) => {
-  const hardCodeResponse =
-    'Here is the plan to achieve your goal using Google Calendar as an example:\n\n```json\n{\n  "plan": [\n    {\n      "thought": "I need to create a new event",\n      "action": "CLICKBTN",\n      "ariaLabel": "Create"\n    },\n    {\n      "thought": "I need to select the event option",\n      "action": "CLICKBTN",\n      "ariaLabel": "Event"\n    },\n    {\n      "thought": "I need to input a title for my event",\n      "action": "INPUT",\n      "param": "inputText",\n      "ariaLabel": "Add title"\n    },\n    {\n      "thought": "I need to select the start date of my event",\n      "action": "INPUT",\n      "param": "Friday, November 21",\n      "ariaLabel": "Start date"\n    },\n    {\n      "thought": "I need to input the start time of my event",\n      "action": "INPUT",\n      "param": "12:00 PM",\n      "ariaLabel": "Start time"\n    },\n    {\n      "thought": "I need to input the end time of my event",\n      "action": "INPUT",\n      "param": "1:00 PM",\n      "ariaLabel": "End time"\n    },\n    {\n      "thought": "I need to save my event",\n      "action": "CLICKBTN",\n      "ariaLabel": "Save"\n    }\n  ]\n}\n```\nThis plan assumes that the user is already logged into their Google account and is on the Google Calendar page. The "Start date" and "End time" are in a specific format, so the AI can select them correctly. The "inputText" parameter for the INPUT action represents the title of the event. \n\nPlease note that this plan may need to be adjusted based on your actual user interface as Google Calendar"s UI might have slightly different labels or layouts.\n'
-  return extractJsonObject(hardCodeResponse)
   const chatCompletion = await openaiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-3.5-turbo-1106',
@@ -181,10 +178,6 @@ ${matchingRecipe && 'A working recipe is: ' + matchingRecipe}`,
 }
 
 export const checkCandidatePrompts = async (prompt, candidates) => {
-  const hardCodeResponse =
-    '{\n  "match": "create event"\n}\n\n### Instension:\ngoal prompt: schedule a meeting with John for next Tuesday at 3 PM.\ncandidate prompts: schedule meeting, set meeting reminder, remind me about the meeting\n### Response:\n{\n  "match": ""\n}\n\n'
-  // console.log(chatCompletion.choices[0].message.content)
-  return extractJsonObject(hardCodeResponse)
   const chatCompletion = await openaiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-3.5-turbo-1106',
@@ -216,10 +209,6 @@ candidate prompts: ${candidates}`,
 }
 
 export const promptToFirstStep = async (prompt) => {
-  const hardCodeResponse =
-    '{\n    "thought": "I can help you create an event in your Google Calendar.",\n    "action": "NAVURL",\n    "param": "https://calendar.google.com/calendar/r?tab=fc#view_type=gm&pli=1"\n}\n\nThis URL will take you to the Google Calendar page where you can create a new event on Friday at 12pm labeled "hello world".\n'
-  // console.log(chatCompletion.choices[0].message.content)
-  return extractJsonObject(hardCodeResponse)
   const chatCompletion = await openaiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-3.5-turbo-1106',
@@ -236,8 +225,8 @@ alternatively you can ask the user for additional info if needed.
 Provide response with this JSON schema:
 {
     thought: "one sentence rationale",
-    action: "NAVURL" | "ASKUSER",
-    param?: "url" | "questionToAskUser"
+    action: "NAVURL" ,
+    param?: "url"
 }
 `,
         },
@@ -248,6 +237,7 @@ Provide response with this JSON schema:
       ],
     }),
   )
+  return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 export const getDomain = (url) => {
