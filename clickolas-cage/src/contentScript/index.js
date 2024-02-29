@@ -11,13 +11,15 @@ let currentStep = ''
 let currentStepNumber = 0
 let newNodes = []
 let observer = null
-const delayBetweenKeystrokes = 1000
+const delayBetweenKeystrokes = 100
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function clickElement(selector) {
+  sendMessageToBackgroundScript({ type: 'click_element', selector })
+  return
   const element = document.querySelector(selector)
   element.click()
   element.dispatchEvent(
@@ -40,25 +42,56 @@ async function clickElement(selector) {
  * @param {HTMLElement} element - The target HTML element where the text will be typed
  */
 async function typeText(text, element) {
-  for (const char of text) {
-    const charCode = char.charCodeAt(0)
-    const eventInitDict = {
-      key: char,
-      char: char,
-      keyCode: charCode,
-      which: charCode,
-      shiftKey: false,
-      ctrlKey: false,
-      altKey: false,
-      metaKey: false,
-    }
+  return new Promise(async (resolve) => {
+    element.focus() // Ensure the element has focus before typing
 
-    element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
-    // element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
-    await sleep(delayBetweenKeystrokes / 2)
-    element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
-    await sleep(delayBetweenKeystrokes / 2)
+    for (const char of text) {
+      const charCode = char.charCodeAt(0)
+      const eventInitDict = {
+        key: char,
+        char: char,
+        keyCode: charCode,
+        which: charCode,
+        shiftKey: false,
+        ctrlKey: false,
+        altKey: false,
+        metaKey: false,
+      }
+
+      element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
+      element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
+      element.value += char
+      element.dispatchEvent(new InputEvent('input', { inputType: 'insertText', ...eventInitDict }))
+      element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
+
+      await sleep(delayBetweenKeystrokes)
+    }
+    // pressEnter(element)
+    resolve()
+  })
+}
+
+/**
+ * @param {HTMLElement} element - The target HTML element where the text will be typed
+ */
+async function pressEnter(element) {
+  debugger
+  element.focus() // Ensure the element has focus before typing
+  const eventInitDict = {
+    key: 'Enter',
+    keyCode: 13,
+    which: 13,
+    bubbles: true,
+    shiftKey: false,
+    ctrlKey: false,
+    altKey: false,
+    metaKey: false,
   }
+
+  element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
+  element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
+  element.dispatchEvent(new InputEvent('input', { inputType: 'insertText', ...eventInitDict }))
+  element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
 }
 
 // Callback function to execute when mutations are observed
@@ -72,17 +105,27 @@ const nodeChangeCallback = function (mutationsList, observer) {
   }
 }
 
-// let div = document.createElement('div')
-// div.id = 'test-div'
-// div.style.position = 'absolute'
-// div.style.bottom = '100px'
-// div.style.minWidth = '100px'
-// div.style.maxWidth = '100px'
-// div.style.minHeight = '100px'
-// div.style.position = 'sticky'
-// div.style.backgroundColor = 'grey'
-// document.body.appendChild(div)
-//
+async function createSquareAtLocation(x, y) {
+  console.log(x, 'x')
+  console.log(y, 'y')
+  // Create a div element
+  let square = document.createElement('div')
+
+  // Set its position and size
+  square.style.position = 'absolute'
+  square.style.left = x - 25 + 'px'
+  square.style.top = y - 25 + 'px'
+  square.style.width = '50px'
+  square.style.height = '50px'
+  square.style.zIndex = '9999'
+
+  // Set its color to red
+  square.style.backgroundColor = 'red'
+
+  // Append it to the body of the document
+  document.body.appendChild(square)
+}
+
 // waits minimum 1000ms
 function waitForWindowLoad() {
   return new Promise((resolve) => {
@@ -90,7 +133,7 @@ function waitForWindowLoad() {
 
     function delayResolve() {
       let elapsedTime = Date.now() - startTime
-      let remainingTime = 1000 - elapsedTime
+      let remainingTime = 2000 - elapsedTime
       if (remainingTime > 0) {
         setTimeout(resolve, remainingTime)
       } else {
@@ -151,12 +194,17 @@ const locateCorrectElement = async (initialLabel) => {
       renderedAtStep,
     })
   })
+  let returnEl = null
   // If an element matches the initialLabel, return the path to the element
   for (const el of clickableElements) {
     if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
-      return getPathTo(el)
+      console.log(el)
+      const boundingBox = el.getBoundingClientRect()
+      if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) returnEl = getPathTo(el)
     }
   }
+  if (returnEl) return returnEl
+  else console.log('NO ELEMENT FOUND :(')
   // Remove duplicates and empty text elements from the clickableElementLabels array
   const cleanedArray = [
     ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
@@ -196,10 +244,10 @@ const executeAction = async (actionName, label, param) => {
       // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
       clickElement(selector)
       await waitForWindowLoad()
-      return true
+      return false
     case 'INPUT':
-      debugger
       console.log(`Inputting text: ${param} into field with label: ${label}`)
+      console.log('Input selector: ', selector)
       clickElement(selector)
       await typeText(param, document.querySelector(selector))
       await waitForWindowLoad()
@@ -232,6 +280,10 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     observer = new MutationObserver(nodeChangeCallback)
     // Start observing the the whole dom for changes
     observer.observe(document.documentElement, { attributes: true, childList: true, subtree: true })
+  }
+  if (request.type === 'showClick') {
+    createSquareAtLocation(request.x, request.y)
+    return
   }
   console.log(request, 'request')
   currentStepNumber = request.currentStep
