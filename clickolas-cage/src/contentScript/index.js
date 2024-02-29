@@ -19,21 +19,6 @@ function sleep(ms) {
 
 async function clickElement(selector) {
   sendMessageToBackgroundScript({ type: 'click_element', selector })
-  return
-  const element = document.querySelector(selector)
-  element.click()
-  element.dispatchEvent(
-    new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }),
-  )
-  element.dispatchEvent(
-    new MouseEvent('mousePressed', { bubbles: true, cancelable: true, view: window }),
-  )
-  element.dispatchEvent(
-    new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }),
-  )
-  element.dispatchEvent(
-    new MouseEvent('mouseReleased', { bubbles: true, cancelable: true, view: window }),
-  )
 }
 
 /**
@@ -66,32 +51,8 @@ async function typeText(text, element) {
 
       await sleep(delayBetweenKeystrokes)
     }
-    // pressEnter(element)
     resolve()
   })
-}
-
-/**
- * @param {HTMLElement} element - The target HTML element where the text will be typed
- */
-async function pressEnter(element) {
-  debugger
-  element.focus() // Ensure the element has focus before typing
-  const eventInitDict = {
-    key: 'Enter',
-    keyCode: 13,
-    which: 13,
-    bubbles: true,
-    shiftKey: false,
-    ctrlKey: false,
-    altKey: false,
-    metaKey: false,
-  }
-
-  element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
-  element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
-  element.dispatchEvent(new InputEvent('input', { inputType: 'insertText', ...eventInitDict }))
-  element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
 }
 
 // Callback function to execute when mutations are observed
