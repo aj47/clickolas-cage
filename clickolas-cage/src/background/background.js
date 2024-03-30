@@ -24,35 +24,56 @@ fetch(chrome.runtime.getURL('src/recipes.json'))
   })
 
 const navURL = (url) => {
-  console.log(url, 'url')
-  currentURL = url
-  chrome.tabs.create({ url: url }, async function (tab) {
-    targetTab = tab.id // Store the tab ID for later use
-    currentStep++
-    // Check if the tab is completely loaded before sending a message
-    checkTabReady(targetTab, async function () {
-      console.log('tab ready')
-      if (currentStep >= currentPlan.length) {
-        const recipeCandidates = recipes[getDomain(url)]
-        let matchingRecipe = null
-        if (recipeCandidates) {
-          const responseJSON = await checkCandidatePrompts(
-            originalPrompt,
-            Object.keys(recipeCandidates),
-          )
-          matchingRecipe = recipeCandidates[responseJSON.match]
-          console.log(matchingRecipe, 'matchingRecipe')
-        }
-        const responseJSON = await sendPromptToPlanner(originalPrompt, url, matchingRecipe)
-        currentPlan = responseJSON.plan
-        currentStep = 1
+  // console.log(url, 'url')
+  // currentURL = url
+  // chrome.tabs.create({ url: url }, async function (tab) {
+  //   targetTab = tab.id // Store the tab ID for later use
+  //   currentStep++
+  //   // Check if the tab is completely loaded before sending a message
+  //   checkTabReady(targetTab, async function () {
+  //     console.log('tab ready')
+  //     if (currentStep >= currentPlan.length) {
+  //       const recipeCandidates = recipes[getDomain(url)]
+  //       let matchingRecipe = null
+  //       if (recipeCandidates) {
+  //         const responseJSON = await checkCandidatePrompts(
+  //           originalPrompt,
+  //           Object.keys(recipeCandidates),
+  //         )
+  //         matchingRecipe = recipeCandidates[responseJSON.match]
+  //         console.log(matchingRecipe, 'matchingRecipe')
+  //       }
+  //       const responseJSON = await sendPromptToPlanner(originalPrompt, url, matchingRecipe)
+  //       currentPlan = responseJSON.plan
+  //       currentStep = 1
+  //     }
+  //     const messagePayload = {
+  //       currentStep: currentStep - 1,
+  //       originalPlan: currentPlan,
+  //       originalPrompt,
+  //     }
+  //     await sendMessageToTab(targetTab, messagePayload)
+  //   })
+  // })
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0]
+    chrome.debugger.attach({ tabId: tab.id }, '1.3', () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError.message)
+        return
       }
-      const messagePayload = {
-        currentStep: currentStep - 1,
-        originalPlan: currentPlan,
-        originalPrompt,
-      }
-      await sendMessageToTab(targetTab, messagePayload)
+
+      // Use chrome.windows.create instead of window.open
+      chrome.windows.create({
+        url: url, // Path to your debugger window HTML
+        type: 'panel', // Or 'panel', 'detached_panel', etc., depending on your needs
+        width: 800,
+        height: 600,
+      })
+
+      // Optional: Detach when the debugger window is closed
+      // This would require additional logic to track window closure.
     })
   })
 }
