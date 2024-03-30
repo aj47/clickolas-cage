@@ -24,7 +24,7 @@ fetch(chrome.runtime.getURL('src/recipes.json'))
   })
 
 const navURL = (url) => {
-  // console.log(url, 'url')
+  console.log(url, 'url')
   // currentURL = url
   // chrome.tabs.create({ url: url }, async function (tab) {
   //   targetTab = tab.id // Store the tab ID for later use
@@ -55,26 +55,11 @@ const navURL = (url) => {
   //     await sendMessageToTab(targetTab, messagePayload)
   //   })
   // })
-
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const tab = tabs[0]
-    chrome.debugger.attach({ tabId: tab.id }, '1.3', () => {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message)
-        return
-      }
-
-      // Use chrome.windows.create instead of window.open
-      chrome.windows.create({
-        url: url, // Path to your debugger window HTML
-        type: 'panel', // Or 'panel', 'detached_panel', etc., depending on your needs
-        width: 800,
-        height: 600,
-      })
-
-      // Optional: Detach when the debugger window is closed
-      // This would require additional logic to track window closure.
-    })
+  chrome.windows.create({
+    url: url, // Path to your debugger window HTML
+    type: 'popup', // Or 'panel', 'detached_panel', etc., depending on your needs
+    width: 800,
+    height: 600,
   })
 }
 
@@ -127,7 +112,7 @@ chrome.runtime.onMessage.addListener((request) => {
     originalPrompt = request.prompt
     promptToFirstStep(request.prompt).then((responseJSON) => {
       console.log(responseJSON, 'response')
-      responseJSON.action = 'NAVURL';
+      responseJSON.action = 'NAVURL'
       if (responseJSON.action === 'NAVURL') navURL(responseJSON.param)
       else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
     })

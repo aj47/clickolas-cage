@@ -212,6 +212,7 @@ export const promptToFirstStep = async (prompt) => {
   const chatCompletion = await openaiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-3.5-turbo-1106',
+      stop: "}",
       temperature: 0.2,
       response_format: { type: 'json_object' },
       messages: [
@@ -235,7 +236,7 @@ Provide response with this JSON schema:
       ],
     }),
   )
-  return extractJsonObject(chatCompletion.choices[0].message.content)
+  return extractJsonObject(chatCompletion.choices[0].message.content+ "}") // because it is not included when supplying the "stop" property
 }
 
 export const getDomain = (url) => {
