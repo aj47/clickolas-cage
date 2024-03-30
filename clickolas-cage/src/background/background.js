@@ -57,14 +57,14 @@ const navURL = (url) => {
   })
 }
 
-const retryTask = () => {
-  const messagePayload = {
-    currentStep: currentStep - 1,
-    originalPlan: currentPlan,
-    originalPrompt,
-  }
-  sendMessageToTab(targetTab, messagePayload)
-}
+// const retryTask = () => {
+//   const messagePayload = {
+//     currentStep: currentStep - 1,
+//     originalPlan: currentPlan,
+//     originalPrompt,
+//   }
+//   sendMessageToTab(targetTab, messagePayload)
+// }
 
 const completedTask = () => {
   console.log('inside completed task')
@@ -106,6 +106,7 @@ chrome.runtime.onMessage.addListener((request) => {
     originalPrompt = request.prompt
     promptToFirstStep(request.prompt).then((responseJSON) => {
       console.log(responseJSON, 'response')
+      responseJSON.action = 'NAVURL';
       if (responseJSON.action === 'NAVURL') navURL(responseJSON.param)
       else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
     })
@@ -283,28 +284,3 @@ async function clickElement(tabId, selector) {
     console.log(e, 'e')
   }
 }
-
-// async function clickElement(tabId, selector) {
-//   await new Promise((resolve, reject) => {
-//     chrome.debugger.sendCommand({ tabId }, 'DOM.getDocument', {}, ({ root }) => {
-//       chrome.debugger.sendCommand(
-//         { tabId },
-//         'DOM.querySelector',
-//         { nodeId: root.nodeId, selector },
-//         ({ nodeId }) => {
-//           chrome.debugger.sendCommand({ tabId }, 'DOM.resolveNode', { nodeId }, ({ object }) => {
-//             chrome.debugger.sendCommand(
-//               { tabId },
-//               'Runtime.callFunctionOn',
-//               {
-//                 functionDeclaration: 'function() { this.click(); }',
-//                 objectId: object.objectId,
-//               },
-//               resolve,
-//             )
-//           })
-//         },
-//       )
-//     })
-//   })
-// }

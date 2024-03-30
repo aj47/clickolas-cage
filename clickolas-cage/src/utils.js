@@ -212,8 +212,7 @@ export const promptToFirstStep = async (prompt) => {
   const chatCompletion = await openaiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-3.5-turbo-1106',
-      seed: 1,
-      temperature: 0,
+      temperature: 0.2,
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -225,8 +224,7 @@ alternatively you can ask the user for additional info if needed.
 Provide response with this JSON schema:
 {
     thought: "one sentence rationale",
-    action: "NAVURL" ,
-    param?: "url"
+    param: "url"
 }
 `,
         },

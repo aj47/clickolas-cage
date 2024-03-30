@@ -19,13 +19,13 @@ export default defineManifest({
   options_page: 'options.html',
   devtools_page: 'devtools.html',
   background: {
-    service_worker: 'src/background/index.js',
+    service_worker: 'src/background/background.js',
     type: 'module',
   },
   content_scripts: [
     {
       matches: ['http://*/*', 'https://*/*'],
-      js: ['src/contentScript/index.js'],
+      js: ['src/contentScript/contentScript.js'],
     },
   ],
   side_panel: {

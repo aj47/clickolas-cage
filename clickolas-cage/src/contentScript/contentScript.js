@@ -66,6 +66,28 @@ const nodeChangeCallback = function (mutationsList, observer) {
   }
 }
 
+async function createThinkingPanel() {
+  // Create a div element
+  let square = document.createElement('div')
+
+  // Set its position and size
+  square.style.position = 'sticky'
+  square.style.right = 0
+  square.style.bottom = 0
+  square.style.height = '400px'
+  square.style.zIndex = '9999'
+  square.style.backgroundColor = 'darkgray'
+  square.style.color = 'white'
+  square.style.padding = '15px'
+  square.style.fontSize = '25px'
+  square.style.opacity = '0.4'
+  square.style.pointerEvents = 'none'
+  square.id = 'thoughts-panel'
+
+  // Append it to the body of the document
+  document.body.appendChild(square)
+}
+
 async function createSquareAtLocation(x, y) {
   console.log(x, 'x')
   console.log(y, 'y')
@@ -87,7 +109,12 @@ async function createSquareAtLocation(x, y) {
   document.body.appendChild(square)
 }
 
-// waits minimum 1000ms
+/**
+ * Waits for the document to load or until 2000ms have passed since the start.
+ * @returns {Promise<void>} A promise that resolves when the window is loaded or after 2000ms, whichever comes first.
+ */
+function waitForWindowLoad() {
+  return new Promise((resolve) => {
 function waitForWindowLoad() {
   return new Promise((resolve) => {
     let startTime = Date.now()
@@ -110,6 +137,11 @@ function waitForWindowLoad() {
   })
 }
 
+/**
+ * Gets the CSS query path to an element relative to its parent nodes.
+ * @param {HTMLElement} element - The HTML element for which you want to get the path.
+ * @returns {string} A string representing the path of the element from the document root.
+ */
 const getPathTo = (element) => {
   if (element.id) return `#${element.id}`
   if (element === document.body) return element.tagName.toLowerCase()
@@ -121,7 +153,13 @@ const getPathTo = (element) => {
   return `${getPathTo(element.parentNode)} > ${tagName}${nthChild}`
 }
 
-//Given an initial guess label (likely hallucinated) find the correct selector or update plan
+/**
+  * Locates the correct element based on an initial label. If it finds a matching element, \
+  * it returns its path; otherwise, it logs an error message and returns false.
+  * @param {string} initialLabel - The initial guess of the element's label.
+  * @returns {Promise<Array<HTMLElement>|boolean>} A promise that resolves to either an array of paths or false, \
+  * depending on whether it finds a matching element.
+*/
 const locateCorrectElement = async (initialLabel) => {
   const clickableElements = []
   // Add all clickable elements in DOM to clickableElements array
@@ -235,6 +273,14 @@ const executeAction = async (actionName, label, param) => {
   return true
 }
 
+const processPlanText = (plan) => {
+  let output = ''
+  for (const step in plan) {
+    output = output + '\n ' + step.thought
+  }
+  return output
+}
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (observer === null) {
     // Create an instance of MutationObserver with the callback
@@ -249,6 +295,8 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log(request, 'request')
   currentStepNumber = request.currentStep
   originalPlan = request.originalPlan
+  document.querySelector('#thoughts-panel').innerText = processPlanText(originalPlan)
+  createThinkingPanel()
   currentStep = originalPlan[currentStepNumber]
   originalPrompt = request.originalPrompt
   executeAction(currentStep.action, currentStep.ariaLabel, currentStep.param)
