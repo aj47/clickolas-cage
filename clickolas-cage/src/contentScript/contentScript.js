@@ -115,8 +115,6 @@ async function createSquareAtLocation(x, y) {
  */
 function waitForWindowLoad() {
   return new Promise((resolve) => {
-function waitForWindowLoad() {
-  return new Promise((resolve) => {
     let startTime = Date.now()
 
     function delayResolve() {
