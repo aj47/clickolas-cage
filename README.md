@@ -29,14 +29,15 @@ $ npm run dev
 
 ### Chrome Extension Developer Mode
 
+The main source files are:
+`src/background/background.js'
+`src/contentScript/contentScript.js`
+`src/utils.js`
+
 1. set your Chrome browser 'Developer mode' up
 2. click 'Load unpacked', and select `clickolas-cage/build` folder
+3. you can now try the extension as normal ![image](https://github.com/aj47/clickolas-cage/assets/8023513/3c358fb4-480d-4e6c-87d8-e0e7f709075d)
 
-### Nomal FrontEnd Developer Mode
-
-1. access `http://0.0.0.0:3000/`
-2. when debugging popup page, open `http://0.0.0.0:3000//popup.html`
-3. when debugging options page, open `http://0.0.0.0:3000//options.html`
 
 ## Packing
 
