@@ -2,14 +2,7 @@
 
 > a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using GPT-4 as a brain).
 
-## Structure
-
-- Popup.jsx
-  - contains the popup shown when the extension is clicked
-- Content script
-  - this should execute DOM actions
-- Background.js
-  - this should hold the execution plan and history.
+![image](https://github.com/aj47/clickolas-cage/assets/8023513/3c358fb4-480d-4e6c-87d8-e0e7f709075d)
 
 ## Installing
 
@@ -27,16 +20,16 @@ $ cd clickolas-cage
 $ npm run dev
 ```
 
-### Chrome Extension Developer Mode
-
 1. set your Chrome browser 'Developer mode' up
 2. click 'Load unpacked', and select `clickolas-cage/build` folder
 
-### Nomal FrontEnd Developer Mode
+The main source files are:
+- `src/popup/popup.jsx` The popup window that shows when you press the extension icon
+- `src/background/background.js` Persists and facilitates planning
+- `src/contentScript/contentScript.js` Executes on web pages, executes actions and scrapes elements
+- `src/utils.js` Helper functions
 
-1. access `http://0.0.0.0:3000/`
-2. when debugging popup page, open `http://0.0.0.0:3000//popup.html`
-3. when debugging options page, open `http://0.0.0.0:3000//options.html`
+
 
 ## Packing
 
