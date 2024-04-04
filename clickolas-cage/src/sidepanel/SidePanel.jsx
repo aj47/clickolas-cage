@@ -9,11 +9,11 @@ import {
 import './SidePanel.css'
 export const SidePanel = () => {
   const [originalPlan, setOriginalPlan] = useState([])
+  const [currentStep, setCurrentStep] = useState(null)
+  const [currentStepNumber, setCurrentStepNumber] = useState(0)
+  const [originalPrompt, setOriginalPrompt] = useState('')
 
   console.info('contentScript is running')
-  let originalPrompt = ''
-  let currentStep = ''
-  let currentStepNumber = 0
   let newNodes = []
   let observer = null
   const delayBetweenKeystrokes = 100
@@ -64,14 +64,14 @@ export const SidePanel = () => {
 
   // Callback function to execute when mutations are observed
   // gets called every time a node changes
-  const nodeChangeCallback = function (mutationsList, observer) {
-    for (const mutation of mutationsList) {
-      if (mutation.type === 'childList' && mutation.addedNodes?.length > 0) {
-        newNodes.push({ nodes: mutation.addedNodes, step: currentStepNumber })
-        console.log('A child node has been added.')
-      }
-    }
-  }
+  // const nodeChangeCallback = function (mutationsList, observer) {
+  //   for (const mutation of mutationsList) {
+  //     if (mutation.type === 'childList' && mutation.addedNodes?.length > 0) {
+  //       newNodes.push({ nodes: mutation.addedNodes, step: currentStepNumber })
+  //       console.log('A child node has been added.')
+  //     }
+  //   }
+  // }
 
   async function createSquareAtLocation(x, y) {
     console.log(x, 'x')
@@ -257,28 +257,29 @@ export const SidePanel = () => {
   }
 
   chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (observer === null) {
-      // Create an instance of MutationObserver with the callback
-      observer = new MutationObserver(nodeChangeCallback)
-      // Start observing the the whole dom for changes
-      observer.observe(document.documentElement, {
-        attributes: true,
-        childList: true,
-        subtree: true,
-      })
-    }
+    // if (observer === null) {
+    //   // Create an instance of MutationObserver with the callback
+    //   observer = new MutationObserver(nodeChangeCallback)
+    //   // Start observing the the whole dom for changes
+    //   observer.observe(document.documentElement, {
+    //     attributes: true,
+    //     childList: true,
+    //     subtree: true,
+    //   })
+    // }
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
       return
     }
+    debugger
     console.log(request, 'request')
-    currentStepNumber = request.currentStep
+    setCurrentStepNumber(request.currentStep)
     // document.querySelector('#thoughts-panel').innerText = processPlanText(originalPlan)
     setOriginalPlan(request.originalPlan)
     console.log(originalPlan, 'originalPlan')
-    createThinkingPanel()
-    currentStep = originalPlan[currentStepNumber]
-    originalPrompt = request.originalPrompt
+    setCurrentStep(request.originalPlan[request.currentStep])
+    setOriginalPrompt(request.originalPrompt)
+    console.log(currentStep, 'currentStep')
     executeAction(currentStep.action, currentStep.ariaLabel, currentStep.param)
       .then((completedAction) => {
         sendResponse('complete')
@@ -303,7 +304,7 @@ export const SidePanel = () => {
           <ul>
             {originalPlan.map((step, i) => {
               return (
-                <div className="step">
+                <div className="step" key={i}>
                   {i + 1} - {step.thought}
                 </div>
               )
