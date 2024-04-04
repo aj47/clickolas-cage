@@ -1,6 +1,7 @@
 # clickolas-cage
 
 > a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using GPT-4 as a brain).
+![image](https://github.com/aj47/clickolas-cage/assets/8023513/3c358fb4-480d-4e6c-87d8-e0e7f709075d)
 
 ## Structure
 
@@ -36,8 +37,6 @@ The main source files are:
 
 1. set your Chrome browser 'Developer mode' up
 2. click 'Load unpacked', and select `clickolas-cage/build` folder
-3. you can now try the extension as normal ![image](https://github.com/aj47/clickolas-cage/assets/8023513/3c358fb4-480d-4e6c-87d8-e0e7f709075d)
-
 
 ## Packing
 
