@@ -1,9 +1,19 @@
 .sidePanel {
   position: fixed;
-  top: 20px;
+  top: 120px;
   right: 20px;
   width: 200px;
-  height: 400px;
   background-color: #001c24;
-  z-index: 99;
+  opacity: 0.95;
+  font-size: 18px;
+  z-index: 99999;
+  border-radius: 5px;
+  box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+  .plan {
+    color: white;
+    margin: 10px;
+    .step {
+      padding: 10px 5px;
+    }
+  }
 }

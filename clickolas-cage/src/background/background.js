@@ -33,9 +33,6 @@ const navURL = (url) => {
     currentStep++
     // Check if the tab is completely loaded before sending a message
     checkTabReady(targetTab, async function () {
-      chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
-        chrome.sidePanel.open({ tabId: targetTab })
-      })
       console.log('tab ready')
       if (currentStep >= currentPlan.length) {
         const recipeCandidates = recipes[getDomain(url)]
