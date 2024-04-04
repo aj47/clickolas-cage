@@ -29,7 +29,7 @@ const Popup = () => {
             <input ref={promptRef} type="text" placeholder="Add event x to my google calendar" className="input-large" />
             <input
               onClick={async () => {
-                console.log('hello?')
+                console.log('submit clicked.')
                 if (promptRef.current.value.length === 0) return
                 sendMessageToBackgroundScript({ type: 'goal', prompt: promptRef.current.value })
                 setIsLoading(true)
