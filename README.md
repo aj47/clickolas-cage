@@ -4,15 +4,6 @@
 
 ![image](https://github.com/aj47/clickolas-cage/assets/8023513/3c358fb4-480d-4e6c-87d8-e0e7f709075d)
 
-## Structure
-
-- Popup.jsx
-  - contains the popup shown when the extension is clicked
-- Content script
-  - this should execute DOM actions
-- Background.js
-  - this should hold the execution plan and history.
-
 ## Installing
 
 1. Check if your `Node.js` version is >= **14**.
