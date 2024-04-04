@@ -13,7 +13,7 @@ let currentStep = 0
 let originalPrompt = ''
 let currentURL = ''
 let recipes = null
-let allowedTabs = new Set();
+let allowedTabs = new Set()
 
 fetch(chrome.runtime.getURL('src/recipes.json'))
   .then((response) => response.json()) // parse the JSON from the response
@@ -27,8 +27,12 @@ fetch(chrome.runtime.getURL('src/recipes.json'))
 const navURL = (url) => {
   console.log(url, 'url')
   currentURL = url
+  //Needs http otherwise does not go to absolute URL
+  if (url.indexOf('http') !== 0) {
+    url = 'http://' + url
+  }
   chrome.tabs.create({ url: url }, async function (tab) {
-    allowedTabs.add(tab.id);
+    allowedTabs.add(tab.id)
     targetTab = tab.id // Store the tab ID for later use
     currentStep++
     // Check if the tab is completely loaded before sending a message
@@ -287,16 +291,15 @@ async function clickElement(tabId, selector) {
   }
 }
 
-
 // --- We only allow content script to execute on tabs created by background script
 // Listen for when a tab is closed and remove it from the set
-chrome.tabs.onRemoved.addListener(function(tabId) {
-    allowedTabs.delete(tabId);
-});
+chrome.tabs.onRemoved.addListener(function (tabId) {
+  allowedTabs.delete(tabId)
+})
 //Used for ContentScript to see if its on a tab it can execute on
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    if (request.action === "checkTab") {
-        const isAllowed = allowedTabs.has(sender.tab.id);
-        sendResponse({isAllowed: isAllowed});
-    }
-});
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.action === 'checkTab') {
+    const isAllowed = allowedTabs.has(sender.tab.id)
+    sendResponse({ isAllowed: isAllowed })
+  }
+})

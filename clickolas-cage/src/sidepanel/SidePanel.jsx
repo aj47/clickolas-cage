@@ -277,10 +277,11 @@ export const SidePanel = () => {
     // document.querySelector('#thoughts-panel').innerText = processPlanText(originalPlan)
     setOriginalPlan(request.originalPlan)
     console.log(originalPlan, 'originalPlan')
-    setCurrentStep(request.originalPlan[request.currentStep])
+    localCurrentStep =request.originalPlan[request.currentStep];
     setOriginalPrompt(request.originalPrompt)
     console.log(currentStep, 'currentStep')
-    executeAction(currentStep.action, currentStep.ariaLabel, currentStep.param)
+    setCurrentStep(localCurrentStep);
+    executeAction(localCurrentStep.action, localCurrentStep.ariaLabel, localCurrentStep.param)
       .then((completedAction) => {
         sendResponse('complete')
         console.log('completed action')
