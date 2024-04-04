@@ -165,11 +165,11 @@ export const SidePanel = () => {
     clickableElements.forEach((e) => {
       let renderedAtStep = 0
       //cringe at this n^3 complexity
-      for (const newNode of newNodes) {
-        for (const node of newNode.nodes) {
-          if (node.contains(e)) renderedAtStep = newNode.step
-        }
-      }
+      // for (const newNode of newNodes) {
+      //   for (const node of newNode.nodes) {
+      //     if (node.contains(e)) renderedAtStep = newNode.step
+      //   }
+      // }
       clickableElementLabels.push({
         role: e.getAttribute('role') || e.tagName,
         ariaLabel: e.getAttribute('aria-label') || e.innerText,
@@ -277,10 +277,10 @@ export const SidePanel = () => {
     // document.querySelector('#thoughts-panel').innerText = processPlanText(originalPlan)
     setOriginalPlan(request.originalPlan)
     console.log(originalPlan, 'originalPlan')
-    localCurrentStep =request.originalPlan[request.currentStep];
+    localCurrentStep = request.originalPlan[request.currentStep]
     setOriginalPrompt(request.originalPrompt)
     console.log(currentStep, 'currentStep')
-    setCurrentStep(localCurrentStep);
+    setCurrentStep(localCurrentStep)
     executeAction(localCurrentStep.action, localCurrentStep.ariaLabel, localCurrentStep.param)
       .then((completedAction) => {
         sendResponse('complete')
@@ -299,20 +299,24 @@ export const SidePanel = () => {
 
   return (
     <div className="sidePanel">
-      {originalPlan.length > 0 && (
-        <div className="plan">
-          <h2>Clickolas Plan: </h2>
-          <ul>
-            {originalPlan.map((step, i) => {
-              return (
-                <div className="step" key={i}>
-                  {i + 1} - {step.thought}
-                </div>
-              )
-            })}
-          </ul>
-        </div>
-      )}
+      <div className="plan">
+        {originalPlan.length > 0 ? (
+          <>
+            <h2>Clickolas Plan: </h2>
+            <ul>
+              {originalPlan.map((step, i) => {
+                return (
+                  <div className="step" key={i}>
+                    {i + 1} - {step.thought}
+                  </div>
+                )
+              })}
+            </ul>
+          </>
+        ) : (
+          <h2> Thinking...</h2>
+        )}
+      </div>
     </div>
   )
 }

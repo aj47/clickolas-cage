@@ -1,20 +1,19 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
-import SidePanel from '../sidepanel/SidePanel'
+import React from 'react';
+import { createRoot } from 'react-dom/client'; // Import createRoot
+import SidePanel from '../sidepanel/SidePanel';
 
-// --- We only allow content script to execute on tabs created by background script
 chrome.runtime.sendMessage({ action: 'checkTab' }, function (response) {
   if (response.isAllowed) {
-    console.log('content script executed')
-    const root = document.createElement('div')
-    root.id = 'crx-root'
-    document.body.append(root)
+    console.log('content script executed');
+    const rootDiv = document.createElement('div');
+    rootDiv.id = 'crx-root';
+    document.body.appendChild(rootDiv);
 
-    ReactDOM.render(
+    const root = createRoot(rootDiv); // Use createRoot
+    root.render(
       <React.StrictMode>
         <SidePanel />
-      </React.StrictMode>,
-      root,
-    )
+      </React.StrictMode>
+    );
   }
-})
+});

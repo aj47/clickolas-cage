@@ -29,6 +29,13 @@ The main source files are:
 - `src/contentScript/contentScript.js` Executes on web pages, executes actions and scrapes elements
 - `src/utils.js` Helper functions
 
+### Current Flow
+1. User clicks extension icon
+2. User enters prompt
+3. Popup.jsx sends a message to background.js with request type 'goal'
+4. background.js calls promptToFirstStep in utils.js which calls LLM
+5. LLM returns starting URL, background.js calls NavURL, creates a new tab with url
+6. 
 
 
 ## Packing

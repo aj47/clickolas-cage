@@ -70,7 +70,7 @@ const completedTask = () => {
   sendMessageToTab(targetTab, messagePayload)
 }
 
-chrome.runtime.onMessage.addListener((request) => {
+chrome.runtime.onMessage.addListener(async (request) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
   if (request.type === 'new_plan') {
     console.log('new plan received')
@@ -91,12 +91,12 @@ chrome.runtime.onMessage.addListener((request) => {
     console.log(JSON.stringify(request))
     console.log('received request in background', request.prompt)
     originalPrompt = request.prompt
-    promptToFirstStep(request.prompt).then((responseJSON) => {
-      console.log(responseJSON, 'response')
-      responseJSON.action = 'NAVURL'
-      if (responseJSON.action === 'NAVURL') navURL(responseJSON.param)
-      else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
-    })
+    const responseJSON = await promptToFirstStep(request.prompt)
+    console.log(responseJSON, 'response')
+    responseJSON.action = 'NAVURL'
+    currentPlan.push(responseJSON)
+    navURL(responseJSON.param)
+    // else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
   } else if (request.type === 'click_element') {
     clickElement(targetTab, request.selector)
   }
@@ -280,6 +280,7 @@ chrome.tabs.onRemoved.addListener(function (tabId) {
 //Used for ContentScript to see if its on a tab it can execute on
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === 'checkTab') {
+    console.log(allowedTabs, sender.tab.id, "allowedTabs");
     const isAllowed = allowedTabs.has(sender.tab.id)
     sendResponse({ isAllowed: isAllowed })
   }

@@ -13,6 +13,7 @@ const openai = new OpenAI({
  * @returns {Object|null} The parsed JSON object, or null if no valid JSON object is found.
  */
 const extractJsonObject = (str) => {
+  console.log(str, "str");
   // Regular expression to match JSON objects
   const jsonRegex = /{(?:[^{}]|{(?:[^{}]|{[^{}]*})*})*}/g
 
@@ -210,7 +211,7 @@ Provide the response with this JSON schema:
         },
         {
           role: 'user',
-          content: `Your goal is: ${prompt}`
+          content: `Your goal is: ${prompt}`,
         },
       ],
     }),
@@ -273,11 +274,11 @@ export const promptToFirstStep = async (prompt) => {
           role: 'system',
           content: `you are an expert web browsing AI. given a prompt from the user provide the first step into achieving the goal.
 This should be either the absolute URL given
-OR a google search URL ('www.google.com/search?q=your+search+here') when a url isn't specified by the user.
+OR a google search URL ('www.google.com/search?q=your+search+here')
 Provide response with this JSON schema:
 {
-    thought: "one sentence rationale",
-    param: "url"
+    "thought": "one sentence rationale",
+    "param": "url"
 }
 `,
         },
