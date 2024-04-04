@@ -32,9 +32,10 @@ $ npm run dev
 ### Chrome Extension Developer Mode
 
 The main source files are:
-`src/background/background.js`
-`src/contentScript/contentScript.js`
-`src/utils.js`
+- `src/popup/popup.jsx` The popup window that shows when you press the extension icon
+- `src/background/background.js` Persists and facilitates planning
+- `src/contentScript/contentScript.js` Executes on web pages, executes actions and scrapes elements
+- `src/utils.js` Helper functions
 
 1. set your Chrome browser 'Developer mode' up
 2. click 'Load unpacked', and select `clickolas-cage/build` folder
