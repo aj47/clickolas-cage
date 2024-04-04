@@ -3,18 +3,19 @@
 > a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using GPT-4 as a brain).
 
 ## Structure
+
 - Popup.jsx
-	- contains the popup shown when the extension is clicked
+  - contains the popup shown when the extension is clicked
 - Content script
-	- this should execute DOM actions
-- Background.js 
-	- this should hold the execution plan and history.
+  - this should execute DOM actions
+- Background.js
+  - this should hold the execution plan and history.
 
 ## Installing
 
 1. Check if your `Node.js` version is >= **14**.
-2. Change or configurate the name of your extension on `src/manifest`.
-3. Run `npm install` to install the dependencies.
+2. Run `npm install` to install the dependencies.
+3. you need to either be running a local model on `http://localhost:1234` or change the openAI config in `src/utils.js`
 
 ## Developing
 
