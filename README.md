@@ -30,7 +30,7 @@ $ npm run dev
 ### Chrome Extension Developer Mode
 
 The main source files are:
-`src/background/background.js'
+`src/background/background.js`
 `src/contentScript/contentScript.js`
 `src/utils.js`
 
