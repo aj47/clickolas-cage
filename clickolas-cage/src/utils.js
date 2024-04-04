@@ -182,10 +182,9 @@ ONLY use the following user provided nodes aria-labels:
  * Sends a prompt to the OpenAI chat completion API to generate a plan for achieving a user goal on a specific URL.
  * @param {string} prompt - The user goal prompt.
  * @param {string} url - The URL of the current page.
- * @param {string} [matchingRecipe] - An optional working recipe related to the goal.
  * @returns {Promise<Object>} - A promise that resolves to the extracted JSON object containing the generated plan.
  */
-export const sendPromptToPlanner = async (prompt, url, matchingRecipe) => {
+export const sendPromptToPlanner = async (prompt, url) => {
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-3.5-turbo-1106',
@@ -211,8 +210,7 @@ Provide the response with this JSON schema:
         },
         {
           role: 'user',
-          content: `Your goal is: ${prompt}
-${matchingRecipe && 'A working recipe is: ' + matchingRecipe}`,
+          content: `Your goal is: ${prompt}`
         },
       ],
     }),

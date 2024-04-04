@@ -12,17 +12,7 @@ let targetTab = null
 let currentStep = 0
 let originalPrompt = ''
 let currentURL = ''
-let recipes = null
 let allowedTabs = new Set()
-
-fetch(chrome.runtime.getURL('src/recipes.json'))
-  .then((response) => response.json()) // parse the JSON from the response
-  .then((jsonData) => {
-    recipes = jsonData
-  })
-  .catch((error) => {
-    console.error('Error:', error)
-  })
 
 const navURL = (url) => {
   console.log(url, 'url')
@@ -38,18 +28,9 @@ const navURL = (url) => {
     // Check if the tab is completely loaded before sending a message
     checkTabReady(targetTab, async function () {
       console.log('tab ready')
+      //If not started a plan or finished previous plan
       if (currentStep >= currentPlan.length) {
-        const recipeCandidates = recipes[getDomain(url)]
-        let matchingRecipe = null
-        if (recipeCandidates) {
-          const responseJSON = await checkCandidatePrompts(
-            originalPrompt,
-            Object.keys(recipeCandidates),
-          )
-          matchingRecipe = recipeCandidates[responseJSON.match]
-          console.log(matchingRecipe, 'matchingRecipe')
-        }
-        const responseJSON = await sendPromptToPlanner(originalPrompt, url, matchingRecipe)
+        const responseJSON = await sendPromptToPlanner(originalPrompt, url)
         currentPlan = responseJSON.plan
         currentStep = 1
       }
