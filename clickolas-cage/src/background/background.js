@@ -72,7 +72,7 @@ const executeCurrentStep = async () => {
   if (currentPlan[currentStep].action === 'NAVURL') {
     // if the action is NAVURL
     await navURL(currentPlan[currentStep].param)
-  } else if (currentPlan[currentStep].action === 'CLICK') {
+  } else if (currentPlan[currentStep].action === 'CLICKBTN') {
     // if the action is CLICK
     clickElement(targetTab, currentPlan[currentStep].param)
   } else if (currentPlan[currentStep].action === 'ASKUSER') {
@@ -125,7 +125,14 @@ chrome.runtime.onMessage.addListener(async (request) => {
   } else if (request.type === 'click_element') {
     clickElement(targetTab, request.selector)
   } else if (request.type === 'next_step') {
-    getNextStepFromLLM(currentURL, currentPlan, currentStep, request.clickableElementLabels)
+    addStepToPlan(
+      await getNextStepFromLLM(
+        currentURL,
+        currentPlan,
+        currentStep,
+        request.clickableElementLabels,
+      ),
+    )
   }
   return true
 })
