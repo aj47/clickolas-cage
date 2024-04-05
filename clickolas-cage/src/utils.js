@@ -13,7 +13,7 @@ const openai = new OpenAI({
  * @returns {Object|null} The parsed JSON object, or null if no valid JSON object is found.
  */
 const extractJsonObject = (str) => {
-  console.log(str, "str");
+  console.log(str, 'str')
   // Regular expression to match JSON objects
   const jsonRegex = /{(?:[^{}]|{(?:[^{}]|{[^{}]*})*})*}/g
 
@@ -131,6 +131,55 @@ ${currentStep}
  * @param {string} originalPrompt - The original prompt given to the AI.
  * @param {string} originalPlan - The original plan created by the AI.
  * @param {string} currentStep - The current step being executed.
+ * @param {any[]} textOptions - An array of user-provided node aria-labels.
+ * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
+ */
+export const getNextStepFromLLM = async (
+  originalPrompt,
+  originalPlan,
+  currentStep,
+  textOptions,
+) => {
+  const chatCompletion = await openAiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: 'gpt-4-1106-preview',
+      seed: 1,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
+you originally came up with the plan:
+  ${originalPlan}
+We currently just tried to execute step of the plan:
+  ${currentStep}
+provide the next step of the plan to successfully achieve the goal.
+the response should be in this JSON schema:
+{
+    thought: "one sentence rationale",
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
+    ariaLabel: "labelName",
+    param?: "url" | "inputOption" | "inputText"
+}
+ONLY use the following user provided nodes aria-labels:
+`,
+        },
+        {
+          role: 'user',
+          content: `nodes: ${JSON.stringify(textOptions)}`,
+        },
+      ],
+    }),
+  )
+  return extractJsonObject(chatCompletion.choices[0].message.content)
+}
+
+/**
+ * Sends a prompt to the Plan Reviser to get a revised plan based on the current step and available text options.
+ * @param {string} originalPrompt - The original prompt given to the AI.
+ * @param {string} originalPlan - The original plan created by the AI.
+ * @param {string} currentStep - The current step being executed.
  * @param {string[]} textOptions - An array of user-provided node aria-labels.
  * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
  */
@@ -201,10 +250,10 @@ Assume we are already on the URL: ${url} and give the following steps.
 Provide the response with this JSON schema:
 {
   plan: [ {
-    thought: "one sentence rationale",
-    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
-    ariaLabel: "labelName",
-    param?: "url" | "inputOption" | "inputText"
+    "thought": "one sentence rationale",
+    "action": "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
+    "ariaLabel": "labelName",
+    "param"?: "url" | "inputOption" | "inputText"
   },...]
 }
 `,

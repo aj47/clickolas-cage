@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
 import {
+  getNextStepFromLLM,
   sendMessageToBackgroundScript,
   sendPromptToPlanReviser,
   sendPromptWithFeedback,
@@ -136,14 +137,7 @@ export const SidePanel = () => {
     return `${getPathTo(element.parentNode)} > ${tagName}${nthChild}`
   }
 
-  /**
-   * Locates the correct element based on an initial label. If it finds a matching element, \
-   * it returns its path; otherwise, it logs an error message and returns false.
-   * @param {string} initialLabel - The initial guess of the element's label.
-   * @returns {Promise<Array<HTMLElement>|boolean>} A promise that resolves to either an array of paths or false, \
-   * depending on whether it finds a matching element.
-   */
-  const locateCorrectElement = async (initialLabel) => {
+  const getClickableElements = () => {
     const clickableElements = []
     // Add all clickable elements in DOM to clickableElements array
     document.querySelectorAll('*').forEach(function (node) {
@@ -163,7 +157,7 @@ export const SidePanel = () => {
     const clickableElementLabels = []
     // Construct array of aria-labels and roles for each element
     clickableElements.forEach((e) => {
-      let renderedAtStep = 0
+      // let renderedAtStep = 0
       //cringe at this n^3 complexity
       // for (const newNode of newNodes) {
       //   for (const node of newNode.nodes) {
@@ -173,9 +167,21 @@ export const SidePanel = () => {
       clickableElementLabels.push({
         role: e.getAttribute('role') || e.tagName,
         ariaLabel: e.getAttribute('aria-label') || e.innerText,
-        renderedAtStep,
+        // renderedAtStep,
       })
     })
+    return { clickableElements, clickableElementLabels }
+  }
+
+  /**
+   * Locates the correct element based on an initial label. If it finds a matching element, \
+   * it returns its path; otherwise, it logs an error message and returns false.
+   * @param {string} initialLabel - The initial guess of the element's label.
+   * @returns {Promise<Array<HTMLElement>|boolean>} A promise that resolves to either an array of paths or false, \
+   * depending on whether it finds a matching element.
+   */
+  const locateCorrectElement = async (initialLabel) => {
+    const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
     // If an element matches the initialLabel, return the path to the element
     for (const el of clickableElements) {
@@ -270,8 +276,14 @@ export const SidePanel = () => {
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
       return
+    } else if (request.type === 'generateNextStep') {
+      console.log('generating next response')
+      const { clickableElements, clickableElementLabels } = getClickableElements()
+      console.log(clickableElementLabels, 'clickableElementLabels')
+      sendMessageToBackgroundScript({ type: 'next_step', clickableElementLabels })
+      return
     }
-    debugger
+
     console.log(request, 'request')
     setCurrentStepNumber(request.currentStep)
     // document.querySelector('#thoughts-panel').innerText = processPlanText(originalPlan)

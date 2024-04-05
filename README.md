@@ -30,12 +30,14 @@ The main source files are:
 - `src/utils.js` Helper functions
 
 ### Current Flow
-1. User clicks extension icon
-2. User enters prompt
-3. Popup.jsx sends a message to background.js with request type 'goal'
-4. background.js calls promptToFirstStep in utils.js which calls LLM
-5. LLM returns starting URL, background.js calls NavURL, creates a new tab with url
-6. 
+1. User clicks extension icon, enters and submits goal prompt
+2. Popup.jsx sends a message to background.js with request type 'new_goal'
+3. background.js calls promptToFirstStep() in utils.js
+4. LLM returns starting URL which feeds into navURL()
+5. navURL will open a new tab with the starting URL
+6. getNextStep() is called which will get contentScript to extract clickable elements and send it to LLM to generate next step
+
+
 
 
 ## Packing

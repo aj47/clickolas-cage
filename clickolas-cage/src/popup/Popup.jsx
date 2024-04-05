@@ -31,7 +31,7 @@ const Popup = () => {
               onClick={async () => {
                 console.log('submit clicked.')
                 if (promptRef.current.value.length === 0) return
-                sendMessageToBackgroundScript({ type: 'goal', prompt: promptRef.current.value })
+                sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
                 setIsLoading(true)
               }}
               type="button"

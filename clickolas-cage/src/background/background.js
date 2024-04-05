@@ -1,6 +1,7 @@
 import {
   checkCandidatePrompts,
   getDomain,
+  getNextStepFromLLM,
   promptToFirstStep,
   sendMessageToContentScript,
   sendPromptToPlanner,
@@ -21,25 +22,16 @@ const navURL = (url) => {
   if (url.indexOf('http') !== 0) {
     url = 'http://' + url
   }
-  chrome.tabs.create({ url: url }, async function (tab) {
-    allowedTabs.add(tab.id)
-    targetTab = tab.id // Store the tab ID for later use
-    currentStep++
-    // Check if the tab is completely loaded before sending a message
-    checkTabReady(targetTab, async function () {
-      console.log('tab ready')
-      //If not started a plan or finished previous plan
-      if (currentStep >= currentPlan.length) {
-        const responseJSON = await sendPromptToPlanner(originalPrompt, url)
-        currentPlan = responseJSON.plan
-        currentStep = 1
+  return new Promise((resolve, reject) => {
+    chrome.tabs.create({ url: url }, (tab) => {
+      if (chrome.runtime.lastError) {
+        // If there's an error during tab creation, reject the promise
+        reject(new Error(chrome.runtime.lastError))
+      } else {
+        allowedTabs.add(tab.id) //allowed tabs enables content script
+        targetTab = tab.id // Store the tab ID for later use
+        resolve(tab) // Resolve the promise with the tab object
       }
-      const messagePayload = {
-        currentStep: currentStep - 1,
-        originalPlan: currentPlan,
-        originalPrompt,
-      }
-      await sendMessageToTab(targetTab, messagePayload)
     })
   })
 }
@@ -70,6 +62,43 @@ const completedTask = () => {
   sendMessageToTab(targetTab, messagePayload)
 }
 
+const addStepToPlan = (step) => {
+  currentPlan.push(step)
+  executeCurrentStep()
+}
+
+const executeCurrentStep = async () => {
+  console.log('inside execute current step')
+  if (currentPlan[currentStep].action === 'NAVURL') {
+    // if the action is NAVURL
+    await navURL(currentPlan[currentStep].param)
+  } else if (currentPlan[currentStep].action === 'CLICK') {
+    // if the action is CLICK
+    clickElement(targetTab, currentPlan[currentStep].param)
+  } else if (currentPlan[currentStep].action === 'ASKUSER') {
+    // if the action is ASKUSER
+    // TODO: Handle ASKUSER
+  }
+  currentStep++
+  getNextStep()
+}
+
+const getNextStep = () => {
+  console.log('inside next step ting')
+  // Check if the tab is completely loaded before sending a message
+  console.log(targetTab, 'targetTab')
+  checkTabReady(targetTab, async function () {
+    console.log('made it')
+    const messagePayload = {
+      type: 'generateNextStep',
+      currentStep: currentStep - 1,
+      originalPlan: currentPlan,
+      originalPrompt,
+    }
+    await sendMessageToTab(targetTab, messagePayload)
+  })
+}
+
 chrome.runtime.onMessage.addListener(async (request) => {
   // make an event in my google calendar on friday 12pm labeled "hello world"
   if (request.type === 'new_plan') {
@@ -86,19 +115,17 @@ chrome.runtime.onMessage.addListener(async (request) => {
     navURL(request.url)
   } else if (request.type === 'completed_task') {
     completedTask()
-  } else if (request.type === 'goal') {
+  } else if (request.type === 'new_goal') {
     currentStep = 0
-    console.log(JSON.stringify(request))
-    console.log('received request in background', request.prompt)
+    currentPlan = []
     originalPrompt = request.prompt
     const responseJSON = await promptToFirstStep(request.prompt)
-    console.log(responseJSON, 'response')
-    responseJSON.action = 'NAVURL'
-    currentPlan.push(responseJSON)
-    navURL(responseJSON.param)
-    // else if (responseJSON.action === 'ASKUSER') alert('TODO: Handle ASKUSER')
+    responseJSON.action = 'NAVURL' // Hard coded for now
+    addStepToPlan(responseJSON)
   } else if (request.type === 'click_element') {
     clickElement(targetTab, request.selector)
+  } else if (request.type === 'next_step') {
+    getNextStepFromLLM(currentURL, currentPlan, currentStep, request.clickableElementLabels)
   }
   return true
 })
@@ -280,7 +307,7 @@ chrome.tabs.onRemoved.addListener(function (tabId) {
 //Used for ContentScript to see if its on a tab it can execute on
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === 'checkTab') {
-    console.log(allowedTabs, sender.tab.id, "allowedTabs");
+    console.log(allowedTabs, sender.tab.id, 'allowedTabs')
     const isAllowed = allowedTabs.has(sender.tab.id)
     sendResponse({ isAllowed: isAllowed })
   }
