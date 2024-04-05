@@ -1,6 +1,6 @@
 # clickolas-cage
 
-> a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using GPT-4 as a brain).
+> a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using LLM as a brain).
 
 ![image](https://github.com/aj47/clickolas-cage/assets/8023513/3c358fb4-480d-4e6c-87d8-e0e7f709075d)
 
