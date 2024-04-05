@@ -157,10 +157,9 @@ We currently just tried to execute step of the plan:
 provide the next step of the plan to successfully achieve the goal.
 the response should be in this JSON schema:
 {
-    thought: "one sentence rationale",
-    action: "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
-    ariaLabel: "ariaLabelValue",
-    param?: "inputOption" | "inputText"
+    "thought": "one sentence rationale",
+    "action": "CLICKBTN" | "WAITLOAD" ,
+    "ariaLabel": "ariaLabelValue",
 }
 make sure to use an EXACT aria label from the list of user provided labels
 `,

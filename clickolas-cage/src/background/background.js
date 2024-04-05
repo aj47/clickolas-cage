@@ -72,7 +72,10 @@ const executeCurrentStep = async () => {
   if (currentPlan[currentStep].action === 'NAVURL') {
     await navURL(currentPlan[currentStep].param)
   } else if (currentPlan[currentStep].action === 'CLICKBTN') {
-    sendMessageToTab(targetTab, { type: 'clickElement', label: currentPlan[currentStep].ariaLabel })
+    sendMessageToTab(targetTab, {
+      type: 'clickElement',
+      ariaLabel: currentPlan[currentStep].ariaLabel,
+    })
     // await clickElement(targetTab, currentPlan[currentStep].ariaLabel)
   } else if (currentPlan[currentStep].action === 'ASKUSER') {
     // if the action is ASKUSER

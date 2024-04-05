@@ -175,10 +175,12 @@ export const SidePanel = () => {
    * depending on whether it finds a matching element.
    */
   const locateCorrectElement = (initialLabel) => {
+    console.log(initialLabel, "initialLabel");
     const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
     // If an element matches the initialLabel, return the path to the element
     for (const el of clickableElements) {
+      console.log(el.getAttribute('aria-label'), el.innerText, "e.getAttribute(ari");
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
         console.log(el)
         const boundingBox = el.getBoundingClientRect()
@@ -268,11 +270,13 @@ export const SidePanel = () => {
       //     subtree: true,
       //   })
       // }
-      debugger;
+      console.log(request, "request");
       if (request.type === 'showClick') {
         createSquareAtLocation(request.x, request.y)
       } else if (request.type === 'addThought') {
+        console.log("add thought");
         setThoughts([...thoughts, request.thought])
+        console.log(thoughts, "thoughts");
       } else if (request.type === 'clickElement') {
         setThoughts([...thoughts, `clicking: "${request.ariaLabel}"`])
         sendMessageToBackgroundScript({
@@ -287,9 +291,8 @@ export const SidePanel = () => {
       }
       return sendResponse('complete')
 
-      return true // This keeps the message channel open
     })
-  })
+  }, [])
 
   return (
     <div className="sidePanel">
