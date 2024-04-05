@@ -13,6 +13,8 @@ export const SidePanel = () => {
   const [currentStep, setCurrentStep] = useState(null)
   const [currentStepNumber, setCurrentStepNumber] = useState(0)
   const [originalPrompt, setOriginalPrompt] = useState('')
+  //---
+  const [thoughts, setThoughts] = useState([])
 
   console.info('contentScript is running')
   let newNodes = []
@@ -62,17 +64,6 @@ export const SidePanel = () => {
       resolve()
     })
   }
-
-  // Callback function to execute when mutations are observed
-  // gets called every time a node changes
-  // const nodeChangeCallback = function (mutationsList, observer) {
-  //   for (const mutation of mutationsList) {
-  //     if (mutation.type === 'childList' && mutation.addedNodes?.length > 0) {
-  //       newNodes.push({ nodes: mutation.addedNodes, step: currentStepNumber })
-  //       console.log('A child node has been added.')
-  //     }
-  //   }
-  // }
 
   async function createSquareAtLocation(x, y) {
     console.log(x, 'x')
@@ -170,7 +161,10 @@ export const SidePanel = () => {
         // renderedAtStep,
       })
     })
-    return { clickableElements, clickableElementLabels }
+    const cleanedArray = [
+      ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
+    ]
+    return { clickableElements, clickableElementLabels: cleanedArray }
   }
 
   /**
@@ -180,7 +174,7 @@ export const SidePanel = () => {
    * @returns {Promise<Array<HTMLElement>|boolean>} A promise that resolves to either an array of paths or false, \
    * depending on whether it finds a matching element.
    */
-  const locateCorrectElement = async (initialLabel) => {
+  const locateCorrectElement = (initialLabel) => {
     const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
     // If an element matches the initialLabel, return the path to the element
@@ -194,19 +188,19 @@ export const SidePanel = () => {
     if (returnEl) return returnEl
     else console.log('NO ELEMENT FOUND :(')
     // Remove duplicates and empty text elements from the clickableElementLabels array
-    const cleanedArray = [
-      ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
-    ]
-    // Send a prompt to the element locator and await the response
-    const response = await sendPromptToPlanReviser(
-      originalPrompt,
-      JSON.stringify(originalPlan),
-      JSON.stringify(currentStep),
-      JSON.stringify(cleanedArray),
-    )
-    console.log(response, 'response')
+    // const cleanedArray = [
+    //   ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
+    // ]
+    // // Send a prompt to the element locator and await the response
+    // const response = await sendPromptToPlanReviser(
+    //   originalPrompt,
+    //   JSON.stringify(originalPlan),
+    //   JSON.stringify(currentStep),
+    //   JSON.stringify(cleanedArray),
+    // )
+    // console.log(response, 'response')
     // Send a message to the background script with the new plan
-    sendMessageToBackgroundScript({ type: 'new_plan', data: response })
+    // sendMessageToBackgroundScript({ type: 'new_plan', data: response })
     return false
   }
 
@@ -262,64 +256,52 @@ export const SidePanel = () => {
     return true
   }
 
-  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    // if (observer === null) {
-    //   // Create an instance of MutationObserver with the callback
-    //   observer = new MutationObserver(nodeChangeCallback)
-    //   // Start observing the the whole dom for changes
-    //   observer.observe(document.documentElement, {
-    //     attributes: true,
-    //     childList: true,
-    //     subtree: true,
-    //   })
-    // }
-    if (request.type === 'showClick') {
-      createSquareAtLocation(request.x, request.y)
-      return
-    } else if (request.type === 'generateNextStep') {
-      console.log('generating next response')
-      const { clickableElements, clickableElementLabels } = getClickableElements()
-      console.log(clickableElementLabels, 'clickableElementLabels')
-      sendMessageToBackgroundScript({ type: 'next_step', clickableElementLabels })
-      return
-    }
+  useEffect(() => {
+    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+      // if (observer === null) {
+      //   // Create an instance of MutationObserver with the callback
+      //   observer = new MutationObserver(nodeChangeCallback)
+      //   // Start observing the the whole dom for changes
+      //   observer.observe(document.documentElement, {
+      //     attributes: true,
+      //     childList: true,
+      //     subtree: true,
+      //   })
+      // }
+      debugger;
+      if (request.type === 'showClick') {
+        createSquareAtLocation(request.x, request.y)
+      } else if (request.type === 'addThought') {
+        setThoughts([...thoughts, request.thought])
+      } else if (request.type === 'clickElement') {
+        setThoughts([...thoughts, `clicking: "${request.ariaLabel}"`])
+        sendMessageToBackgroundScript({
+          type: 'click_element',
+          selector: locateCorrectElement(request.ariaLabel),
+        })
+      } else if (request.type === 'generateNextStep') {
+        console.log("generate next");
+        const { clickableElements, clickableElementLabels } = getClickableElements()
+        sendResponse({ type: 'next_step', clickableElementLabels })
+        return;
+      }
+      return sendResponse('complete')
 
-    console.log(request, 'request')
-    setCurrentStepNumber(request.currentStep)
-    // document.querySelector('#thoughts-panel').innerText = processPlanText(originalPlan)
-    setOriginalPlan(request.originalPlan)
-    console.log(originalPlan, 'originalPlan')
-    localCurrentStep = request.originalPlan[request.currentStep]
-    setOriginalPrompt(request.originalPrompt)
-    console.log(currentStep, 'currentStep')
-    setCurrentStep(localCurrentStep)
-    executeAction(localCurrentStep.action, localCurrentStep.ariaLabel, localCurrentStep.param)
-      .then((completedAction) => {
-        sendResponse('complete')
-        console.log('completed action')
-        if (completedAction)
-          chrome.runtime.sendMessage({ type: 'completed_task' }, function (response) {
-            console.log(response)
-          })
-      })
-      .catch((error) => {
-        console.error('Error in executeAction:', error)
-        sendResponse({ error: error.message })
-      })
-    return true // This keeps the message channel open
+      return true // This keeps the message channel open
+    })
   })
 
   return (
     <div className="sidePanel">
       <div className="plan">
-        {originalPlan.length > 0 ? (
+        {thoughts.length > 0 ? (
           <>
             <h2>Clickolas Plan: </h2>
             <ul>
-              {originalPlan.map((step, i) => {
+              {thoughts.map((thought, i) => {
                 return (
                   <div className="step" key={i}>
-                    {i + 1} - {step.thought}
+                    {i + 1} - {thought}
                   </div>
                 )
               })}

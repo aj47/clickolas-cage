@@ -70,11 +70,10 @@ const addStepToPlan = (step) => {
 const executeCurrentStep = async () => {
   console.log('inside execute current step')
   if (currentPlan[currentStep].action === 'NAVURL') {
-    // if the action is NAVURL
     await navURL(currentPlan[currentStep].param)
   } else if (currentPlan[currentStep].action === 'CLICKBTN') {
-    // if the action is CLICK
-    clickElement(targetTab, currentPlan[currentStep].param)
+    sendMessageToTab(targetTab, { type: 'clickElement', label: currentPlan[currentStep].ariaLabel })
+    // await clickElement(targetTab, currentPlan[currentStep].ariaLabel)
   } else if (currentPlan[currentStep].action === 'ASKUSER') {
     // if the action is ASKUSER
     // TODO: Handle ASKUSER
@@ -88,7 +87,7 @@ const getNextStep = () => {
   // Check if the tab is completely loaded before sending a message
   console.log(targetTab, 'targetTab')
   checkTabReady(targetTab, async function () {
-    console.log('made it')
+    console.log('sending message to generate next step')
     const messagePayload = {
       type: 'generateNextStep',
       currentStep: currentStep - 1,
@@ -99,9 +98,14 @@ const getNextStep = () => {
   })
 }
 
-chrome.runtime.onMessage.addListener(async (request) => {
+const processResponse = async (request, sender, sendResponse) => {
+  console.log('received response', request)
   // make an event in my google calendar on friday 12pm labeled "hello world"
-  if (request.type === 'new_plan') {
+  if (request.type === 'checkTabAllowed') {
+    console.log(allowedTabs, sender.tab.id, 'allowedTabs')
+    const isAllowed = allowedTabs.has(sender.tab.id)
+    sendResponse({ isAllowed: isAllowed })
+  } else if (request.type === 'new_plan') {
     console.log('new plan received')
     currentPlan = request.data.plan
     currentStep = 1
@@ -125,24 +129,26 @@ chrome.runtime.onMessage.addListener(async (request) => {
   } else if (request.type === 'click_element') {
     clickElement(targetTab, request.selector)
   } else if (request.type === 'next_step') {
-    addStepToPlan(
-      await getNextStepFromLLM(
-        currentURL,
-        currentPlan,
-        currentStep,
-        request.clickableElementLabels,
-      ),
+    const nextStep = await getNextStepFromLLM(
+      currentURL,
+      currentPlan,
+      currentStep,
+      request.clickableElementLabels,
     )
+    sendMessageToTab(targetTab, { type: 'addThought', thought: nextStep.thought })
+    addStepToPlan(nextStep)
   }
   return true
-})
+}
+
+chrome.runtime.onMessage.addListener(processResponse)
 
 async function sendMessageToTab(tabId, message) {
   let retries = 3
   while (retries > 0) {
     try {
       const response = await new Promise((resolve, reject) => {
-        console.log('sending message')
+        console.log('sending message', message)
         chrome.tabs.sendMessage(tabId, message, function (response) {
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message))
@@ -151,7 +157,7 @@ async function sendMessageToTab(tabId, message) {
           }
         })
       })
-      console.log('Received response:', response)
+      processResponse(response)
       return
     } catch (error) {
       console.error('Error in sending message:', error)
@@ -168,6 +174,7 @@ function checkTabReady(tabId, callback) {
     if (tabIdUpdated === tabId && changeInfo.status === 'complete') {
       // Remove the listener after we found the right tab and it has finished loading
       chrome.tabs.onUpdated.removeListener(listener)
+      console.log('tab ready')
       callback(tab)
     }
   })
@@ -310,12 +317,4 @@ async function clickElement(tabId, selector) {
 // Listen for when a tab is closed and remove it from the set
 chrome.tabs.onRemoved.addListener(function (tabId) {
   allowedTabs.delete(tabId)
-})
-//Used for ContentScript to see if its on a tab it can execute on
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.action === 'checkTab') {
-    console.log(allowedTabs, sender.tab.id, 'allowedTabs')
-    const isAllowed = allowedTabs.has(sender.tab.id)
-    sendResponse({ isAllowed: isAllowed })
-  }
 })

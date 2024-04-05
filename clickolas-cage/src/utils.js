@@ -158,11 +158,11 @@ provide the next step of the plan to successfully achieve the goal.
 the response should be in this JSON schema:
 {
     thought: "one sentence rationale",
-    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
-    ariaLabel: "labelName",
-    param?: "url" | "inputOption" | "inputText"
+    action: "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
+    ariaLabel: "ariaLabelValue",
+    param?: "inputOption" | "inputText"
 }
-ONLY use the following user provided nodes aria-labels:
+make sure to use an EXACT aria label from the list of user provided labels
 `,
         },
         {
