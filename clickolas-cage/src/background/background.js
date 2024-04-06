@@ -138,7 +138,7 @@ const processResponse = async (request, sender, sendResponse) => {
       currentStep,
       request.clickableElementLabels,
     )
-    sendMessageToTab(targetTab, { type: 'addThought', thought: nextStep.thought })
+    sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
     addStepToPlan(nextStep)
   }
   return true

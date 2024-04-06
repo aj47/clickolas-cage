@@ -150,11 +150,10 @@ export const getNextStepFromLLM = async (
         {
           role: 'system',
           content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
-you originally came up with the plan:
+This is the plan so far:
   ${originalPlan}
-We currently just tried to execute step of the plan:
-  ${currentStep}
-provide the next step of the plan to successfully achieve the goal.
+we have just finished the final step and want to progress.
+provide the next step of the plan to successfully achieve the goal and confirm it has been achieved.
 the response should be in this JSON schema:
 {
     "thought": "one sentence rationale",

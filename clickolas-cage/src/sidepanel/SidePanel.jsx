@@ -14,7 +14,6 @@ export const SidePanel = () => {
   const [currentStepNumber, setCurrentStepNumber] = useState(0)
   const [originalPrompt, setOriginalPrompt] = useState('')
   //---
-  const [thoughts, setThoughts] = useState([])
 
   console.info('contentScript is running')
   let newNodes = []
@@ -175,12 +174,12 @@ export const SidePanel = () => {
    * depending on whether it finds a matching element.
    */
   const locateCorrectElement = (initialLabel) => {
-    console.log(initialLabel, "initialLabel");
+    console.log(initialLabel, 'initialLabel')
     const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
     // If an element matches the initialLabel, return the path to the element
     for (const el of clickableElements) {
-      console.log(el.getAttribute('aria-label'), el.innerText, "e.getAttribute(ari");
+      // console.log(el.getAttribute('aria-label'), el.innerText, "e.getAttribute(ari");
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
         console.log(el)
         const boundingBox = el.getBoundingClientRect()
@@ -270,41 +269,40 @@ export const SidePanel = () => {
       //     subtree: true,
       //   })
       // }
-      console.log(request, "request");
+      console.log(request, 'request')
       if (request.type === 'showClick') {
         createSquareAtLocation(request.x, request.y)
       } else if (request.type === 'addThought') {
-        console.log("add thought");
-        setThoughts([...thoughts, request.thought])
-        console.log(thoughts, "thoughts");
+        console.log('add thought')
+        setOriginalPlan(request.originalPlan)
       } else if (request.type === 'clickElement') {
-        setThoughts([...thoughts, `clicking: "${request.ariaLabel}"`])
+        setOriginalPlan(request.originalPlan)
         sendMessageToBackgroundScript({
           type: 'click_element',
           selector: locateCorrectElement(request.ariaLabel),
         })
       } else if (request.type === 'generateNextStep') {
-        console.log("generate next");
+        console.log('generate next')
+        setOriginalPlan(request.originalPlan)
         const { clickableElements, clickableElementLabels } = getClickableElements()
         sendResponse({ type: 'next_step', clickableElementLabels })
-        return;
+        return
       }
       return sendResponse('complete')
-
     })
   }, [])
 
   return (
     <div className="sidePanel">
       <div className="plan">
-        {thoughts.length > 0 ? (
+        {originalPlan.length > 0 ? (
           <>
             <h2>Clickolas Plan: </h2>
             <ul>
-              {thoughts.map((thought, i) => {
+              {originalPlan.map((step, i) => {
                 return (
                   <div className="step" key={i}>
-                    {i + 1} - {thought}
+                    {i + 1} - {step.thought}
                   </div>
                 )
               })}
