@@ -316,6 +316,67 @@ async function clickElement(tabId, selector) {
   }
 }
 
+async function pressTab(tabId) {
+  try {
+    // console.log(selector, 'selector')
+    await attachDebugger(tabId)
+    const root = await getDocumentRoot(tabId)
+
+    // await callElementClick(tabId, nodeId)
+    await dispatchTabKeyPress(tabId)
+    chrome.debugger.detach({ tabId })
+    await sleep(2000)
+    // completedTask()
+  } catch (e) {
+    console.log(e, 'e')
+  }
+}
+
+async function dispatchTabKeyPress(tabId) {
+  return new Promise((resolve, reject) => {
+    console.log("1");
+    chrome.debugger.sendCommand(
+      { tabId },
+      'Input.dispatchKeyEvent',
+      {
+        type: 'keyDown',
+        key: 'Tab',
+        code: 'Tab',
+        windowsVirtualKeyCode: 9,
+        nativeVirtualKeyCode: 9
+      },
+      () => {
+        console.log("2");
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError.message);
+        } else {
+          console.log("3");
+          // Since TAB is a key press, we might want to ensure keyUp is also sent to simulate a complete key press
+          chrome.debugger.sendCommand(
+            { tabId },
+            'Input.dispatchKeyEvent',
+            {
+              type: 'keyUp',
+              key: 'Tab',
+              code: 'Tab',
+              windowsVirtualKeyCode: 9,
+              nativeVirtualKeyCode: 9
+            },
+            () => {
+              console.log("4  ");
+              if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError.message);
+              } else {
+                resolve();
+              }
+            }
+          );
+        }
+      }
+    );
+  });
+}
+
 // --- We only allow content script to execute on tabs created by background script
 // Listen for when a tab is closed and remove it from the set
 chrome.tabs.onRemoved.addListener(function (tabId) {
