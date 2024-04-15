@@ -15,6 +15,11 @@ let originalPrompt = ''
 let currentURL = ''
 let allowedTabs = new Set()
 
+/**
+ * Navigates to a specified URL in a new tab and adds the tab to the allowedTabs set.
+ * @param {string} url - The URL to navigate to.
+ * @returns {Promise<chrome.tabs.Tab>} A promise that resolves with the created tab object.
+ */
 const navURL = (url) => {
   console.log(url, 'url')
   currentURL = url
@@ -45,6 +50,9 @@ const navURL = (url) => {
 //   sendMessageToTab(targetTab, messagePayload)
 // }
 
+/**
+ * Marks the current task as completed and sends a message to the target tab to proceed with the next step.
+ */
 const completedTask = () => {
   console.log('inside completed task')
   console.log(targetTab, 'targetTab')
@@ -62,11 +70,18 @@ const completedTask = () => {
   sendMessageToTab(targetTab, messagePayload)
 }
 
+/**
+ * Adds a new step to the current plan and executes it.
+ * @param {Object} step - The step to add to the plan.
+ */
 const addStepToPlan = (step) => {
   currentPlan.push(step)
   executeCurrentStep()
 }
 
+/**
+ * Executes the current step in the plan based on its action type.
+ */
 const executeCurrentStep = async () => {
   console.log('inside execute current step')
   if (currentPlan[currentStep].action === 'NAVURL') {
@@ -85,6 +100,9 @@ const executeCurrentStep = async () => {
   getNextStep()
 }
 
+/**
+ * Checks if the next step can be executed and sends a message to the target tab to generate the next step.
+ */
 const getNextStep = () => {
   console.log('inside next step ting')
   // Check if the tab is completely loaded before sending a message
@@ -101,13 +119,20 @@ const getNextStep = () => {
   })
 }
 
+/**
+ * Processes messages received from content scripts or other parts of the extension.
+ * @param {Object} request - The request object received.
+ * @param {MessageSender} sender - An object containing information about the sender of the message.
+ * @param {function} sendResponse - Function to call when you have a response. The argument should be any JSON-ifiable object.
+ * @returns {Promise<string>} A promise that resolves with a string indicating the completion status.
+ */
 const processResponse = async (request, sender, sendResponse) => {
   console.log('received response', request)
   // make an event in my google calendar on friday 12pm labeled "hello world"
   if (request.type === 'checkTabAllowed') {
     console.log(allowedTabs, sender.tab.id, 'allowedTabs')
     const isAllowed = allowedTabs.has(sender.tab.id)
-    sendResponse({ isAllowed: isAllowed })
+    return sendResponse({ isAllowed: isAllowed })
   } else if (request.type === 'new_plan') {
     console.log('new plan received')
     currentPlan = request.data.plan
@@ -131,6 +156,8 @@ const processResponse = async (request, sender, sendResponse) => {
     addStepToPlan(responseJSON)
   } else if (request.type === 'click_element') {
     clickElement(targetTab, request.selector)
+  } else if (request.type === 'press_tab_key') {
+    await pressTabKey(targetTab)
   } else if (request.type === 'next_step') {
     const nextStep = await getNextStepFromLLM(
       currentURL,
@@ -141,11 +168,16 @@ const processResponse = async (request, sender, sendResponse) => {
     sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
     addStepToPlan(nextStep)
   }
-  return true
+  return sendResponse('completed')
 }
 
 chrome.runtime.onMessage.addListener(processResponse)
 
+/**
+ * Sends a message to a specific tab and retries if necessary.
+ * @param {number} tabId - The ID of the tab to send the message to.
+ * @param {Object} message - The message to send to the tab.
+ */
 async function sendMessageToTab(tabId, message) {
   let retries = 3
   while (retries > 0) {
@@ -171,6 +203,11 @@ async function sendMessageToTab(tabId, message) {
   }
 }
 
+/**
+ * Checks if a tab is ready by listening for the 'complete' status update.
+ * @param {number} tabId - The ID of the tab to check.
+ * @param {function} callback - The callback to execute once the tab is ready.
+ */
 function checkTabReady(tabId, callback) {
   console.log('waiting tab ready...')
   chrome.tabs.onUpdated.addListener(function listener(tabIdUpdated, changeInfo, tab) {
@@ -182,6 +219,22 @@ function checkTabReady(tabId, callback) {
     }
   })
 }
+
+/**
+ * Retrieves the accessibility tree of a tab.
+ * @param {number} tabId - The ID of the tab to get the accessibility tree from.
+ */
+async function getAccessibilityTree(tabId) {
+  chrome.debugger.sendCommand({ tabId }, 'Accessibility.getFullAXTree', (result) => {
+    console.log(result)
+  })
+}
+
+/**
+ * Attaches the debugger to a tab.
+ * @param {number} tabId - The ID of the tab to attach the debugger to.
+ * @returns {Promise<void>} A promise that resolves when the debugger is attached.
+ */
 async function attachDebugger(tabId) {
   return new Promise((resolve, reject) => {
     chrome.debugger.attach({ tabId }, '1.2', () => {
@@ -194,6 +247,11 @@ async function attachDebugger(tabId) {
   })
 }
 
+/**
+ * Retrieves the root DOM node of a tab.
+ * @param {number} tabId - The ID of the tab to get the root DOM node from.
+ * @returns {Promise<Object>} A promise that resolves with the root DOM node.
+ */
 async function getDocumentRoot(tabId) {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand({ tabId }, 'DOM.getDocument', {}, (result) => {
@@ -206,6 +264,13 @@ async function getDocumentRoot(tabId) {
   })
 }
 
+/**
+ * Finds a DOM node by its selector.
+ * @param {number} tabId - The ID of the tab to search within.
+ * @param {Object} root - The root node to start the search from.
+ * @param {string} selector - The CSS selector of the node to find.
+ * @returns {Promise<number>} A promise that resolves with the node ID of the found element.
+ */
 async function querySelectorNode(tabId, root, selector) {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
@@ -223,6 +288,12 @@ async function querySelectorNode(tabId, root, selector) {
   })
 }
 
+/**
+ * Retrieves the box model information for a given DOM node.
+ * @param {number} tabId - The ID of the tab that contains the node.
+ * @param {number} nodeId - The ID of the node to get the box model for.
+ * @returns {Promise<Object>} A promise that resolves with the box model of the node.
+ */
 async function getBoxModelForNode(tabId, nodeId) {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand({ tabId }, 'DOM.getBoxModel', { nodeId }, (result) => {
@@ -235,6 +306,16 @@ async function getBoxModelForNode(tabId, nodeId) {
   })
 }
 
+/**
+ * Dispatches a mouse event to a specific location in a tab.
+ * @param {number} tabId - The ID of the tab to dispatch the event to.
+ * @param {string} type - The type of mouse event (e.g., 'mousePressed', 'mouseReleased').
+ * @param {number} x - The x coordinate of the event location.
+ * @param {number} y - The y coordinate of the event location.
+ * @param {string} button - The mouse button (e.g., 'left', 'right').
+ * @param {number} clickCount - The number of times the button is clicked.
+ * @returns {Promise<void>} A promise that resolves when the event has been dispatched.
+ */
 async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
@@ -258,6 +339,12 @@ async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
   })
 }
 
+/**
+ * Simulates a click event on a DOM element by its node ID.
+ * @param {number} tabId - The ID of the tab containing the element.
+ * @param {number} nodeId - The node ID of the element to click.
+ * @returns {Promise<void>} A promise that resolves when the click action has been performed.
+ */
 async function callElementClick(tabId, nodeId) {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand({ tabId }, 'DOM.resolveNode', { nodeId }, ({ object }) => {
@@ -280,10 +367,21 @@ async function callElementClick(tabId, nodeId) {
   })
 }
 
+/**
+ * Pauses execution for a specified number of milliseconds.
+ * @param {number} ms - The number of milliseconds to pause for.
+ * @returns {Promise<void>} A promise that resolves after the specified delay.
+ */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * Simulates a click event at a specific location within a tab.
+ * @param {number} tabId - The ID of the tab to perform the click in.
+ * @param {number} x - The x coordinate of the click location.
+ * @param {number} y - The y coordinate of the click location.
+ */
 async function clickElementAt(tabId, x, y) {
   await dispatchMouseEvent(tabId, 'mousePressed', x, y, 'left', 1)
   await dispatchMouseEvent(tabId, 'mouseReleased', x, y, 'left', 1)
@@ -295,6 +393,11 @@ async function clickElementAt(tabId, x, y) {
   sendMessageToTab(targetTab, messagePayload)
 }
 
+/**
+ * Performs a click action on an element identified by a CSS selector.
+ * @param {number} tabId - The ID of the tab where the element resides.
+ * @param {string} selector - The CSS selector of the element to click.
+ */
 async function clickElement(tabId, selector) {
   try {
     console.log(selector, 'selector')
@@ -316,25 +419,28 @@ async function clickElement(tabId, selector) {
   }
 }
 
-async function pressTab(tabId) {
+/**
+ * Simulates pressing the Tab key within a tab.
+ * @param {number} tabId - The ID of the tab to press the Tab key in.
+ */
+async function pressTabKey(tabId) {
   try {
-    // console.log(selector, 'selector')
     await attachDebugger(tabId)
-    const root = await getDocumentRoot(tabId)
-
-    // await callElementClick(tabId, nodeId)
     await dispatchTabKeyPress(tabId)
     chrome.debugger.detach({ tabId })
     await sleep(2000)
-    // completedTask()
   } catch (e) {
     console.log(e, 'e')
   }
 }
 
+/**
+ * Dispatches a Tab key press event to a tab.
+ * @param {number} tabId - The ID of the tab to dispatch the Tab key press to.
+ * @returns {Promise<void>} A promise that resolves when the Tab key press event has been dispatched.
+ */
 async function dispatchTabKeyPress(tabId) {
   return new Promise((resolve, reject) => {
-    console.log("1");
     chrome.debugger.sendCommand(
       { tabId },
       'Input.dispatchKeyEvent',
@@ -343,14 +449,12 @@ async function dispatchTabKeyPress(tabId) {
         key: 'Tab',
         code: 'Tab',
         windowsVirtualKeyCode: 9,
-        nativeVirtualKeyCode: 9
+        nativeVirtualKeyCode: 9,
       },
       () => {
-        console.log("2");
         if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError.message);
+          reject(chrome.runtime.lastError.message)
         } else {
-          console.log("3");
           // Since TAB is a key press, we might want to ensure keyUp is also sent to simulate a complete key press
           chrome.debugger.sendCommand(
             { tabId },
@@ -360,25 +464,27 @@ async function dispatchTabKeyPress(tabId) {
               key: 'Tab',
               code: 'Tab',
               windowsVirtualKeyCode: 9,
-              nativeVirtualKeyCode: 9
+              nativeVirtualKeyCode: 9,
             },
             () => {
-              console.log("4  ");
               if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError.message);
+                reject(chrome.runtime.lastError.message)
               } else {
-                resolve();
+                resolve()
               }
-            }
-          );
+            },
+          )
         }
-      }
-    );
-  });
+      },
+    )
+  })
 }
 
 // --- We only allow content script to execute on tabs created by background script
 // Listen for when a tab is closed and remove it from the set
+/**
+ * Listens for tab removal events and removes the closed tab from the allowedTabs set.
+ */
 chrome.tabs.onRemoved.addListener(function (tabId) {
   allowedTabs.delete(tabId)
 })
