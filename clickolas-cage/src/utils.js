@@ -140,6 +140,8 @@ export const getNextStepFromLLM = async (
   currentStep,
   textOptions,
 ) => {
+  console.log(originalPlan, "originalPlan");
+  console.log(textOptions, "textOptions");
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
       model: 'gpt-4-1106-preview',
@@ -151,7 +153,7 @@ export const getNextStepFromLLM = async (
           role: 'system',
           content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
 This is the plan so far:
-  ${originalPlan}
+  ${JSON.stringify(originalPlan)}
 we have just finished the final step and want to progress.
 provide the next step of the plan to successfully achieve the goal and confirm it has been achieved.
 the response should be in this JSON schema:

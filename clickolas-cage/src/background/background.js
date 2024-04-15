@@ -154,6 +154,7 @@ const processResponse = async (request, sender, sendResponse) => {
     currentPlan = []
     originalPrompt = request.prompt
     const responseJSON = await promptToFirstStep(request.prompt)
+    //TODO: if failed to give valid json retry
     responseJSON.action = 'NAVURL' // Hard coded for now
     addStepToPlan(responseJSON)
   } else if (request.type === 'click_element') {

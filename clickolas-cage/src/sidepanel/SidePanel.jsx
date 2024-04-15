@@ -338,7 +338,7 @@ export const SidePanel = () => {
   return (
     <div className="sidePanel">
       <div className="plan">
-        {originalPlan.length > 0 ? (
+        {originalPlan?.length > 0 ? (
           <>
             <h2>Clickolas Plan: </h2>
             <ul>
