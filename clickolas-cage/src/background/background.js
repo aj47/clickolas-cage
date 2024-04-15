@@ -5,6 +5,7 @@ import {
   promptToFirstStep,
   sendMessageToContentScript,
   sendPromptToPlanner,
+  sleep,
 } from '../utils'
 console.log('background is running')
 
@@ -14,6 +15,7 @@ let currentStep = 0
 let originalPrompt = ''
 let currentURL = ''
 let allowedTabs = new Set()
+let focusedElements = []
 
 /**
  * Navigates to a specified URL in a new tab and adds the tab to the allowedTabs set.
@@ -127,7 +129,7 @@ const getNextStep = () => {
  * @returns {Promise<string>} A promise that resolves with a string indicating the completion status.
  */
 const processResponse = async (request, sender, sendResponse) => {
-  console.log('received response', request)
+  console.log('received response from client', request)
   // make an event in my google calendar on friday 12pm labeled "hello world"
   if (request.type === 'checkTabAllowed') {
     console.log(allowedTabs, sender.tab.id, 'allowedTabs')
@@ -158,12 +160,16 @@ const processResponse = async (request, sender, sendResponse) => {
     clickElement(targetTab, request.selector)
   } else if (request.type === 'press_tab_key') {
     await pressTabKey(targetTab)
+  } else if (request.type === 'new_focused_element') {
+    focusedElements.push(request.element);
   } else if (request.type === 'next_step') {
+    console.log("-------------------------------------");
+    console.log(focusedElements, "focusedElements");
     const nextStep = await getNextStepFromLLM(
       currentURL,
       currentPlan,
       currentStep,
-      request.clickableElementLabels,
+      focusedElements.map(item => item.cleanLabel),
     )
     sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
     addStepToPlan(nextStep)
@@ -368,15 +374,6 @@ async function callElementClick(tabId, nodeId) {
 }
 
 /**
- * Pauses execution for a specified number of milliseconds.
- * @param {number} ms - The number of milliseconds to pause for.
- * @returns {Promise<void>} A promise that resolves after the specified delay.
- */
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/**
  * Simulates a click event at a specific location within a tab.
  * @param {number} tabId - The ID of the tab to perform the click in.
  * @param {number} x - The x coordinate of the click location.
@@ -428,7 +425,6 @@ async function pressTabKey(tabId) {
     await attachDebugger(tabId)
     await dispatchTabKeyPress(tabId)
     chrome.debugger.detach({ tabId })
-    await sleep(2000)
   } catch (e) {
     console.log(e, 'e')
   }

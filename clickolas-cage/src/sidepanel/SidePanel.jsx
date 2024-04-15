@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 
 import {
   getNextStepFromLLM,
+  runFunctionXTimesWithDelay,
   sendMessageToBackgroundScript,
   sendPromptToPlanReviser,
   sendPromptWithFeedback,
+  sleep,
 } from '../utils'
 
 import './SidePanel.css'
@@ -19,10 +21,6 @@ export const SidePanel = () => {
   let newNodes = []
   let observer = null
   const delayBetweenKeystrokes = 100
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-  }
 
   async function clickElement(selector) {
     sendMessageToBackgroundScript({ type: 'click_element', selector })
@@ -257,8 +255,52 @@ export const SidePanel = () => {
     return true
   }
 
+  /**
+   * Sends a message to the background script to press the Tab key.
+   */
+  const pressTabInTab = () => {
+    console.log('Requesting background to press Tab')
+    sendMessageToBackgroundScript({ type: 'press_tab_key' })
+  }
+  // Function to get the text of the currently focused element or its accessible name
+  const logFocusedElement = async () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const focusedElementObj = { element: document.activeElement } // Get the currently focused element
+
+        if (focusedElementObj.element && focusedElementObj.element.getAttribute('aria-label')) {
+          // Check if there's an aria-label for accessibility; if so, return that
+          focusedElementObj.label = focusedElementObj.element.getAttribute('aria-label')
+        } else {
+          // Otherwise, return the text content or innerText
+          focusedElementObj.label = focusedElementObj.element
+            ? focusedElementObj.element.textContent || focusedElementObj.element.innerText
+            : ''
+        }
+        focusedElementObj.cleanLabel = focusedElementObj.label.trim()
+        sendMessageToBackgroundScript({
+          type: 'new_focused_element',
+          element: focusedElementObj,
+        })
+        resolve(focusedElementObj) // Resolve the promise with the focused element object
+      } catch (error) {
+        reject(error) // Reject the promise in case of any errors
+      }
+    })
+  }
+
+  // Add a listener to log the focused element when it changes
   useEffect(() => {
-    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    document.addEventListener('focus', logFocusedElement, true) // Use capture phase to ensure the listener is executed
+
+    // Cleanup the listener on component unmount
+    return () => {
+      document.removeEventListener('focus', logFocusedElement, true)
+    }
+  }, [])
+
+  useEffect(() => {
+    chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
       // if (observer === null) {
       //   // Create an instance of MutationObserver with the callback
       //   observer = new MutationObserver(nodeChangeCallback)
@@ -282,11 +324,12 @@ export const SidePanel = () => {
           selector: locateCorrectElement(request.ariaLabel),
         })
       } else if (request.type === 'generateNextStep') {
+        await runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
         console.log('generate next')
         setOriginalPlan(request.originalPlan)
-        const { clickableElements, clickableElementLabels } = getClickableElements()
-        sendResponse({ type: 'next_step', clickableElementLabels })
-        return
+        sendMessageToBackgroundScript({
+          type: 'next_step',
+        })
       }
       return sendResponse('complete')
     })

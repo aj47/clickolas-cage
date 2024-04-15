@@ -2,6 +2,7 @@ import {
   sendMessageToBackgroundScript,
   sendPromptToPlanReviser,
   sendPromptWithFeedback,
+  sleep,
 } from '../utils'
 
 console.info('contentScript is running')
@@ -13,9 +14,6 @@ let newNodes = []
 let observer = null
 const delayBetweenKeystrokes = 100
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 async function clickElement(selector) {
   sendMessageToBackgroundScript({ type: 'click_element', selector })
