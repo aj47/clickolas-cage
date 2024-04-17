@@ -27,7 +27,7 @@ export const SidePanel = () => {
   }
 
   /**
-   * @function typeText
+   * Simulates typing text into a given HTML element
    * @param {string} text - The string of text to be typed into an HTML element
    * @param {HTMLElement} element - The target HTML element where the text will be typed
    */
@@ -62,6 +62,12 @@ export const SidePanel = () => {
     })
   }
 
+  /**
+    * Creates a square at the given location. The x and y parameters are in pixel values.
+    * Used for showing where clickolas has clicked.
+    * @param {number} x - The x-coordinate of the top left corner of the square.
+    * @param {number} y - The y-coordinate of the top left corner of the square.
+    */
   async function createSquareAtLocation(x, y) {
     console.log(x, 'x')
     console.log(y, 'y')

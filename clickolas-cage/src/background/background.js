@@ -130,54 +130,62 @@ const getNextStep = () => {
  */
 const processResponse = async (request, sender, sendResponse) => {
   console.log('received response from client', request)
-  // make an event in my google calendar on friday 12pm labeled "hello world"
-  if (request.type === 'checkTabAllowed') {
-    console.log(allowedTabs, sender.tab.id, 'allowedTabs')
-    const isAllowed = allowedTabs.has(sender.tab.id)
-    return sendResponse({ isAllowed: isAllowed })
-  } else if (request.type === 'new_plan') {
-    console.log('new plan received')
-    currentPlan = request.data.plan
-    currentStep = 1
-    const messagePayload = {
-      currentStep: 0,
-      originalPlan: currentPlan,
-      originalPrompt,
-    }
-    sendMessageToTab(targetTab, messagePayload)
-  } else if (request.type === 'nav_url') {
-    navURL(request.url)
-  } else if (request.type === 'completed_task') {
-    completedTask()
-  } else if (request.type === 'new_goal') {
-    currentStep = 0
-    currentPlan = []
-    originalPrompt = request.prompt
-    const responseJSON = await promptToFirstStep(request.prompt)
-    //TODO: if failed to give valid json retry
-    responseJSON.action = 'NAVURL' // Hard coded for now
-    addStepToPlan(responseJSON)
-  } else if (request.type === 'click_element') {
-    clickElement(targetTab, request.selector)
-  } else if (request.type === 'press_tab_key') {
-    await pressTabKey(targetTab)
-  } else if (request.type === 'new_focused_element') {
-    focusedElements.push(request.element);
-  } else if (request.type === 'next_step') {
-    console.log("-------------------------------------");
-    console.log(focusedElements, "focusedElements");
-    const nextStep = await getNextStepFromLLM(
-      currentURL,
-      currentPlan,
-      currentStep,
-      focusedElements.map(item => item.cleanLabel),
-    )
-    sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
-    addStepToPlan(nextStep)
+  switch (request.type) {
+    case 'checkTabAllowed':
+      console.log(allowedTabs, sender.tab.id, 'allowedTabs')
+      const isAllowed = allowedTabs.has(sender.tab.id)
+      return sendResponse({ isAllowed: isAllowed })
+    case 'new_plan':
+      console.log('new plan received')
+      currentPlan = request.data.plan
+      currentStep = 1
+      const messagePayload = {
+        currentStep: 0,
+        originalPlan: currentPlan,
+        originalPrompt,
+      }
+      sendMessageToTab(targetTab, messagePayload)
+      break
+    case 'nav_url':
+      navURL(request.url)
+      break
+    case 'completed_task':
+      completedTask()
+      break
+    case 'new_goal':
+      currentStep = 0
+      currentPlan = []
+      originalPrompt = request.prompt
+      const responseJSON = await promptToFirstStep(request.prompt)
+      //TODO: if failed to give valid json retry
+      responseJSON.action = 'NAVURL' // Hard coded for now
+      addStepToPlan(responseJSON)
+      break
+    case 'click_element':
+      clickElement(targetTab, request.selector)
+      break
+    case 'press_tab_key':
+      await pressTabKey(targetTab)
+      break
+    case 'new_focused_element':
+      focusedElements.push(request.element)
+      break
+    case 'next_step':
+      console.log('-------------------------------------')
+      console.log(focusedElements, 'focusedElements')
+      const nextStep = await getNextStepFromLLM(
+        currentURL,
+        currentPlan,
+        currentStep,
+        focusedElements.map((item) => item.cleanLabel),
+      )
+      sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
+      addStepToPlan(nextStep)
+      break
+    default:
+      return sendResponse('completed')
   }
-  return sendResponse('completed')
 }
-
 chrome.runtime.onMessage.addListener(processResponse)
 
 /**
