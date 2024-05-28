@@ -10,7 +10,8 @@
 
 1. Check if your `Node.js` version is >= **14**.
 2. Run `npm install` to install the dependencies.
-3. you need to either be running a local model on `http://localhost:1234` or change the openAI config in `src/utils.js`
+3. replace your openai api key in `.env.template` and rename the file  to `.env`
+<!-- 3. you need to either be running a local model on `http://localhost:1234` or change the openAI config in `src/utils.js` -->
 
 ## Developing
 
