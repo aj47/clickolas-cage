@@ -1,10 +1,16 @@
 import OpenAI from 'openai'
+import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
+const model = "gemini-1.5-flash-latest"
 
 const openai = new OpenAI({
   // apiKey: 'not-needed', // defaults to process.env[""]
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // defaults to process.env[""]
-  // baseURL: 'http://localhost:1234/v1',
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY, // defaults to process.env[""]
+  // apiKey: "",
+  baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
+  defaultHeaders: createHeaders({
+    provider: "google"
+  })
 })
 
 /**
@@ -93,7 +99,7 @@ export const sendPromptWithFeedback = async (
 ) => {
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: 'gpt-3.5-turbo-1106',
+      model: model,
       seed: 1,
       response_format: { type: 'json_object' },
       messages: [
@@ -144,7 +150,7 @@ export const getNextStepFromLLM = async (
   console.log(textOptions, "textOptions");
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: 'gpt-4-1106-preview',
+      model: model,
       seed: 1,
       temperature: 0,
       response_format: { type: 'json_object' },
@@ -191,7 +197,7 @@ export const sendPromptToPlanReviser = async (
 ) => {
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: 'gpt-4-1106-preview',
+      model: model,
       seed: 1,
       temperature: 0,
       response_format: { type: 'json_object' },
@@ -237,7 +243,7 @@ ONLY use the following user provided nodes aria-labels:
 export const sendPromptToPlanner = async (prompt, url) => {
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: 'gpt-3.5-turbo-1106',
+      model: model,
       seed: 1,
       temperature: 0,
       response_format: { type: 'json_object' },
@@ -278,7 +284,7 @@ Provide the response with this JSON schema:
 export const checkCandidatePrompts = async (prompt, candidates) => {
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: 'gpt-3.5-turbo-1106',
+      model: model,
       seed: 1,
       temperature: 0,
       response_format: { type: 'json_object' },
@@ -314,7 +320,7 @@ candidate prompts: ${candidates}`,
 export const promptToFirstStep = async (prompt) => {
   const chatCompletion = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: 'gpt-3.5-turbo-1106',
+      model: model,
       stop: '}',
       temperature: 0.2,
       response_format: { type: 'json_object' },

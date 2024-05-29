@@ -10,7 +10,7 @@
 
 1. Check if your `Node.js` version is >= **14**.
 2. Run `npm install` to install the dependencies.
-3. replace your openai api key in `.env.template` and rename the file  to `.env`
+3. replace your GEMINI api key in `.env.template` and rename the file  to `.env`
 <!-- 3. you need to either be running a local model on `http://localhost:1234` or change the openAI config in `src/utils.js` -->
 
 ## Developing
@@ -22,6 +22,14 @@ $ cd clickolas-cage
 
 $ npm run dev
 ```
+
+This runs the chrome extension locally.
+
+Also run 
+```shell
+$ npx @portkey-ai/gateway
+```
+To run the ai gateway locally
 
 1. set your Chrome browser 'Developer mode' up
 2. click 'Load unpacked', and select `clickolas-cage/build` folder
