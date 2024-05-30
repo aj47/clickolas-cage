@@ -1,1 +1,11 @@
 
+services:
+  clickolascage:
+    image: clickolascage/clickolascage
+    tty: true # enable colorized logs
+    restart: always # should this be on-failure ?
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - 1:1
