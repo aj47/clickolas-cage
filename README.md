@@ -6,12 +6,18 @@
 
 [Demo on youtube](https://www.youtube.com/watch?v=HVevc5XnKJU)
 
-## Installing
+## Installing Locally
 
 1. Check if your `Node.js` version is >= **14**.
 2. Run `npm install` to install the dependencies.
 3. replace your GEMINI api key in `.env.template` and rename the file  to `.env`
 <!-- 3. you need to either be running a local model on `http://localhost:1234` or change the openAI config in `src/utils.js` -->
+
+## Installing via Docker
+
+1. Clone the repo
+2. Run `docker compose up -d --build` to install the plugin.
+3. The plugin is now running on ``**yourip**:3000``
 
 ## Developing
 
