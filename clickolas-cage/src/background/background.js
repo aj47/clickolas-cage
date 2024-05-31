@@ -56,9 +56,6 @@ const navURL = (url) => {
  * Marks the current task as completed and sends a message to the target tab to proceed with the next step.
  */
 const completedTask = () => {
-  console.log('inside completed task')
-  console.log(targetTab, 'targetTab')
-  console.log(currentPlan[currentStep], 'currentPlan[currentStep]')
   if (currentStep >= currentPlan.length) {
     console.log('plan complete.')
     return
@@ -129,10 +126,8 @@ const getNextStep = () => {
  * @returns {Promise<string>} A promise that resolves with a string indicating the completion status.
  */
 const processResponse = async (request, sender, sendResponse) => {
-  console.log('received response from client', request)
   switch (request.type) {
     case 'checkTabAllowed':
-      console.log(allowedTabs, sender.tab.id, 'allowedTabs')
       const isAllowed = allowedTabs.has(sender.tab.id)
       return sendResponse({ isAllowed: isAllowed })
     case 'new_plan':
@@ -207,7 +202,7 @@ async function sendMessageToTab(tabId, message) {
           }
         })
       })
-      processResponse(response)
+      // processResponse(response)
       return
     } catch (error) {
       console.error('Error in sending message:', error)
