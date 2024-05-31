@@ -84,6 +84,7 @@ export const SidePanel = () => {
 
     // Set its color to red
     square.style.backgroundColor = 'red'
+    square.style.opacity = 0.5
 
     // Append it to the body of the document
     document.body.appendChild(square)
