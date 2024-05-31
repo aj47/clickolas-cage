@@ -19,7 +19,6 @@ const openai = new OpenAI({
  * @returns {Object|null} The parsed JSON object, or null if no valid JSON object is found.
  */
 const extractJsonObject = (str) => {
-  console.log(str, 'str')
   // Regular expression to match JSON objects
   const jsonRegex = /{(?:[^{}]|{(?:[^{}]|{[^{}]*})*})*}/g
 
