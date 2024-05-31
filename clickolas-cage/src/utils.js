@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
-const model = "gemini-1.5-flash-latest"
+const model = 'gemini-1.5-flash-latest'
 
 const openai = new OpenAI({
   // apiKey: 'not-needed', // defaults to process.env[""]
@@ -9,8 +9,8 @@ const openai = new OpenAI({
   baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: createHeaders({
-    provider: "google"
-  })
+    provider: 'google',
+  }),
 })
 
 /**
@@ -146,18 +146,12 @@ export const getNextStepFromLLM = async (
   currentStep,
   textOptions,
 ) => {
-  console.log(originalPlan, "originalPlan");
-  console.log(textOptions, "textOptions");
-  const chatCompletion = await openAiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: model,
-      seed: 1,
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
+  console.log(originalPlan, 'originalPlan')
+  console.log(textOptions, 'textOptions')
+  const messages = [
+    {
+      role: 'system',
+      content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
 This is the plan so far:
   ${JSON.stringify(originalPlan)}
 we have just finished the final step and want to progress.
@@ -170,13 +164,25 @@ the response should be in this JSON schema:
 }
 make sure to use an EXACT aria label from the list of user provided labels
 `,
-        },
-        {
-          role: 'user',
-          content: `nodes: ${JSON.stringify(textOptions)}`,
-        },
-      ],
+    },
+    {
+      role: 'user',
+      content: `nodes: ${JSON.stringify(textOptions)}`,
+    },
+  ]
+  const chatCompletion = await openAiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: model,
+      seed: 1,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: messages,
     }),
+  )
+  console.log(
+    '=======LLM LOGGING=====',
+    JSON.stringify(messages),
+    chatCompletion.choices[0].message.content + '}',
   )
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -318,16 +324,10 @@ candidate prompts: ${candidates}`,
  * @returns {Promise<object>} - A promise that resolves to an object containing the thought and URL parameter.
  */
 export const promptToFirstStep = async (prompt) => {
-  const chatCompletion = await openAiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: model,
-      stop: '}',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI. given a prompt from the user provide the first step into achieving the goal.
+  const messages = [
+    {
+      role: 'system',
+      content: `you are an expert web browsing AI. given a prompt from the user provide the first step into achieving the goal.
 This should be either the absolute URL given
 OR a google search URL ('www.google.com/search?q=your+search+here')
 Provide response with this JSON schema:
@@ -336,13 +336,25 @@ Provide response with this JSON schema:
     "param": "url"
 }
 `,
-        },
-        {
-          role: 'user',
-          content: `user prompt: ${prompt}`,
-        },
-      ],
+    },
+    {
+      role: 'user',
+      content: `user prompt: ${prompt}`,
+    },
+  ]
+  const chatCompletion = await openAiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: model,
+      stop: '}',
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+      messages: messages,
     }),
+  )
+  console.log(
+    '=======LLM LOGGING=====',
+    JSON.stringify(messages),
+    chatCompletion.choices[0].message.content + '}',
   )
   return extractJsonObject(chatCompletion.choices[0].message.content + '}') // because it is not included when supplying the "stop" property
 }
