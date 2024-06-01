@@ -11,7 +11,6 @@
 1. Check if your `Node.js` version is >= **14**.
 2. Run `npm install` to install the dependencies.
 3. replace your GEMINI api key in `.env.template` and rename the file  to `.env`
-<!-- 3. you need to either be running a local model on `http://localhost:1234` or change the openAI config in `src/llm-utils.js` -->
 
 ## Developing
 
@@ -38,7 +37,8 @@ The main source files are:
 - `src/popup/popup.jsx` The popup window that shows when you press the extension icon
 - `src/background/background.js` Persists and facilitates planning
 - `src/contentScript/contentScript.js` Executes on web pages, executes actions and scrapes elements
-- `src/llm-utils.js` Helper functions
+- `src/utils.js` Helper functions
+- `src/llm-utils.js` LLM helper functions
 
 ### Current Flow
 1. User clicks extension icon, enters and submits goal prompt
