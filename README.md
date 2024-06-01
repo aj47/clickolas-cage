@@ -14,23 +14,20 @@
 
 ## Developing
 
-run the command
-
+run these commands to run everything locally:
 ```shell
 $ cd clickolas-cage
 
 $ npm run dev
 ```
-
-This runs the chrome extension locally.
-
-Also run 
+and in a seperate terminal:
 ```shell
 $ npx @portkey-ai/gateway
 ```
-To run the ai gateway locally
+This runs the chrome extension locally.
 
-1. set your Chrome browser 'Developer mode' up
+To link the running extension to chrome:
+1. set your Chrome browser 'Developer mode' on
 2. click 'Load unpacked', and select `clickolas-cage/build` folder
 
 The main source files are:
