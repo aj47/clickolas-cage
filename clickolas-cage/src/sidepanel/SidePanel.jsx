@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 
 import {
-  getNextStepFromLLM,
   runFunctionXTimesWithDelay,
   sendMessageToBackgroundScript,
-  sendPromptToPlanReviser,
-  sendPromptWithFeedback,
   sleep,
 } from '../utils'
+
+import {
+  getNextStepFromLLM,
+  sendPromptToPlanReviser,
+  sendPromptWithFeedback,
+} from '../llm-utils'
 
 import './SidePanel.css'
 export const SidePanel = () => {
