@@ -1,4 +1,3 @@
-
 export const getDomain = (url) => {
   try {
     const parsedUrl = new URL(url)
@@ -40,4 +39,12 @@ export const runFunctionXTimesWithDelay = async (func, times, delay) => {
     }
     resolve() // Resolve the promise when finished
   })
+}
+
+/**
+ * Sends a user confirmation response to the background script.
+ * @param {boolean} confirmation - The user's confirmation response.
+ */
+export const sendConfirmationToBackground = async (confirmation) => {
+  chrome.runtime.sendMessage({ type: 'userConfirmation', confirmation });
 }
