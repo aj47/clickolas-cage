@@ -2,22 +2,28 @@ import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../utils'
+
 const Popup = () => {
   const promptRef = useRef(null)
   const [LLMThoughts, setLLMThoughts] = useState(null)
   const [LLMPlan, setLLMPlan] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [initialPrompt, setInitialPrompt] = useState(null)
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
 
-  // useEffect(() => {
-  // console.log(chrome.extension.getBackgroundPage());
-  // const storedPrompt = localStorage.getItem('click-cage-prompt')
-  // console.log(storedPrompt)
-  // if (storedPrompt !== initialPrompt) {
-  //   setInitialPrompt(storedPrompt)
-  //   runFlow(storedPrompt)
-  // }
-  // }, [initialPrompt])
+  useEffect(() => {
+    // Listener for background script to trigger confirmation dialog
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message.type === 'askUserConfirmation') {
+        setShowConfirmationDialog(true)
+      }
+    })
+  }, [])
+
+  const handleUserConfirmation = (confirmation) => {
+    setShowConfirmationDialog(false)
+    sendMessageToBackgroundScript({ type: 'userConfirmation', confirmation })
+  }
 
   return (
     <div className="App">
@@ -41,6 +47,13 @@ const Popup = () => {
           </>
         )}
         {isLoading && <p>Thinking...</p>}
+        {showConfirmationDialog && (
+          <div>
+            <p>Did the task complete successfully?</p>
+            <button onClick={() => handleUserConfirmation(true)}>Yes</button>
+            <button onClick={() => handleUserConfirmation(false)}>No</button>
+          </div>
+        )}
       </header>
       <p>{LLMThoughts}</p>
       <p>{LLMPlan}</p>
