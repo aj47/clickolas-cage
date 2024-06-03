@@ -15,6 +15,21 @@ const openai = new OpenAI({
 })
 
 /**
+ * Wrapper function for OpenAI chat completion calls with logging.
+ * @param {Object} messages - The messages payload to send to the OpenAI API.
+ * @returns {Promise<Object>} - The response from the OpenAI API.
+ */
+const openAiChatCompletionWithLogging = async (messages) => {
+  logs.push({ messages });
+  return openAiCallWithRetry(() => openai.chat.completions.create({
+    model: model,
+    seed: 1,
+    response_format: { type: 'json_object' },
+    messages: messages,
+  }));
+}
+
+/**
  * Extracts the first JSON object from a given string.
  * @param {string} str - The string to search for a JSON object.
  * @returns {Object|null} The parsed JSON object, or null if no valid JSON object is found.
@@ -73,11 +88,10 @@ export const sendPromptWithFeedback = async (
   currentStep,
   feedback,
 ) => {
-  const chatCompletion = await openAiCallWithRetry(() => {
-    logs.push({ messages: [
-      {
-        role: 'system',
-        content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
+  const chatCompletion = await openAiChatCompletionWithLogging([
+    {
+      role: 'system',
+      content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
 you originally came up with the plan:
 ${originalPlan}
 We currently just tried to execute step of the plan :
@@ -92,43 +106,12 @@ ${currentStep}
     param?: "url" | "inputOption" | "inputText"
   },...]
 } `,
-      },
-      {
-        role: 'user',
-        content: `user has answered the question with ${feedback}`,
-      },
-    ]});
-    return openai.chat.completions.create({
-    openai.chat.completions.create({
-      model: model,
-      seed: 1,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
-you originally came up with the plan:
-${originalPlan}
-We currently just tried to execute step of the plan :
-${currentStep}
-  given user feedback, come up with a revised plan from the current step.
-  Provide a response with this JSON schema:
-{
-  plan: [ {
-    thought: "one sentence rationale",
-    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
-    ariaLabel: "labelName",
-    param?: "url" | "inputOption" | "inputText"
-  },...]
-} `,
-        },
-        {
-          role: 'user',
-          content: `user has answered the question with ${feedback}`,
-        },
-      ],
-    }),
-  )
+    },
+    {
+      role: 'user',
+      content: `user has answered the question with ${feedback}`,
+    },
+  ]);
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -149,16 +132,10 @@ export const getNextStepFromLLM = async (
 ) => {
   console.log(originalPlan, 'originalPlan')
   console.log(textOptions, 'textOptions')
-  const chatCompletion = await openAiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: model,
-      seed: 1,
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
+  const chatCompletion = await openAiChatCompletionWithLogging([
+    {
+      role: 'system',
+      content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
 This is the plan so far:
   ${JSON.stringify(originalPlan)}
 we have just finished the final step and want to progress.
@@ -171,14 +148,12 @@ the response should be in this JSON schema:
 }
 make sure to use an EXACT aria label from the list of user provided labels
 `,
-        },
-        {
-          role: 'user',
-          content: `nodes: ${JSON.stringify(textOptions)}`,
-        },
-      ],
-    }),
-  )
+    },
+    {
+      role: 'user',
+      content: `nodes: ${JSON.stringify(textOptions)}`,
+    },
+  ]);
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
@@ -196,16 +171,10 @@ export const sendPromptToPlanReviser = async (
   currentStep,
   textOptions,
 ) => {
-  const chatCompletion = await openAiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: model,
-      seed: 1,
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
+  const chatCompletion = await openAiChatCompletionWithLogging([
+    {
+      role: 'system',
+      content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
 you originally came up with the plan:
   ${originalPlan}
 We currently just tried to execute step of the plan:
@@ -223,14 +192,12 @@ the response should be in this JSON schema:
 }
 ONLY use the following user provided nodes aria-labels:
 `,
-        },
-        {
-          role: 'user',
-          content: `nodes: [${textOptions}]`,
-        },
-      ],
-    }),
-  )
+    },
+    {
+      role: 'user',
+      content: `nodes: [${textOptions}]`,
+    },
+  ]);
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -242,16 +209,10 @@ ONLY use the following user provided nodes aria-labels:
  * @returns {Promise<Object>} - A promise that resolves to the extracted JSON object containing the generated plan.
  */
 export const sendPromptToPlanner = async (prompt, url) => {
-  const chatCompletion = await openAiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: model,
-      seed: 1,
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI.
+  const chatCompletion = await openAiChatCompletionWithLogging([
+    {
+      role: 'system',
+      content: `you are an expert web browsing AI.
 given a user goal prompt devise a plan to achieve the goal.
 Assume we are already on the URL: ${url} and give the following steps.
 Provide the response with this JSON schema:
@@ -264,14 +225,12 @@ Provide the response with this JSON schema:
   },...]
 }
 `,
-        },
-        {
-          role: 'user',
-          content: `Your goal is: ${prompt}`,
-        },
-      ],
-    }),
-  )
+    },
+    {
+      role: 'user',
+      content: `Your goal is: ${prompt}`,
+    },
+  ]);
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -283,16 +242,10 @@ Provide the response with this JSON schema:
  * @returns {Promise<{match: string}>} A promise that resolves to an object with a 'match' property containing the matching candidate prompt or an empty string if no match is found.
  */
 export const checkCandidatePrompts = async (prompt, candidates) => {
-  const chatCompletion = await openAiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: model,
-      seed: 1,
-      temperature: 0,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `Compare the following long goal prompt with the given list of smaller candidate prompts.
+  const chatCompletion = await openAiChatCompletionWithLogging([
+    {
+      role: 'system',
+      content: `Compare the following long goal prompt with the given list of smaller candidate prompts.
 Determine if any of the smaller prompts match or closely align with the intention or key elements of the long goal prompt.
 If a match is found, identify and return the matching smaller prompt.
 Provide response in this JSON schema:
@@ -300,15 +253,13 @@ Provide response in this JSON schema:
   match: "candidate prompt" | ""
 }
 `,
-        },
-        {
-          role: 'user',
-          content: `goal prompt: ${prompt}
+    },
+    {
+      role: 'user',
+      content: `goal prompt: ${prompt}
 candidate prompts: ${candidates}`,
-        },
-      ],
-    }),
-  )
+    },
+  ]);
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -319,16 +270,10 @@ candidate prompts: ${candidates}`,
  * @returns {Promise<object>} - A promise that resolves to an object containing the thought and URL parameter.
  */
 export const promptToFirstStep = async (prompt) => {
-  const chatCompletion = await openAiCallWithRetry(() =>
-    openai.chat.completions.create({
-      model: model,
-      stop: '}',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `you are an expert web browsing AI. given a prompt from the user provide the first step into achieving the goal.
+  const chatCompletion = await openAiChatCompletionWithLogging([
+    {
+      role: 'system',
+      content: `you are an expert web browsing AI. given a prompt from the user provide the first step into achieving the goal.
 This should be either the absolute URL given
 OR a google search URL ('www.google.com/search?q=your+search+here')
 Provide response with this JSON schema:
@@ -337,14 +282,12 @@ Provide response with this JSON schema:
     "param": "url"
 }
 `,
-        },
-        {
-          role: 'user',
-          content: `user prompt: ${prompt}`,
-        },
-      ],
-    }),
-  )
+    },
+    {
+      role: 'user',
+      content: `user prompt: ${prompt}`,
+    },
+  ]);
   return extractJsonObject(chatCompletion.choices[0].message.content + '}') // because it is not included when supplying the "stop" property
 }
 /**
