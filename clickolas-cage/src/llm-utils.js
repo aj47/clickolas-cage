@@ -20,16 +20,18 @@ const openai = new OpenAI({
  */
 const openAiChatCompletionWithLogging = async (messages) => {
   chrome.storage.local.get({ logs: [] }, (result) => {
-    const logs = result.logs;
-    logs.push({ messages });
-    chrome.storage.local.set({ logs });
-  });
-  return openAiCallWithRetry(() => openai.chat.completions.create({
-    model: model,
-    seed: 1,
-    response_format: { type: 'json_object' },
-    messages: messages,
-  }));
+    const logs = result.logs
+    logs.push({ messages })
+    chrome.storage.local.set({ logs })
+  })
+  return openAiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: model,
+      seed: 1,
+      response_format: { type: 'json_object' },
+      messages: messages,
+    }),
+  )
 }
 
 /**
@@ -114,7 +116,7 @@ ${currentStep}
       role: 'user',
       content: `user has answered the question with ${feedback}`,
     },
-  ]);
+  ])
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -156,7 +158,7 @@ make sure to use an EXACT aria label from the list of user provided labels
       role: 'user',
       content: `nodes: ${JSON.stringify(textOptions)}`,
     },
-  ]);
+  ])
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
@@ -200,7 +202,7 @@ ONLY use the following user provided nodes aria-labels:
       role: 'user',
       content: `nodes: [${textOptions}]`,
     },
-  ]);
+  ])
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -233,7 +235,7 @@ Provide the response with this JSON schema:
       role: 'user',
       content: `Your goal is: ${prompt}`,
     },
-  ]);
+  ])
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -262,7 +264,7 @@ Provide response in this JSON schema:
       content: `goal prompt: ${prompt}
 candidate prompts: ${candidates}`,
     },
-  ]);
+  ])
   console.log(chatCompletion.choices[0].message.content)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
@@ -290,18 +292,21 @@ Provide response with this JSON schema:
       role: 'user',
       content: `user prompt: ${prompt}`,
     },
-  ]);
+  ])
   return extractJsonObject(chatCompletion.choices[0].message.content + '}') // because it is not included when supplying the "stop" property
 }
 /**
  * Exports the logs as a JSON file.
  */
 export const exportLogs = () => {
-  const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'logs.json';
-  a.click();
-  URL.revokeObjectURL(url);
+  chrome.storage.local.get({ logs: [] }, (result) => {
+    const logs = result.logs
+    const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'logs.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  })
 }

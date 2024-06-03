@@ -2,6 +2,11 @@ import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../utils'
+import { exportLogs } from '../llm-utils'
+
+const handleExportLogs = () => {
+  exportLogs();
+}
 const Popup = () => {
   const promptRef = useRef(null)
   const [LLMThoughts, setLLMThoughts] = useState(null)
@@ -50,8 +55,3 @@ const Popup = () => {
 }
 
 export default Popup
-import { exportLogs } from '../llm-utils'
-
-const handleExportLogs = () => {
-  exportLogs();
-}
