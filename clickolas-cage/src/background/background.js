@@ -11,7 +11,8 @@ import {
   sendPromptToPlanner,
 } from '../llm-utils'
 
-console.log('background is running')
+chrome.storage.local.set({ logs: [] });
+console.log('background is running');
 
 let currentPlan = []
 let targetTab = null

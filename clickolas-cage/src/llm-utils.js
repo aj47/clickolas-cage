@@ -1,7 +1,6 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 const model = 'gemini-1.5-flash-latest'
-let logs = [] // Global variable to store logs
 
 const openai = new OpenAI({
   // apiKey: 'not-needed', // defaults to process.env[""]
@@ -20,7 +19,11 @@ const openai = new OpenAI({
  * @returns {Promise<Object>} - The response from the OpenAI API.
  */
 const openAiChatCompletionWithLogging = async (messages) => {
-  logs.push({ messages });
+  chrome.storage.local.get({ logs: [] }, (result) => {
+    const logs = result.logs;
+    logs.push({ messages });
+    chrome.storage.local.set({ logs });
+  });
   return openAiCallWithRetry(() => openai.chat.completions.create({
     model: model,
     seed: 1,
