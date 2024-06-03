@@ -259,7 +259,7 @@ export const SidePanel = () => {
       //     subtree: true,
       //   })
       // }
-      console.log("Side panel recv:", request.type)
+      console.log("Side panel recv:", JSON.stringify(request))
       if (request.type === 'showClick') {
         createSquareAtLocation(request.x, request.y)
       } else if (request.type === 'addThought') {
@@ -271,11 +271,14 @@ export const SidePanel = () => {
           selector: locateCorrectElement(request.ariaLabel),
         })
       } else if (request.type === 'generateNextStep') {
-        await runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
-        setOriginalPlan(request.originalPlan)
-        sendMessageToBackgroundScript({
-          type: 'next_step',
-        })
+        // await runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
+        // Can't use await becuase we need to return response to keep socket open
+        runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
+
+        // setOriginalPlan(request.originalPlan)
+        // sendMessageToBackgroundScript({
+        //   type: 'next_step',
+        // })
       }
       return sendResponse('complete')
   }
