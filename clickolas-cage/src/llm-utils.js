@@ -1,6 +1,7 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 const model = 'gemini-1.5-flash-latest'
+let logs = [] // Global variable to store logs
 
 const openai = new OpenAI({
   // apiKey: 'not-needed', // defaults to process.env[""]
@@ -72,7 +73,32 @@ export const sendPromptWithFeedback = async (
   currentStep,
   feedback,
 ) => {
-  const chatCompletion = await openAiCallWithRetry(() =>
+  const chatCompletion = await openAiCallWithRetry(() => {
+    logs.push({ messages: [
+      {
+        role: 'system',
+        content: `you are an expert web browsing AI. you were given the original prompt:"${originalPrompt}"
+you originally came up with the plan:
+${originalPlan}
+We currently just tried to execute step of the plan :
+${currentStep}
+  given user feedback, come up with a revised plan from the current step.
+  Provide a response with this JSON schema:
+{
+  plan: [ {
+    thought: "one sentence rationale",
+    action: "NAVURL" | "CLICKBTN" | "INPUT" | "SELECT" | "WAITLOAD" ,
+    ariaLabel: "labelName",
+    param?: "url" | "inputOption" | "inputText"
+  },...]
+} `,
+      },
+      {
+        role: 'user',
+        content: `user has answered the question with ${feedback}`,
+      },
+    ]});
+    return openai.chat.completions.create({
     openai.chat.completions.create({
       model: model,
       seed: 1,
@@ -320,4 +346,16 @@ Provide response with this JSON schema:
     }),
   )
   return extractJsonObject(chatCompletion.choices[0].message.content + '}') // because it is not included when supplying the "stop" property
+}
+/**
+ * Exports the logs as a JSON file.
+ */
+export const exportLogs = () => {
+  const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'logs.json';
+  a.click();
+  URL.revokeObjectURL(url);
 }

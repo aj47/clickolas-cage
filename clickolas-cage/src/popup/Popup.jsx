@@ -44,8 +44,14 @@ const Popup = () => {
       </header>
       <p>{LLMThoughts}</p>
       <p>{LLMPlan}</p>
+      <button onClick={handleExportLogs}>Export Logs</button>
     </div>
   )
 }
 
 export default Popup
+import { exportLogs } from '../llm-utils'
+
+const handleExportLogs = () => {
+  exportLogs();
+}
