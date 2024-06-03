@@ -2,11 +2,16 @@ import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../utils'
-import { exportLogs } from '../llm-utils'
+import { exportLogs, clearLogs } from '../llm-utils'
 
 const handleExportLogs = () => {
-  exportLogs();
+  exportLogs()
 }
+
+const handleClearLogs = () => {
+  clearLogs()
+}
+
 const Popup = () => {
   const promptRef = useRef(null)
   const [LLMThoughts, setLLMThoughts] = useState(null)
@@ -31,7 +36,13 @@ const Popup = () => {
         <p>HELLO! I AM CLICKOLAS CAGE!</p>
         {!initialPrompt && !isLoading && (
           <>
-            <input ref={promptRef} type="text" placeholder="Add event x to my google calendar" className="input-large" />
+            <input
+              ref={promptRef}
+              type="text"
+              placeholder="Add event x to
+ google calendar"
+              className="input-large"
+            />
             <input
               onClick={async () => {
                 console.log('submit clicked.')
@@ -50,6 +61,7 @@ const Popup = () => {
       <p>{LLMThoughts}</p>
       <p>{LLMPlan}</p>
       <button onClick={handleExportLogs}>Export Logs</button>
+      <button onClick={handleClearLogs}>Clear Logs</button>
     </div>
   )
 }

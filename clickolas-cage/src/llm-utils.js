@@ -310,3 +310,12 @@ export const exportLogs = () => {
     URL.revokeObjectURL(url)
   })
 }
+
+/**
+ * Clears the logs from Chrome storage.
+ */
+export const clearLogs = () => {
+  chrome.storage.local.set({ logs: [] }, () => {
+    console.log('Logs have been cleared.')
+  })
+}
