@@ -45,8 +45,8 @@
     transform: rotate(360deg);
   }
 }
-.input-large {
-  width: 80%;
+
+.input-common {
   height: 50px;
   font-size: 20px;
   display: block;
@@ -54,11 +54,21 @@
   transition: transform .2s;
 }
 
-.input-large:hover {
+.input-large {
+  width: 80%;
+}
+
+.input-small {
+  font-size: 12px;
+  width: 100px;
+  opacity: 0.5;
+}
+
+.input-common:hover {
   transform: scale(1.1);
 }
 
-.input-large[type="button"] {
+.input-common[type="button"] {
   background: linear-gradient(270deg, #000000, #2f2f2f, #5e5e5e, #8d8d8d, #bcbcbc);
   background-size: 1400% 1400%;
   animation: rainbow 3s ease infinite;

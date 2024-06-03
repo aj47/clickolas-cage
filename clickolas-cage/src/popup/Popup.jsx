@@ -14,34 +14,29 @@ const handleClearLogs = () => {
 
 const Popup = () => {
   const promptRef = useRef(null)
-  const [LLMThoughts, setLLMThoughts] = useState(null)
-  const [LLMPlan, setLLMPlan] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [initialPrompt, setInitialPrompt] = useState(null)
-
-  // useEffect(() => {
-  // console.log(chrome.extension.getBackgroundPage());
-  // const storedPrompt = localStorage.getItem('click-cage-prompt')
-  // console.log(storedPrompt)
-  // if (storedPrompt !== initialPrompt) {
-  //   setInitialPrompt(storedPrompt)
-  //   runFlow(storedPrompt)
-  // }
-  // }, [initialPrompt])
 
   return (
     <div className="App">
       <header className="App-header">
+        <div style={{position: 'absolute', top: 15, right: 15}}>
+          <button className="input-common input-small" style={{marginBottom: 15}} onClick={handleExportLogs}>
+            Export Logs
+          </button>
+          <button className="input-common input-small" onClick={handleClearLogs}>
+            Clear Logs
+          </button>
+        </div>
         <img src={logo} className="App-logo" alt="logo" />
         <p>HELLO! I AM CLICKOLAS CAGE!</p>
-        {!initialPrompt && !isLoading && (
+        {!isLoading && (
           <>
             <input
               ref={promptRef}
               type="text"
               placeholder="Add event x to
  google calendar"
-              className="input-large"
+              className="input-common input-large"
             />
             <input
               onClick={async () => {
@@ -52,16 +47,12 @@ const Popup = () => {
               }}
               type="button"
               value="Submit"
-              className="input-large"
+              className="input-common input-large"
             />
           </>
         )}
         {isLoading && <p>Thinking...</p>}
       </header>
-      <p>{LLMThoughts}</p>
-      <p>{LLMPlan}</p>
-      <button onClick={handleExportLogs}>Export Logs</button>
-      <button onClick={handleClearLogs}>Clear Logs</button>
     </div>
   )
 }
