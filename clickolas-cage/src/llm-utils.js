@@ -18,7 +18,7 @@ const openai = new OpenAI({
   baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: createHeaders({
-    provider: provider, // Use the dynamically retrieved provider
+    provider: provider ?? "google", // Use the dynamically retrieved provider
   }),
 })
 
