@@ -248,6 +248,14 @@ export const SidePanel = () => {
     }
   }, [])
 
+  const runPressTabInTabWithNextStep = (times, delay) => {
+    runFunctionXTimesWithDelay(pressTabInTab, times, delay).then(() => {
+      sendMessageToBackgroundScript({
+        type: 'next_step',
+      });
+    });
+  };
+
   const handleRequest = async (request, sender, sendResponse) => {
       // if (observer === null) {
       //   // Create an instance of MutationObserver with the callback
@@ -273,12 +281,7 @@ export const SidePanel = () => {
       } else if (request.type === 'generateNextStep') {
         // await runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
         // Can't use await becuase we need to return response to keep socket open
-        runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
-
-        // setOriginalPlan(request.originalPlan)
-        // sendMessageToBackgroundScript({
-        //   type: 'next_step',
-        // })
+        runPressTabInTabWithNextStep(10, 250);
       }
       return sendResponse('complete')
   }
