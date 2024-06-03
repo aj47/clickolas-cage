@@ -91,6 +91,8 @@ const executeCurrentStep = async () => {
   if (currentPlan[currentStep].action === 'NAVURL') {
     await navURL(currentPlan[currentStep].param)
   } else if (currentPlan[currentStep].action === 'CLICKBTN') {
+    //Send message to Content Script to get the element
+    //Then it's sent back to Background script to execute click in debug mode
     sendMessageToTab(targetTab, {
       type: 'clickElement',
       ariaLabel: currentPlan[currentStep].ariaLabel,

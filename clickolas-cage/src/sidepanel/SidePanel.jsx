@@ -18,14 +18,9 @@ export const SidePanel = () => {
   const [originalPrompt, setOriginalPrompt] = useState('')
   //---
 
-  console.info('contentScript is running')
   let newNodes = []
   let observer = null
   const delayBetweenKeystrokes = 100
-
-  async function clickElement(selector) {
-    sendMessageToBackgroundScript({ type: 'click_element', selector })
-  }
 
   /**
    * Simulates typing text into a given HTML element
@@ -214,7 +209,6 @@ export const SidePanel = () => {
    * Sends a message to the background script to press the Tab key.
    */
   const pressTabInTab = () => {
-    console.log('Requesting background to press Tab')
     sendMessageToBackgroundScript({ type: 'press_tab_key' })
   }
   // Function to get the text of the currently focused element or its accessible name
@@ -254,8 +248,7 @@ export const SidePanel = () => {
     }
   }, [])
 
-  useEffect(() => {
-    chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+  const handleRequest = async (request, sender, sendResponse) => {
       // if (observer === null) {
       //   // Create an instance of MutationObserver with the callback
       //   observer = new MutationObserver(nodeChangeCallback)
@@ -266,11 +259,10 @@ export const SidePanel = () => {
       //     subtree: true,
       //   })
       // }
-      console.log(request, 'request')
+      console.log("Side panel recv:", request.type)
       if (request.type === 'showClick') {
         createSquareAtLocation(request.x, request.y)
       } else if (request.type === 'addThought') {
-        console.log('add thought')
         setOriginalPlan(request.originalPlan)
       } else if (request.type === 'clickElement') {
         setOriginalPlan(request.originalPlan)
@@ -280,13 +272,18 @@ export const SidePanel = () => {
         })
       } else if (request.type === 'generateNextStep') {
         await runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
-        console.log('generate next')
         setOriginalPlan(request.originalPlan)
         sendMessageToBackgroundScript({
           type: 'next_step',
         })
       }
       return sendResponse('complete')
+  }
+
+
+  useEffect(() => {
+    chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+      handleRequest(request, sender, sendResponse);
     })
   }, [])
 
