@@ -24,7 +24,7 @@ const openAiChatCompletionWithLogging = async (messages) => {
     logs.push({ messages })
     chrome.storage.local.set({ logs })
   })
-  return openAiCallWithRetry(() =>
+  const response = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
       model: model,
       seed: 1,
@@ -32,6 +32,12 @@ const openAiChatCompletionWithLogging = async (messages) => {
       messages: messages,
     }),
   )
+  chrome.storage.local.get({ logs: [] }, (result) => {
+    const logs = result.logs
+    logs.push({ response })
+    chrome.storage.local.set({ logs })
+  })
+  return response
 }
 
 /**
