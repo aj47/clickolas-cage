@@ -31,6 +31,18 @@ const Popup = () => {
         <p>HELLO! I AM CLICKOLAS CAGE!</p>
         {!isLoading && (
           <>
+            <button
+              className="input-common input-small"
+              onClick={async () => {
+                const prompt = "Create a google calendar event at 2pm labeled 'hello world'";
+                promptRef.current.value = prompt;
+                console.log('submit clicked.')
+                sendMessageToBackgroundScript({ type: 'new_goal', prompt });
+                setIsLoading(true);
+              }}
+            >
+              Quick Add Event
+            </button>
             <input
               ref={promptRef}
               type="text"
