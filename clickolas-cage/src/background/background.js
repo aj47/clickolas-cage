@@ -1,12 +1,16 @@
 import {
-  checkCandidatePrompts,
   getDomain,
-  getNextStepFromLLM,
-  promptToFirstStep,
   sendMessageToContentScript,
-  sendPromptToPlanner,
   sleep,
 } from '../utils'
+
+import {
+  checkCandidatePrompts,
+  getNextStepFromLLM,
+  promptToFirstStep,
+  sendPromptToPlanner,
+} from '../llm-utils'
+
 console.log('background is running')
 
 let currentPlan = []
