@@ -174,6 +174,7 @@ const processResponse = async (request, sender, sendResponse) => {
       console.log('-------------------------------------')
       console.log(focusedElements, 'focusedElements')
       const nextStep = await getNextStepFromLLM(
+        originalPrompt,
         currentURL,
         currentPlan,
         currentStep,

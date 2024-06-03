@@ -137,6 +137,7 @@ ${currentStep}
  */
 export const getNextStepFromLLM = async (
   originalPrompt,
+  currentURL,
   originalPlan,
   currentStep,
   textOptions,
@@ -147,6 +148,7 @@ export const getNextStepFromLLM = async (
     {
       role: 'system',
       content: `you are an expert web browsing AI. you were given the original goal prompt:"${originalPrompt}"
+You are on URL: ${currentURL}
 This is the plan so far:
   ${JSON.stringify(originalPlan)}
 we have just finished the final step and want to progress.

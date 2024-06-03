@@ -7,8 +7,6 @@ import {
 } from '../utils'
 
 import {
-  getNextStepFromLLM,
-  sendPromptToPlanReviser,
   sendPromptWithFeedback,
 } from '../llm-utils'
 
@@ -72,8 +70,6 @@ export const SidePanel = () => {
     * @param {number} y - The y-coordinate of the top left corner of the square.
     */
   async function createSquareAtLocation(x, y) {
-    console.log(x, 'x')
-    console.log(y, 'y')
     // Create a div element
     let square = document.createElement('div')
 
@@ -182,13 +178,14 @@ export const SidePanel = () => {
    * depending on whether it finds a matching element.
    */
   const locateCorrectElement = (initialLabel) => {
-    console.log(initialLabel, 'initialLabel')
+    console.log("looking for element:", initialLabel);
     const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
     // If an element matches the initialLabel, return the path to the element
     for (const el of clickableElements) {
       // console.log(el.getAttribute('aria-label'), el.innerText, "e.getAttribute(ari");
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
+        console.log("LOCATED ELEMENT: ")
         console.log(el)
         const boundingBox = el.getBoundingClientRect()
         if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) returnEl = getPathTo(el)
@@ -211,58 +208,6 @@ export const SidePanel = () => {
     // Send a message to the background script with the new plan
     // sendMessageToBackgroundScript({ type: 'new_plan', data: response })
     return false
-  }
-
-  const executeAction = async (actionName, label, param) => {
-    console.log('executing action...', actionName)
-    let selector = ''
-    if (actionName === 'CLICKBTN' && !label) label = param
-    if (label && (actionName === 'CLICKBTN' || actionName === 'INPUT' || actionName === 'SELECT')) {
-      console.log(label, 'aria-label')
-      selector = await locateCorrectElement(label)
-      if (!selector) return false
-    }
-    switch (actionName) {
-      case 'WAITLOAD':
-        await waitForWindowLoad()
-        return true
-      case 'NAVURL':
-        console.log(`Navigating to URL: ${param}`)
-        chrome.runtime.sendMessage({ type: 'nav_url', url: param }, function (response) {})
-        return true
-      case 'CLICKBTN':
-        console.log(`Clicking button with label: ${label}`)
-        // https://stackoverflow.com/questions/50095952/javascript-trigger-jsaction-from-chrome-console
-        clickElement(selector)
-        await waitForWindowLoad()
-        return false
-      case 'INPUT':
-        console.log(`Inputting text: ${param} into field with label: ${label}`)
-        console.log('Input selector: ', selector)
-        clickElement(selector)
-        await typeText(param, document.querySelector(selector))
-        await waitForWindowLoad()
-        return true
-      case 'SELECT':
-        console.log(`Selecting option: ${param} in field with ID: ${label}`)
-        document.querySelector(selector).value = param
-        await waitForWindowLoad()
-        return true
-      case 'ASKUSER':
-        console.log(`Asking user the following question: ${param}`)
-        const answer = prompt(param || label)
-        const response = await sendPromptWithFeedback(
-          originalPrompt,
-          JSON.stringify(originalPlan),
-          JSON.stringify(currentStep),
-          answer,
-        )
-        sendMessageToBackgroundScript({ type: 'new_plan', data: JSON.parse(response) })
-        return false
-      default:
-        console.log('Unknown action: ' + actionName)
-    }
-    return true
   }
 
   /**
