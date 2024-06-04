@@ -250,6 +250,7 @@ export const SidePanel = () => {
 
   const runPressTabInTabWithNextStep = (times, delay) => {
     runFunctionXTimesWithDelay(pressTabInTab, times, delay).then(() => {
+      console.log("ready for next step...");
       sendMessageToBackgroundScript({
         type: 'next_step',
       });
@@ -279,8 +280,6 @@ export const SidePanel = () => {
           selector: locateCorrectElement(request.ariaLabel),
         })
       } else if (request.type === 'generateNextStep') {
-        // await runFunctionXTimesWithDelay(pressTabInTab, 10, 250)
-        // Can't use await becuase we need to return response to keep socket open
         runPressTabInTabWithNextStep(10, 250);
       }
       return sendResponse('complete')
