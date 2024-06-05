@@ -295,8 +295,9 @@ export const SidePanel = () => {
   }
 
   useEffect(() => {
-    chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       handleRequest(request, sender, sendResponse)
+      return true; // Indicate that the response is asynchronous
     })
   }, [])
 
