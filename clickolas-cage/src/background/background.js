@@ -44,15 +44,6 @@ const navURL = (url) => {
   })
 }
 
-// const retryTask = () => {
-//   const messagePayload = {
-//     currentStep: currentStep - 1,
-//     originalPlan: currentPlan,
-//     originalPrompt,
-//   }
-//   sendMessageToTab(targetTab, messagePayload)
-// }
-
 /**
  * Marks the current task as completed and sends a message to the target tab to proceed with the next step.
  */
@@ -91,7 +82,6 @@ const executeCurrentStep = async () => {
   } else if (currentPlan[currentStep].action === 'CLICKBTN') {
     //Send message to Content Script to get the element
     //Then it's sent back to Background script to execute click in debug mode
-    console.log("@@@ click element")
     sendMessageToTab(targetTab, {
       type: 'clickElement',
       ariaLabel: currentPlan[currentStep].ariaLabel,
@@ -101,9 +91,8 @@ const executeCurrentStep = async () => {
     // if the action is ASKUSER
     // TODO: Handle ASKUSER
   }
-  console.log(currentStep, "before");
-  currentStep++
-  console.log(currentStep);
+  console.log(currentStep, "step");
+  currentStep++;
   getNextStep()
 }
 
@@ -114,14 +103,15 @@ const getNextStep = async () => {
   console.log('inside next step ting')
   // Check if the tab is completely loaded before sending a message
   console.log(targetTab)
-  console.log(currentStep);
+  console.log(currentStep, "step");
   const messagePayload = {
     type: 'generateNextStep',
-    currentStep: currentStep - 1,
+    currentStep: currentStep,
     originalPlan: currentPlan,
     originalPrompt,
   }
   try {
+    console.log('Sending message payload:', JSON.stringify(messagePayload))
     await sendMessageToTab(targetTab, messagePayload)
     console.log('Message successfully sent to generateNextStep', JSON.stringify(messagePayload))
   } catch (error) {
@@ -141,17 +131,6 @@ const processResponse = async (request, sender, sendResponse) => {
     case 'checkTabAllowed':
       const isAllowed = allowedTabs.has(sender.tab.id)
       return sendResponse({ isAllowed: isAllowed })
-    case 'new_plan':
-      console.log('new plan received')
-      currentPlan = request.data.plan
-      currentStep = 1
-      const messagePayload = {
-        currentStep: 0,
-        originalPlan: currentPlan,
-        originalPrompt,
-      }
-      sendMessageToTab(targetTab, messagePayload)
-      break
     case 'nav_url':
       navURL(request.url)
       break

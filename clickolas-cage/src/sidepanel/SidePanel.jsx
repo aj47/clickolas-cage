@@ -7,13 +7,9 @@ import { sendPromptWithFeedback } from '../llm-utils'
 import './SidePanel.css'
 export const SidePanel = () => {
   const [originalPlan, setOriginalPlan] = useState([])
-  const [currentStep, setCurrentStep] = useState(null)
-  const [currentStepNumber, setCurrentStepNumber] = useState(0)
-  const [originalPrompt, setOriginalPrompt] = useState('')
+  const [currentStep, setCurrentStep] = useState(0)
   const socketRef = useRef(null)
 
-  let newNodes = []
-  let observer = null
   const delayBetweenKeystrokes = 100
 
   /**
@@ -124,7 +120,7 @@ export const SidePanel = () => {
     const clickableElements = []
     // Add all clickable elements in DOM to clickableElements array
     document.querySelectorAll('*').forEach(function (node) {
-      if (
+      if (  node.tagName !== 'BODY' &&
         node.tagName === 'BUTTON' ||
         node.tagName === 'INPUT' ||
         node.onclick ||
@@ -132,7 +128,7 @@ export const SidePanel = () => {
           (node.getAttribute('jsaction').includes('click') ||
             node.getAttribute('jsaction').includes('mousedown'))) ||
         node.hasAttribute('onclick') ||
-        (node.getAttribute('role') === 'button' && node.tagName !== 'BODY')
+        (node.getAttribute('role') === 'button')
       ) {
         clickableElements.push(node)
       }
@@ -182,20 +178,6 @@ export const SidePanel = () => {
     }
     if (returnEl) return returnEl
     else console.log('NO ELEMENT FOUND :(')
-    // Remove duplicates and empty text elements from the clickableElementLabels array
-    // const cleanedArray = [
-    //   ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
-    // ]
-    // // Send a prompt to the element locator and await the response
-    // const response = await sendPromptToPlanReviser(
-    //   originalPrompt,
-    //   JSON.stringify(originalPlan),
-    //   JSON.stringify(currentStep),
-    //   JSON.stringify(cleanedArray),
-    // )
-    // console.log(response, 'response')
-    // Send a message to the background script with the new plan
-    // sendMessageToBackgroundScript({ type: 'new_plan', data: response })
     return false
   }
 
@@ -262,28 +244,23 @@ export const SidePanel = () => {
   }
 
   const handleRequest = async (request, sender, sendResponse) => {
-    // if (observer === null) {
-    //   // Create an instance of MutationObserver with the callback
-    //   observer = new MutationObserver(nodeChangeCallback)
-    //   // Start observing the the whole dom for changes
-    //   observer.observe(document.documentElement, {
-    //     attributes: true,
-    //     childList: true,
-    //     subtree: true,
-    //   })
-    // }
     console.log('Side panel recv:', JSON.stringify(request))
+    console.log('Received request:', JSON.stringify(request))
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
-    } else if (request.type === 'addThought') {
-      setOriginalPlan(request.originalPlan)
+    // } else if (request.type === 'addThought') {
+    //   setCurrentStep(request.currentStep)
     } else if (request.type === 'clickElement') {
+      setCurrentStep(request.currentStep)
       setOriginalPlan(request.originalPlan)
       return sendMessageToBackgroundScript({
         type: 'click_element',
         selector: locateCorrectElement(request.ariaLabel),
       })
+      setCurrentStep(request.currentStep)
     } else if (request.type === 'generateNextStep') {
+      setOriginalPlan(request.originalPlan)
+      setCurrentStep(request.currentStep)
       // runPressTabInTabWithNextStep(10, 250);
       console.log(getClickableElements())
       return sendMessageToBackgroundScript({
@@ -304,6 +281,7 @@ export const SidePanel = () => {
   return (
     <div className="sidePanel">
       <div className="plan">
+        <h2>Current Step: {currentStep}</h2>
         {originalPlan?.length > 0 ? (
           <>
             <h2>Clickolas Plan: </h2>
