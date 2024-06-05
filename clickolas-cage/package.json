@@ -16,7 +16,7 @@
     "node": ">=14.18.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "npx @portkey-ai/gateway & vite",
     "build": "vite build",
     "preview": "vite preview",
     "fmt": "prettier --write '**/*.{jsx,js,json,css,scss,md}'"
