@@ -200,7 +200,10 @@ const processResponse = async (request, sender, sendResponse) => {
   }
   return sendResponse('completed')
 }
-chrome.runtime.onMessage.addListener(processResponse)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  processResponse(request, sender, sendResponse)
+  return true; // Indicate that the response is asynchronous
+})
 
 /**
  * Sends a message to a specific tab and retries if necessary.
