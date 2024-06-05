@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react'
 
-import {
-  runFunctionXTimesWithDelay,
-  sendMessageToBackgroundScript,
-  sleep,
-} from '../utils'
+import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from '../utils'
 
-import {
-  sendPromptWithFeedback,
-} from '../llm-utils'
+import { sendPromptWithFeedback } from '../llm-utils'
 
 import './SidePanel.css'
 export const SidePanel = () => {
@@ -59,11 +53,11 @@ export const SidePanel = () => {
   }
 
   /**
-    * Creates a square at the given location. The x and y parameters are in pixel values.
-    * Used for showing where clickolas has clicked.
-    * @param {number} x - The x-coordinate of the top left corner of the square.
-    * @param {number} y - The y-coordinate of the top left corner of the square.
-    */
+   * Creates a square at the given location. The x and y parameters are in pixel values.
+   * Used for showing where clickolas has clicked.
+   * @param {number} x - The x-coordinate of the top left corner of the square.
+   * @param {number} y - The y-coordinate of the top left corner of the square.
+   */
   async function createSquareAtLocation(x, y) {
     // Create a div element
     let square = document.createElement('div')
@@ -138,7 +132,7 @@ export const SidePanel = () => {
           (node.getAttribute('jsaction').includes('click') ||
             node.getAttribute('jsaction').includes('mousedown'))) ||
         node.hasAttribute('onclick') ||
-        node.getAttribute('role') === 'button'
+        (node.getAttribute('role') === 'button' && node.tagName !== 'BODY')
       ) {
         clickableElements.push(node)
       }
@@ -173,14 +167,14 @@ export const SidePanel = () => {
    * depending on whether it finds a matching element.
    */
   const locateCorrectElement = (initialLabel) => {
-    console.log("looking for element:", initialLabel);
+    console.log('looking for element:', initialLabel)
     const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
     // If an element matches the initialLabel, return the path to the element
     for (const el of clickableElements) {
       // console.log(el.getAttribute('aria-label'), el.innerText, "e.getAttribute(ari");
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
-        console.log("LOCATED ELEMENT: ")
+        console.log('LOCATED ELEMENT: ')
         console.log(el)
         const boundingBox = el.getBoundingClientRect()
         if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) returnEl = getPathTo(el)
@@ -250,45 +244,49 @@ export const SidePanel = () => {
 
   const runPressTabInTabWithNextStep = (times, delay) => {
     runFunctionXTimesWithDelay(pressTabInTab, times, delay).then(() => {
-      console.log("ready for next step...");
+      console.log('ready for next step...')
       sendMessageToBackgroundScript({
         type: 'next_step',
-      });
-    });
-  };
-
-  const handleRequest = async (request, sender, sendResponse) => {
-      // if (observer === null) {
-      //   // Create an instance of MutationObserver with the callback
-      //   observer = new MutationObserver(nodeChangeCallback)
-      //   // Start observing the the whole dom for changes
-      //   observer.observe(document.documentElement, {
-      //     attributes: true,
-      //     childList: true,
-      //     subtree: true,
-      //   })
-      // }
-      console.log("Side panel recv:", JSON.stringify(request))
-      if (request.type === 'showClick') {
-        createSquareAtLocation(request.x, request.y)
-      } else if (request.type === 'addThought') {
-        setOriginalPlan(request.originalPlan)
-      } else if (request.type === 'clickElement') {
-        setOriginalPlan(request.originalPlan)
-        sendMessageToBackgroundScript({
-          type: 'click_element',
-          selector: locateCorrectElement(request.ariaLabel),
-        })
-      } else if (request.type === 'generateNextStep') {
-        runPressTabInTabWithNextStep(10, 250);
-      }
-      return sendResponse('complete')
+      })
+    })
   }
 
+  const handleRequest = async (request, sender, sendResponse) => {
+    // if (observer === null) {
+    //   // Create an instance of MutationObserver with the callback
+    //   observer = new MutationObserver(nodeChangeCallback)
+    //   // Start observing the the whole dom for changes
+    //   observer.observe(document.documentElement, {
+    //     attributes: true,
+    //     childList: true,
+    //     subtree: true,
+    //   })
+    // }
+    console.log('Side panel recv:', JSON.stringify(request))
+    if (request.type === 'showClick') {
+      createSquareAtLocation(request.x, request.y)
+    } else if (request.type === 'addThought') {
+      setOriginalPlan(request.originalPlan)
+    } else if (request.type === 'clickElement') {
+      setOriginalPlan(request.originalPlan)
+      return sendMessageToBackgroundScript({
+        type: 'click_element',
+        selector: locateCorrectElement(request.ariaLabel),
+      })
+    } else if (request.type === 'generateNextStep') {
+      // runPressTabInTabWithNextStep(10, 250);
+      console.log(getClickableElements())
+      return sendMessageToBackgroundScript({
+        type: 'next_step_with_elements',
+        elements: getClickableElements().clickableElementLabels.slice(0, 75),
+      })
+    }
+    return sendResponse('complete')
+  }
 
   useEffect(() => {
     chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-      handleRequest(request, sender, sendResponse);
+      handleRequest(request, sender, sendResponse)
     })
   }, [])
 
