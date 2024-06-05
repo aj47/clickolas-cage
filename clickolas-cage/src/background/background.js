@@ -131,75 +131,78 @@ const getNextStep = async () => {
  * @returns {Promise<string>} A promise that resolves with a string indicating the completion status.
  */
 const processResponse = async (request, sender, sendResponse) => {
+  console.log('recieved', JSON.stringify(request))
   try {
     switch (request.type) {
-    case 'checkTabAllowed':
-      const isAllowed = allowedTabs.has(sender.tab.id)
-      return sendResponse({ isAllowed: isAllowed })
-    case 'nav_url':
-      navURL(request.url)
-      break
-    case 'completed_task':
-      completedTask()
-      break
-    case 'new_goal':
-      currentStep = 0
-      currentPlan = []
-      originalPrompt = request.prompt
-      const responseJSON = await promptToFirstStep(request.prompt)
-      //TODO: if failed to give valid json retry
-      responseJSON.action = 'NAVURL' // Hard coded for now
-      addStepToPlan(responseJSON)
-      break
-    case 'click_element':
-      clickElement(targetTab, request.selector)
-      break
-    case 'press_tab_key':
-      await pressTabKey(targetTab)
-      break
-    case 'new_focused_element':
-      focusedElements.push(request.element)
-      break
-    case 'next_step_with_elements':
-      console.log('-------------------------------------')
-      console.log(request.elements, 'focusedElements')
-      const nextStepWithElements = await getNextStepFromLLM(
-        originalPrompt,
-        currentURL,
-        currentPlan,
-        currentStep,
-        request.elements,
-      )
-      // sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
-      addStepToPlan(nextStepWithElements)
-      break
-    case 'next_step':
-      console.log('-------------------------------------')
-      console.log(focusedElements, 'focusedElements')
-      const nextStep = await getNextStepFromLLM(
-        originalPrompt,
-        currentURL,
-        currentPlan,
-        currentStep,
-        focusedElements.map((item) => item.cleanLabel),
-      )
-      sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
-      addStepToPlan(nextStep)
-      break
-  }
-    return sendResponse('completed')
+      case 'checkTabAllowed':
+        const isAllowed = allowedTabs.has(sender.tab.id)
+        return sendResponse({ isAllowed: isAllowed })
+      case 'nav_url':
+        navURL(request.url)
+        break
+      case 'completed_task':
+        completedTask()
+        break
+      case 'new_goal':
+        currentStep = 0
+        currentPlan = []
+        originalPrompt = request.prompt
+        const responseJSON = await promptToFirstStep(request.prompt)
+        //TODO: if failed to give valid json retry
+        responseJSON.action = 'NAVURL' // Hard coded for now
+        addStepToPlan(responseJSON)
+        break
+      case 'click_element':
+        clickElement(targetTab, request.selector)
+        break
+      case 'press_tab_key':
+        await pressTabKey(targetTab)
+        break
+      case 'new_focused_element':
+        focusedElements.push(request.element)
+        break
+      case 'next_step_with_elements':
+        console.log('-------------------------------------')
+        const nextStepWithElements = await getNextStepFromLLM(
+          originalPrompt,
+          currentURL,
+          currentPlan,
+          currentStep,
+          request.elements,
+        )
+        // sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
+        console.log('next step', nextStepWithElements)
+        addStepToPlan(nextStepWithElements)
+        break
+      case 'next_step':
+        console.log('-------------------------------------')
+        console.log(focusedElements, 'focusedElements')
+        const nextStep = await getNextStepFromLLM(
+          originalPrompt,
+          currentURL,
+          currentPlan,
+          currentStep,
+          focusedElements.map((item) => item.cleanLabel),
+        )
+        sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
+        addStepToPlan(nextStep)
+        break
+    }
+    if (sendResponse) sendResponse('completed')
   } catch (error) {
     console.error('Error in processResponse:', error)
     return sendResponse('error')
   }
 }
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  processResponse(request, sender, sendResponse).then(() => {
-    sendResponse('completed')
-  }).catch((error) => {
-    console.error('Error processing response:', error)
-    sendResponse('error')
-  })
+  processResponse(request, sender, sendResponse)
+    .then(() => {
+      sendResponse('completed')
+    })
+    .catch((error) => {
+      console.error('Error processing response:', error)
+      sendResponse('error')
+    })
   return true // Indicate that the response is asynchronous
 })
 
@@ -222,6 +225,7 @@ async function sendMessageToTab(tabId, message) {
             reject(new Error(chrome.runtime.lastError.message))
           } else {
             console.log('resolve')
+            processResponse(response)
             resolve(response)
           }
         })
@@ -245,21 +249,13 @@ async function sendMessageToTab(tabId, message) {
 function checkTabReady(tabId) {
   return new Promise((resolve, reject) => {
     console.log('waiting tab ready...')
-    chrome.tabs.onUpdated.addListener(function listener(tabIdUpdated, changeInfo, tab) {
-      console.log('onUpdated event:', tabIdUpdated, changeInfo, tab)
-      if (tabIdUpdated === tabId && changeInfo.status === 'complete') {
-        // Remove the listener after we found the right tab and it has finished loading
-        chrome.tabs.onUpdated.removeListener(listener)
-        console.log('tab ready')
-        chrome.tabs.sendMessage(tabId, { type: 'ping' }, function (response) {
-          if (chrome.runtime.lastError) {
-            console.log('Content script not ready:', chrome.runtime.lastError.message)
-            setTimeout(() => checkTabReady(tabId).then(resolve).catch(reject), 1000) // Retry after a delay
-          } else {
-            console.log('Content script ready:', response)
-            resolve(tab)
-          }
-        })
+    chrome.tabs.sendMessage(tabId, { type: 'ping' }, function (response) {
+      if (chrome.runtime.lastError) {
+        console.log('Content script not ready:', chrome.runtime.lastError.message)
+        setTimeout(() => checkTabReady(tabId).then(resolve).catch(reject), 1000) // Retry after a delay
+      } else {
+        console.log('Content script ready:', response)
+        resolve('complete')
       }
     })
   })

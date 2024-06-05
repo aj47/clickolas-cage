@@ -120,15 +120,15 @@ export const SidePanel = () => {
     const clickableElements = []
     // Add all clickable elements in DOM to clickableElements array
     document.querySelectorAll('*').forEach(function (node) {
-      if (  node.tagName !== 'BODY' &&
-        node.tagName === 'BUTTON' ||
+      if (
+        (node.tagName !== 'BODY' && node.tagName === 'BUTTON') ||
         node.tagName === 'INPUT' ||
         node.onclick ||
         (node.hasAttribute('jsaction') &&
           (node.getAttribute('jsaction').includes('click') ||
             node.getAttribute('jsaction').includes('mousedown'))) ||
         node.hasAttribute('onclick') ||
-        (node.getAttribute('role') === 'button')
+        node.getAttribute('role') === 'button'
       ) {
         clickableElements.push(node)
       }
@@ -187,6 +187,7 @@ export const SidePanel = () => {
   const pressTabInTab = () => {
     sendMessageToBackgroundScript({ type: 'press_tab_key' })
   }
+
   // Function to get the text of the currently focused element or its accessible name
   const logFocusedElement = async () => {
     return new Promise((resolve, reject) => {
@@ -217,9 +218,13 @@ export const SidePanel = () => {
   // Add a listener to log the focused element when it changes
   useEffect(() => {
     if (!socketRef.current) {
-      socketRef.current = chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-        handleRequest(request, sender, sendResponse)
-      })
+      socketRef.current = chrome.runtime.onMessage.addListener(
+        async function (request, sender, sendResponse) {
+          console.log('recieved request', JSON.stringify(request))
+          handleRequest(request, sender, sendResponse)
+          return true // Indicate that the response is asynchronous
+        },
+      )
     }
 
     document.addEventListener('focus', logFocusedElement, true) // Use capture phase to ensure the listener is executed
@@ -244,12 +249,10 @@ export const SidePanel = () => {
   }
 
   const handleRequest = async (request, sender, sendResponse) => {
-    console.log('Side panel recv:', JSON.stringify(request))
-    console.log('Received request:', JSON.stringify(request))
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
-    // } else if (request.type === 'addThought') {
-    //   setCurrentStep(request.currentStep)
+      // } else if (request.type === 'addThought') {
+      //   setCurrentStep(request.currentStep)
     } else if (request.type === 'clickElement') {
       setCurrentStep(request.currentStep)
       setOriginalPlan(request.originalPlan)
@@ -261,22 +264,15 @@ export const SidePanel = () => {
     } else if (request.type === 'generateNextStep') {
       setOriginalPlan(request.originalPlan)
       setCurrentStep(request.currentStep)
+      console.log('current step', request.currentStep)
       // runPressTabInTabWithNextStep(10, 250);
-      console.log(getClickableElements())
-      return sendMessageToBackgroundScript({
+      sendResponse({
         type: 'next_step_with_elements',
         elements: getClickableElements().clickableElementLabels.slice(0, 75),
       })
     }
-    return sendResponse('complete')
+    sendResponse('complete')
   }
-
-  useEffect(() => {
-    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-      handleRequest(request, sender, sendResponse)
-      return true; // Indicate that the response is asynchronous
-    })
-  }, [])
 
   return (
     <div className="sidePanel">

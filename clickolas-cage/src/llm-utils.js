@@ -142,8 +142,6 @@ export const getNextStepFromLLM = async (
   currentStep,
   textOptions,
 ) => {
-  console.log(originalPlan, 'originalPlan')
-  console.log(textOptions, 'textOptions')
   const chatCompletion = await openAiChatCompletionWithLogging([
     {
       role: 'system',
