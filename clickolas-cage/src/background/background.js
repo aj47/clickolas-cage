@@ -52,14 +52,14 @@ const completedTask = () => {
     console.log('plan complete.')
     return
   }
-  console.log(currentStep, "before");
+  console.log(currentStep, 'before')
   currentStep++
   const messagePayload = {
     currentStep: currentStep - 1,
     originalPlan: currentPlan,
     originalPrompt,
   }
-  console.log(currentStep);
+  console.log(currentStep)
   sendMessageToTab(targetTab, messagePayload)
 }
 
@@ -77,23 +77,27 @@ const addStepToPlan = (step) => {
  */
 const executeCurrentStep = async () => {
   console.log('inside execute current step')
-  if (currentPlan[currentStep].action === 'NAVURL') {
-    await navURL(currentPlan[currentStep].param)
-  } else if (currentPlan[currentStep].action === 'CLICKBTN') {
-    //Send message to Content Script to get the element
-    //Then it's sent back to Background script to execute click in debug mode
-    sendMessageToTab(targetTab, {
-      type: 'clickElement',
-      ariaLabel: currentPlan[currentStep].ariaLabel,
-    })
-    // await clickElement(targetTab, currentPlan[currentStep].ariaLabel)
-  } else if (currentPlan[currentStep].action === 'ASKUSER') {
-    // if the action is ASKUSER
-    // TODO: Handle ASKUSER
+  try {
+    if (currentPlan[currentStep].action === 'NAVURL') {
+      await navURL(currentPlan[currentStep].param)
+    } else if (currentPlan[currentStep].action === 'CLICKBTN') {
+      //Send message to Content Script to get the element
+      //Then it's sent back to Background script to execute click in debug mode
+      await sendMessageToTab(targetTab, {
+        type: 'clickElement',
+        ariaLabel: currentPlan[currentStep].ariaLabel,
+      })
+      // await clickElement(targetTab, currentPlan[currentStep].ariaLabel)
+    } else if (currentPlan[currentStep].action === 'ASKUSER') {
+      // if the action is ASKUSER
+      // TODO: Handle ASKUSER
+    }
+    console.log(currentStep, 'step')
+    currentStep++
+    await getNextStep()
+  } catch (error) {
+    console.error('Error executing current step:', error)
   }
-  console.log(currentStep, "step");
-  currentStep++;
-  getNextStep()
 }
 
 /**
@@ -103,7 +107,7 @@ const getNextStep = async () => {
   console.log('inside next step ting')
   // Check if the tab is completely loaded before sending a message
   console.log(targetTab)
-  console.log(currentStep, "step");
+  console.log(currentStep, 'step')
   const messagePayload = {
     type: 'generateNextStep',
     currentStep: currentStep,
@@ -186,7 +190,7 @@ const processResponse = async (request, sender, sendResponse) => {
 }
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   processResponse(request, sender, sendResponse)
-  return true; // Indicate that the response is asynchronous
+  return true // Indicate that the response is asynchronous
 })
 
 /**
@@ -196,32 +200,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 async function sendMessageToTab(tabId, message) {
   let retries = 3
-  checkTabReady(targetTab, async function () {
-    while (retries > 0) {
-      try {
-        const response = await new Promise((resolve, reject) => {
-          console.log('sending message', message)
-          chrome.tabs.sendMessage(tabId, message, function (response) {
-            if (chrome.runtime.lastError) {
-              console.log('reject')
-              console.log(chrome.runtime.lastError.message)
-              reject(new Error(chrome.runtime.lastError.message))
-            } else {
-              console.log('resolve')
-              resolve(response)
-            }
-          })
+  await checkTabReady(targetTab)
+  while (retries > 0) {
+    try {
+      const response = await new Promise((resolve, reject) => {
+        console.log('sending message', message)
+        chrome.tabs.sendMessage(tabId, message, function (response) {
+          if (chrome.runtime.lastError) {
+            console.log('reject')
+            console.log(chrome.runtime.lastError.message)
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            console.log('resolve')
+            resolve(response)
+          }
         })
-        // processResponse(response)
-        return
-      } catch (error) {
-        console.error('Error in sending message:', error)
-        retries--
-        if (retries === 0) throw error
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // Wait a bit before retrying
-      }
+      })
+      // processResponse(response)
+      return
+    } catch (error) {
+      console.error('Error in sending message:', error)
+      retries--
+      if (retries === 0) throw error
+      await new Promise((resolve) => setTimeout(resolve, 1000)) // Wait a bit before retrying
     }
-  })
+  }
 }
 
 /**
@@ -229,24 +232,26 @@ async function sendMessageToTab(tabId, message) {
  * @param {number} tabId - The ID of the tab to check.
  * @param {function} callback - The callback to execute once the tab is ready.
  */
-function checkTabReady(tabId, callback) {
-  console.log('waiting tab ready...')
-  chrome.tabs.onUpdated.addListener(function listener(tabIdUpdated, changeInfo, tab) {
-    console.log('onUpdated event:', tabIdUpdated, changeInfo, tab)
-    if (tabIdUpdated === tabId && changeInfo.status === 'complete') {
-      // Remove the listener after we found the right tab and it has finished loading
-      chrome.tabs.onUpdated.removeListener(listener)
-      console.log('tab ready')
-      chrome.tabs.sendMessage(tabId, { type: 'ping' }, function (response) {
-        if (chrome.runtime.lastError) {
-          console.log('Content script not ready:', chrome.runtime.lastError.message)
-          setTimeout(() => checkTabReady(tabId, callback), 1000) // Retry after a delay
-        } else {
-          console.log('Content script ready:', response)
-          callback(tab)
-        }
-      })
-    }
+function checkTabReady(tabId) {
+  return new Promise((resolve, reject) => {
+    console.log('waiting tab ready...')
+    chrome.tabs.onUpdated.addListener(function listener(tabIdUpdated, changeInfo, tab) {
+      console.log('onUpdated event:', tabIdUpdated, changeInfo, tab)
+      if (tabIdUpdated === tabId && changeInfo.status === 'complete') {
+        // Remove the listener after we found the right tab and it has finished loading
+        chrome.tabs.onUpdated.removeListener(listener)
+        console.log('tab ready')
+        chrome.tabs.sendMessage(tabId, { type: 'ping' }, function (response) {
+          if (chrome.runtime.lastError) {
+            console.log('Content script not ready:', chrome.runtime.lastError.message)
+            setTimeout(() => checkTabReady(tabId).then(resolve).catch(reject), 1000) // Retry after a delay
+          } else {
+            console.log('Content script ready:', response)
+            resolve(tab)
+          }
+        })
+      }
+    })
   })
 }
 
