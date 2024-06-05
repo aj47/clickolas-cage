@@ -89,6 +89,7 @@ const executeCurrentStep = async () => {
   } else if (currentPlan[currentStep].action === 'CLICKBTN') {
     //Send message to Content Script to get the element
     //Then it's sent back to Background script to execute click in debug mode
+    console.log("@@@ click element")
     sendMessageToTab(targetTab, {
       type: 'clickElement',
       ariaLabel: currentPlan[currentStep].ariaLabel,
@@ -170,6 +171,19 @@ const processResponse = async (request, sender, sendResponse) => {
     case 'new_focused_element':
       focusedElements.push(request.element)
       break
+    case 'next_step_with_elements':
+      console.log('-------------------------------------')
+      console.log(request.elements, 'focusedElements')
+      const nextStepWithElements = await getNextStepFromLLM(
+        originalPrompt,
+        currentURL,
+        currentPlan,
+        currentStep,
+        request.elements,
+      )
+      // sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
+      addStepToPlan(nextStepWithElements)
+      break
     case 'next_step':
       console.log('-------------------------------------')
       console.log(focusedElements, 'focusedElements')
@@ -183,9 +197,8 @@ const processResponse = async (request, sender, sendResponse) => {
       sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
       addStepToPlan(nextStep)
       break
-    default:
-      return sendResponse('completed')
   }
+  return sendResponse('completed')
 }
 chrome.runtime.onMessage.addListener(processResponse)
 
