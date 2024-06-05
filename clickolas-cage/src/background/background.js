@@ -61,12 +61,14 @@ const completedTask = () => {
     console.log('plan complete.')
     return
   }
+  console.log(currentStep, "before");
   currentStep++
   const messagePayload = {
     currentStep: currentStep - 1,
     originalPlan: currentPlan,
     originalPrompt,
   }
+  console.log(currentStep);
   sendMessageToTab(targetTab, messagePayload)
 }
 
@@ -99,7 +101,9 @@ const executeCurrentStep = async () => {
     // if the action is ASKUSER
     // TODO: Handle ASKUSER
   }
+  console.log(currentStep, "before");
   currentStep++
+  console.log(currentStep);
   getNextStep()
 }
 
@@ -110,6 +114,7 @@ const getNextStep = async () => {
   console.log('inside next step ting')
   // Check if the tab is completely loaded before sending a message
   console.log(targetTab)
+  console.log(currentStep);
   const messagePayload = {
     type: 'generateNextStep',
     currentStep: currentStep - 1,
