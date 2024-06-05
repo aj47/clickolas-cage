@@ -10,7 +10,14 @@ export const getDomain = (url) => {
 }
 
 export const sendMessageToBackgroundScript = async (prompt) => {
-  chrome.runtime.sendMessage(prompt, function (response) {})
+  console.log("send message to bg");
+  chrome.runtime.sendMessage(prompt, function(response) {
+    if (chrome.runtime.lastError) {
+      console.error('Error sending message:', chrome.runtime.lastError.message);
+    } else {
+      console.log('Received response:', response);
+    }
+  });
 }
 
 export const sendMessageToContentScript = async (prompt, tabId = null) => {
