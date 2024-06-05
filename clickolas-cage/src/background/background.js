@@ -131,7 +131,8 @@ const getNextStep = async () => {
  * @returns {Promise<string>} A promise that resolves with a string indicating the completion status.
  */
 const processResponse = async (request, sender, sendResponse) => {
-  switch (request.type) {
+  try {
+    switch (request.type) {
     case 'checkTabAllowed':
       const isAllowed = allowedTabs.has(sender.tab.id)
       return sendResponse({ isAllowed: isAllowed })
@@ -186,10 +187,19 @@ const processResponse = async (request, sender, sendResponse) => {
       addStepToPlan(nextStep)
       break
   }
-  return sendResponse('completed')
+    return sendResponse('completed')
+  } catch (error) {
+    console.error('Error in processResponse:', error)
+    return sendResponse('error')
+  }
 }
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  processResponse(request, sender, sendResponse)
+  processResponse(request, sender, sendResponse).then(() => {
+    sendResponse('completed')
+  }).catch((error) => {
+    console.error('Error processing response:', error)
+    sendResponse('error')
+  })
   return true // Indicate that the response is asynchronous
 })
 
