@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from '../utils'
 
@@ -10,7 +10,7 @@ export const SidePanel = () => {
   const [currentStep, setCurrentStep] = useState(null)
   const [currentStepNumber, setCurrentStepNumber] = useState(0)
   const [originalPrompt, setOriginalPrompt] = useState('')
-  //---
+  const socketRef = useRef(null)
 
   let newNodes = []
   let observer = null
@@ -234,10 +234,20 @@ export const SidePanel = () => {
 
   // Add a listener to log the focused element when it changes
   useEffect(() => {
+    if (!socketRef.current) {
+      socketRef.current = chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+        handleRequest(request, sender, sendResponse)
+      })
+    }
+
     document.addEventListener('focus', logFocusedElement, true) // Use capture phase to ensure the listener is executed
 
     // Cleanup the listener on component unmount
     return () => {
+      if (socketRef.current) {
+        chrome.runtime.onMessage.removeListener(socketRef.current)
+        socketRef.current = null
+      }
       document.removeEventListener('focus', logFocusedElement, true)
     }
   }, [])
