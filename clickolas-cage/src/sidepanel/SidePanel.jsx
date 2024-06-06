@@ -255,14 +255,14 @@ export const SidePanel = () => {
       //   setCurrentStep(request.currentStep)
     } else if (request.type === 'clickElement') {
       setCurrentStep(request.currentStep)
-      setOriginalPlan(request.originalPlan)
+      setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
       return sendMessageToBackgroundScript({
         type: 'click_element',
         selector: locateCorrectElement(request.ariaLabel),
       })
       setCurrentStep(request.currentStep)
     } else if (request.type === 'generateNextStep') {
-      setOriginalPlan(request.originalPlan)
+      setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
       setCurrentStep(request.currentStep)
       console.log('current step', request.currentStep)
       // runPressTabInTabWithNextStep(10, 250);
