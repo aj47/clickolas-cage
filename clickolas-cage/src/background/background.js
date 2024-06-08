@@ -1,10 +1,8 @@
-import { getDomain, sendMessageToContentScript, sleep } from '../utils'
+import { sendMessageToContentScript, sleep } from '../utils'
 
 import {
-  checkCandidatePrompts,
   getNextStepFromLLM,
   promptToFirstStep,
-  sendPromptToPlanner,
 } from '../llm-utils'
 
 chrome.storage.local.set({ logs: [] })
@@ -87,7 +85,6 @@ const executeCurrentStep = async () => {
         type: 'clickElement',
         ariaLabel: currentPlan[currentStep].ariaLabel,
       })
-      // await clickElement(targetTab, currentPlan[currentStep].ariaLabel)
     } else if (currentPlan[currentStep].action === 'ASKUSER') {
       // if the action is ASKUSER
       // TODO: Handle ASKUSER
@@ -170,7 +167,6 @@ const processResponse = async (request, sender, sendResponse) => {
           currentStep,
           request.elements,
         )
-        // sendMessageToTab(targetTab, { type: 'addThought', originalPlan: currentPlan })
         console.log('next step', nextStepWithElements)
         addStepToPlan(nextStepWithElements)
         break
@@ -230,7 +226,6 @@ async function sendMessageToTab(tabId, message) {
           }
         })
       })
-      // processResponse(response)
       return
     } catch (error) {
       console.error('Error in sending message:', error)
@@ -244,7 +239,6 @@ async function sendMessageToTab(tabId, message) {
 /**
  * Checks if a tab is ready by listening for the 'complete' status update.
  * @param {number} tabId - The ID of the tab to check.
- * @param {function} callback - The callback to execute once the tab is ready.
  */
 function checkTabReady(tabId) {
   return new Promise((resolve, reject) => {
@@ -258,16 +252,6 @@ function checkTabReady(tabId) {
         resolve('complete')
       }
     })
-  })
-}
-
-/**
- * Retrieves the accessibility tree of a tab.
- * @param {number} tabId - The ID of the tab to get the accessibility tree from.
- */
-async function getAccessibilityTree(tabId) {
-  chrome.debugger.sendCommand({ tabId }, 'Accessibility.getFullAXTree', (result) => {
-    console.log(result)
   })
 }
 
@@ -381,34 +365,6 @@ async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
 }
 
 /**
- * Simulates a click event on a DOM element by its node ID.
- * @param {number} tabId - The ID of the tab containing the element.
- * @param {number} nodeId - The node ID of the element to click.
- * @returns {Promise<void>} A promise that resolves when the click action has been performed.
- */
-async function callElementClick(tabId, nodeId) {
-  return new Promise((resolve, reject) => {
-    chrome.debugger.sendCommand({ tabId }, 'DOM.resolveNode', { nodeId }, ({ object }) => {
-      chrome.debugger.sendCommand(
-        { tabId },
-        'Runtime.callFunctionOn',
-        {
-          functionDeclaration: 'function() { this.click(); }',
-          objectId: object.objectId,
-        },
-        () => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError.message)
-          } else {
-            resolve()
-          }
-        },
-      )
-    })
-  })
-}
-
-/**
  * Simulates a click event at a specific location within a tab.
  * @param {number} tabId - The ID of the tab to perform the click in.
  * @param {number} x - The x coordinate of the click location.
@@ -441,7 +397,6 @@ async function clickElement(tabId, selector) {
     const x = (content[0] + content[2]) / 2
     const y = (content[1] + content[5]) / 2
 
-    // await callElementClick(tabId, nodeId)
     await clickElementAt(tabId, x, y)
     chrome.debugger.detach({ tabId })
     await sleep(2000)
