@@ -1,4 +1,5 @@
 import { sendMessageToContentScript, sleep } from '../utils'
+import { navURL } from '../dom-utils'
 
 import {
   getNextStepFromLLM,
@@ -15,32 +16,6 @@ let originalPrompt = ''
 let currentURL = ''
 let allowedTabs = new Set()
 let focusedElements = []
-
-/**
- * Navigates to a specified URL in a new tab and adds the tab to the allowedTabs set.
- * @param {string} url - The URL to navigate to.
- * @returns {Promise<chrome.tabs.Tab>} A promise that resolves with the created tab object.
- */
-const navURL = (url) => {
-  console.log(url, 'url')
-  currentURL = url
-  //Needs http otherwise does not go to absolute URL
-  if (url.indexOf('http') !== 0) {
-    url = 'http://' + url
-  }
-  return new Promise((resolve, reject) => {
-    chrome.tabs.create({ url: url }, (tab) => {
-      if (chrome.runtime.lastError) {
-        // If there's an error during tab creation, reject the promise
-        reject(new Error(chrome.runtime.lastError))
-      } else {
-        allowedTabs.add(tab.id) //allowed tabs enables content script
-        targetTab = tab.id // Store the tab ID for later use
-        resolve(tab) // Resolve the promise with the tab object
-      }
-    })
-  })
-}
 
 /**
  * Marks the current task as completed and sends a message to the target tab to proceed with the next step.
@@ -135,7 +110,9 @@ const processResponse = async (request, sender, sendResponse) => {
         const isAllowed = allowedTabs.has(sender.tab.id)
         return sendResponse({ isAllowed: isAllowed })
       case 'nav_url':
-        navURL(request.url)
+        targetTab = await navURL(request.url)
+        currentURL = request.url;
+        allowedTabs.add(targetTab)
         break
       case 'completed_task':
         completedTask()
