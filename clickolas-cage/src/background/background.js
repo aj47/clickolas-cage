@@ -262,16 +262,6 @@ function checkTabReady(tabId) {
 }
 
 /**
- * Retrieves the accessibility tree of a tab.
- * @param {number} tabId - The ID of the tab to get the accessibility tree from.
- */
-async function getAccessibilityTree(tabId) {
-  chrome.debugger.sendCommand({ tabId }, 'Accessibility.getFullAXTree', (result) => {
-    console.log(result)
-  })
-}
-
-/**
  * Attaches the debugger to a tab.
  * @param {number} tabId - The ID of the tab to attach the debugger to.
  * @returns {Promise<void>} A promise that resolves when the debugger is attached.
@@ -381,34 +371,6 @@ async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
 }
 
 /**
- * Simulates a click event on a DOM element by its node ID.
- * @param {number} tabId - The ID of the tab containing the element.
- * @param {number} nodeId - The node ID of the element to click.
- * @returns {Promise<void>} A promise that resolves when the click action has been performed.
- */
-async function callElementClick(tabId, nodeId) {
-  return new Promise((resolve, reject) => {
-    chrome.debugger.sendCommand({ tabId }, 'DOM.resolveNode', { nodeId }, ({ object }) => {
-      chrome.debugger.sendCommand(
-        { tabId },
-        'Runtime.callFunctionOn',
-        {
-          functionDeclaration: 'function() { this.click(); }',
-          objectId: object.objectId,
-        },
-        () => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError.message)
-          } else {
-            resolve()
-          }
-        },
-      )
-    })
-  })
-}
-
-/**
  * Simulates a click event at a specific location within a tab.
  * @param {number} tabId - The ID of the tab to perform the click in.
  * @param {number} x - The x coordinate of the click location.
@@ -441,7 +403,6 @@ async function clickElement(tabId, selector) {
     const x = (content[0] + content[2]) / 2
     const y = (content[1] + content[5]) / 2
 
-    // await callElementClick(tabId, nodeId)
     await clickElementAt(tabId, x, y)
     chrome.debugger.detach({ tabId })
     await sleep(2000)
