@@ -1,7 +1,0 @@
-[
-  {
-    "route": "GET /@crx/inline-script/popup",
-    "parameters": "(t)",
-    "status": 200
-  }
-]

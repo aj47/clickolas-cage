@@ -1,7 +1,0 @@
-[
-  {
-    "route": "GET /src/utils.js",
-    "parameters": "(t)",
-    "status": 200
-  }
-]

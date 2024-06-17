@@ -1,0 +1,18 @@
+{
+  "client": {
+    "name": "appmap-node",
+    "version": "2.23.0",
+    "url": "https://github.com/getappmap/appmap-node"
+  },
+  "language": {
+    "name": "javascript",
+    "engine": "Node.js",
+    "version": "v18.19.0"
+  },
+  "app": "clickolas-cage",
+  "recorder": {
+    "type": "requests",
+    "name": "requests"
+  },
+  "name": "GET /__vite_ping (404) — 2024-06-17T18:21:59.843Z"
+}

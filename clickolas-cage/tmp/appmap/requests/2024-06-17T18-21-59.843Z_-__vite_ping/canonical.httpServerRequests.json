@@ -1,0 +1,7 @@
+[
+  {
+    "route": "GET /__vite_ping",
+    "parameters": "()",
+    "status": 404
+  }
+]

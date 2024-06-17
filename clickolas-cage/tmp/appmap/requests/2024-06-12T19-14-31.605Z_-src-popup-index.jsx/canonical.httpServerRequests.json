@@ -1,7 +1,0 @@
-[
-  {
-    "route": "GET /src/popup/index.jsx",
-    "parameters": "(import,t)",
-    "status": 200
-  }
-]

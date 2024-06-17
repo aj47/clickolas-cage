@@ -1,7 +1,0 @@
-[
-  {
-    "route": "GET /src/assets/logo.png",
-    "parameters": "(t)",
-    "status": 200
-  }
-]
