@@ -1,0 +1,89 @@
+{
+  "events": [
+    {
+      "event": "call",
+      "http_server_request": {
+        "path_info": "/src/assets/logo.png",
+        "request_method": "GET",
+        "headers": {
+          "Host": "localhost:5173",
+          "Connection": "keep-alive",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+          "Accept": "*/*",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Dest": "empty",
+          "Accept-Encoding": "gzip, deflate, br, zstd",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Cookie": "appland_session=bFU5p0cvqrcXlz2oQfgEZG3%2BQjfds2AwmlOA%2Fx5fhQLjPvVHIKrHyvnbeq5nw8c5sME56znPsnpSSzB3nr%2BHfdk9sEC9MgOgNKjgjD8qlzGqDVuwRPr30ch96LWGIDwuITrAUwQGqlUw7%2Fdsq0tjrfHFPTlemq71kQtCAIi9JTRWo5tLPJlG%2F9JtfTuiWIfWg8X67ZkAOuaapIHdaA5w5QtwMr7h34LfseImCERQpzoz9xTqJYqSi2SJ9RE1eVw2jyYFG9IGPA4d1USUIXvAmeaMOQ9Z%2BDmKhiIRXve6%2BzO47%2F2RW1kaH2PND2r0EKz%2BaWMbrXswEaj2kjwx09pTJANR5arO0I9c2RelyrURJyvI%2FZ8OwnG99VyxbE2scovqFvxwhmhXr1KDOxpRle3VOJSpxXtFaDjv2TSSbtqGkIj4T51u58xasM4KbZUpapu5OQ5ENf%2FSMADW4DHmCrSQJ14SgVbNtrazlgwdph5p0AKax1l0Bw7j0jz2SGT9C5HMnzVyZdV59G6paFrgLqvtGuXdWr4VeJt2tPVftjki2S0LpmpTAacYMTeiz0JRvAUI2MTy5coFmozGwP2tYolztMsGb%2Bss8Pp0ZRYy8EsEs78L1J1nDMR5VCJ5yVhSq8JXZA7Misee05vblyt4OMHf9CA4AMzWpe2NbExRxiHuW%2Bkx%2F83vj%2Btrqn1QRG33cQUOn3jl8nfSuSLj5p0K5PYVYnXJu8E7RhAyqpC6J23a%2F8B4qsDAOrIrUYPQAWaYOsjd0i3Q5y49d77RlVc7zyyLJxFNVWLlYCD5BrfOMpyF2f9InowPEQei23xjT4UE0W3dXZP1xhk5wDvQ--zbb2b%2Flld908TQxF--8LcY2kn8%2BBw8bSaDiyP6LQ%3D%3D"
+        },
+        "protocol": "HTTP/1.1"
+      },
+      "id": 1,
+      "thread_id": 0,
+      "message": [
+        {
+          "name": "import",
+          "value": "''",
+          "class": "String"
+        },
+        {
+          "name": "t",
+          "value": "'1718219671643'",
+          "class": "String"
+        }
+      ]
+    },
+    {
+      "event": "return",
+      "http_server_response": {
+        "status_code": 200,
+        "headers": {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/javascript",
+          "Cache-Control": "no-cache",
+          "Etag": "W/\"25-LaO6ERMJ2TXerwbbrQ7CsuXE/EY\""
+        },
+        "return_value": {
+          "class": "[ResponseBody]",
+          "value": "export default \"/src/assets/logo.png\""
+        }
+      },
+      "id": 2,
+      "thread_id": 0,
+      "parent_id": 1,
+      "elapsed": 0.00039249699329957366
+    }
+  ],
+  "version": "1.12",
+  "metadata": {
+    "client": {
+      "name": "appmap-node",
+      "version": "2.23.0",
+      "url": "https://github.com/getappmap/appmap-node"
+    },
+    "language": {
+      "name": "javascript",
+      "engine": "Node.js",
+      "version": "v18.19.0"
+    },
+    "app": "clickolas-cage",
+    "recorder": {
+      "type": "requests",
+      "name": "requests"
+    },
+    "name": "GET /src/assets/logo.png (200) — 2024-06-12T19:14:31.657Z"
+  },
+  "classMap": [
+    {
+      "type": "http",
+      "name": "HTTP server requests",
+      "children": [
+        {
+          "type": "route",
+          "name": "GET /src/assets/logo.png"
+        }
+      ]
+    }
+  ]
+}

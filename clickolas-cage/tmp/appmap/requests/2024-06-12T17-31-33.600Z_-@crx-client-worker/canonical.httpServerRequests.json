@@ -1,0 +1,7 @@
+[
+  {
+    "route": "GET /@crx/client-worker",
+    "parameters": "()",
+    "status": 304
+  }
+]

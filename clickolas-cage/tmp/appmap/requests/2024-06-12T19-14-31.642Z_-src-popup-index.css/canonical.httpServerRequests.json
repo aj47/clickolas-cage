@@ -1,0 +1,7 @@
+[
+  {
+    "route": "GET /src/popup/index.css",
+    "parameters": "(t)",
+    "status": 200
+  }
+]

@@ -1,0 +1,7 @@
+[
+  {
+    "route": "GET /@react-refresh",
+    "parameters": "(t)",
+    "status": 200
+  }
+]

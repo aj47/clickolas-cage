@@ -1,0 +1,84 @@
+{
+  "events": [
+    {
+      "event": "call",
+      "http_server_request": {
+        "path_info": "/src/popup/Popup.jsx",
+        "request_method": "GET",
+        "headers": {
+          "Host": "localhost:5173",
+          "Connection": "keep-alive",
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+          "Accept": "*/*",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Dest": "empty",
+          "Accept-Encoding": "gzip, deflate, br, zstd",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Cookie": "appland_session=bFU5p0cvqrcXlz2oQfgEZG3%2BQjfds2AwmlOA%2Fx5fhQLjPvVHIKrHyvnbeq5nw8c5sME56znPsnpSSzB3nr%2BHfdk9sEC9MgOgNKjgjD8qlzGqDVuwRPr30ch96LWGIDwuITrAUwQGqlUw7%2Fdsq0tjrfHFPTlemq71kQtCAIi9JTRWo5tLPJlG%2F9JtfTuiWIfWg8X67ZkAOuaapIHdaA5w5QtwMr7h34LfseImCERQpzoz9xTqJYqSi2SJ9RE1eVw2jyYFG9IGPA4d1USUIXvAmeaMOQ9Z%2BDmKhiIRXve6%2BzO47%2F2RW1kaH2PND2r0EKz%2BaWMbrXswEaj2kjwx09pTJANR5arO0I9c2RelyrURJyvI%2FZ8OwnG99VyxbE2scovqFvxwhmhXr1KDOxpRle3VOJSpxXtFaDjv2TSSbtqGkIj4T51u58xasM4KbZUpapu5OQ5ENf%2FSMADW4DHmCrSQJ14SgVbNtrazlgwdph5p0AKax1l0Bw7j0jz2SGT9C5HMnzVyZdV59G6paFrgLqvtGuXdWr4VeJt2tPVftjki2S0LpmpTAacYMTeiz0JRvAUI2MTy5coFmozGwP2tYolztMsGb%2Bss8Pp0ZRYy8EsEs78L1J1nDMR5VCJ5yVhSq8JXZA7Misee05vblyt4OMHf9CA4AMzWpe2NbExRxiHuW%2Bkx%2F83vj%2Btrqn1QRG33cQUOn3jl8nfSuSLj5p0K5PYVYnXJu8E7RhAyqpC6J23a%2F8B4qsDAOrIrUYPQAWaYOsjd0i3Q5y49d77RlVc7zyyLJxFNVWLlYCD5BrfOMpyF2f9InowPEQei23xjT4UE0W3dXZP1xhk5wDvQ--zbb2b%2Flld908TQxF--8LcY2kn8%2BBw8bSaDiyP6LQ%3D%3D"
+        },
+        "protocol": "HTTP/1.1"
+      },
+      "id": 1,
+      "thread_id": 0,
+      "message": [
+        {
+          "name": "t",
+          "value": "'1718219671614'",
+          "class": "String"
+        }
+      ]
+    },
+    {
+      "event": "return",
+      "http_server_response": {
+        "status_code": 200,
+        "headers": {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/javascript",
+          "Cache-Control": "no-cache",
+          "Etag": "W/\"1c92-xBSU14v9MN2h+TpHKbP0l/2YMYs\""
+        },
+        "return_value": {
+          "class": "[ResponseBody]",
+          "value": "import { createHotContext as __vite__createHotContext } from \"/@vite/client\";import.meta.hot = __vite__createHotContext(\"/src/popup/Popup.jsx\");import __vite__cjsImport0_react_jsxDevRuntime from \"/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=85b4035a\"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime[\"Fragment\"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime[\"jsxDEV\"];\nimport RefreshRuntime from \"/@react-refresh\";\nconst inWebWorker = typeof WorkerGlobalScope !== \"undefined\" && self instanceof WorkerGlobalScope;\nlet prevRefreshReg;\nlet prevRefreshSig;\nif (import.meta.hot && !inWebWorker) {\n  if (!window.__vite_plugin_react_preamble_installed__) {\n    throw new Error(\"@vitejs/plugin-react can't detect preamble. Something is wrong. See https://github.com/vitejs/vite-plugin-react/pull/11#discussion_r430879201\");\n  }\n  prevRefreshReg = window.$RefreshReg$;\n  prevRefreshSig = window.$RefreshSig$;\n  window.$RefreshReg$ = (type, id) => {\n    RefreshRuntime.register(type, \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx \" + id);\n  };\n  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;\n}\nvar _s = $RefreshSig$();\nimport __vite__cjsImport3_react from \"/node_modules/.vite/deps/react.js?v=85b4035a\"; const React = __vite__cjsImport3_react.__esModule ? __vite__cjsImport3_react.default : __vite__cjsImport3_react; const useRef = __vite__cjsImport3_react[\"useRef\"]; const useState = __vite__cjsImport3_react[\"useState\"]; const useEffect = __vite__cjsImport3_react[\"useEffect\"];\nimport logo from \"/src/assets/logo.png?import\";\nimport \"/src/popup/Popup.css\";\nimport { sendMessageToBackgroundScript, sendMessageToContentScript } from \"/src/utils.js\";\nimport { exportLogs, clearLogs } from \"/src/llm-utils.js\";\nconst handleExportLogs = () => {\n  exportLogs();\n};\nconst handleClearLogs = () => {\n  clearLogs();\n};\nconst Popup = () => {\n  _s();\n  const promptRef = useRef(null);\n  const [isLoading, setIsLoading] = useState(false);\n  return /* @__PURE__ */ jsxDEV(\"div\", { className: \"App\", children: /* @__PURE__ */ jsxDEV(\"header\", { className: \"App-header\", children: [\n    /* @__PURE__ */ jsxDEV(\"div\", { style: { position: \"absolute\", top: 15, right: 15 }, children: [\n      /* @__PURE__ */ jsxDEV(\"button\", { className: \"input-common input-small\", style: { marginBottom: 15 }, onClick: handleExportLogs, children: \"Export Logs\" }, void 0, false, {\n        fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n        lineNumber: 23,\n        columnNumber: 11\n      }, this),\n      /* @__PURE__ */ jsxDEV(\"button\", { className: \"input-common input-small\", onClick: handleClearLogs, children: \"Clear Logs\" }, void 0, false, {\n        fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n        lineNumber: 26,\n        columnNumber: 11\n      }, this)\n    ] }, void 0, true, {\n      fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n      lineNumber: 22,\n      columnNumber: 9\n    }, this),\n    /* @__PURE__ */ jsxDEV(\"img\", { src: logo, className: \"App-logo\", alt: \"logo\" }, void 0, false, {\n      fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n      lineNumber: 30,\n      columnNumber: 9\n    }, this),\n    /* @__PURE__ */ jsxDEV(\"p\", { children: \"HELLO! I AM CLICKOLAS CAGE!\" }, void 0, false, {\n      fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n      lineNumber: 31,\n      columnNumber: 9\n    }, this),\n    !isLoading && /* @__PURE__ */ jsxDEV(Fragment, { children: [\n      /* @__PURE__ */ jsxDEV(\n        \"button\",\n        {\n          className: \"input-common input-small\",\n          onClick: async () => {\n            const prompt = \"Create a google calendar event at 2pm labeled 'hello world'\";\n            promptRef.current.value = prompt;\n            console.log(\"submit clicked.\");\n            sendMessageToBackgroundScript({ type: \"new_goal\", prompt });\n            setIsLoading(true);\n          },\n          children: \"Quick Add Event\"\n        },\n        void 0,\n        false,\n        {\n          fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n          lineNumber: 34,\n          columnNumber: 13\n        },\n        this\n      ),\n      /* @__PURE__ */ jsxDEV(\n        \"input\",\n        {\n          ref: promptRef,\n          type: \"text\",\n          placeholder: \"Add event x to\\n google calendar\",\n          className: \"input-common input-large\"\n        },\n        void 0,\n        false,\n        {\n          fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n          lineNumber: 46,\n          columnNumber: 13\n        },\n        this\n      ),\n      /* @__PURE__ */ jsxDEV(\n        \"input\",\n        {\n          onClick: async () => {\n            console.log(\"submit clicked.\");\n            if (promptRef.current.value.length === 0)\n              return;\n            sendMessageToBackgroundScript({ type: \"new_goal\", prompt: promptRef.current.value });\n            setIsLoading(true);\n          },\n          type: \"button\",\n          value: \"Submit\",\n          className: \"input-common input-large\"\n        },\n        void 0,\n        false,\n        {\n          fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n          lineNumber: 53,\n          columnNumber: 13\n        },\n        this\n      )\n    ] }, void 0, true, {\n      fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n      lineNumber: 33,\n      columnNumber: 9\n    }, this),\n    isLoading && /* @__PURE__ */ jsxDEV(\"p\", { children: \"Thinking...\" }, void 0, false, {\n      fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n      lineNumber: 66,\n      columnNumber: 23\n    }, this)\n  ] }, void 0, true, {\n    fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n    lineNumber: 21,\n    columnNumber: 7\n  }, this) }, void 0, false, {\n    fileName: \"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\",\n    lineNumber: 20,\n    columnNumber: 5\n  }, this);\n};\n_s(Popup, \"xErmodkDbwOfXGz8h95r8E9fjZk=\");\n_c = Popup;\nexport default Popup;\nvar _c;\n$RefreshReg$(_c, \"Popup\");\nif (import.meta.hot && !inWebWorker) {\n  window.$RefreshReg$ = prevRefreshReg;\n  window.$RefreshSig$ = prevRefreshSig;\n  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {\n    RefreshRuntime.registerExportsForReactRefresh(\"/Users/danwarner/Documents/PROJECTS/SAMPLE_APPS/clickolas-cage/clickolas-cage/src/popup/Popup.jsx\", currentExports);\n    import.meta.hot.accept((nextExports) => {\n      if (!nextExports)\n        return;\n      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate(currentExports, nextExports);\n      if (invalidateMessage)\n        import.meta.hot.invalidate(invalidateMessage);\n    });\n  });\n}\n\n//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBc0JVLFNBVUEsVUFWQTsyQkF0QlY7QUFBZ0JBLE1BQVFDLGNBQVVDLE9BQVMsc0JBQWU7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFDMUQsT0FBT0MsVUFBVTtBQUNqQixPQUFPO0FBQ1AsU0FBU0MsK0JBQStCQyxrQ0FBa0M7QUFDMUUsU0FBU0MsWUFBWUMsaUJBQWlCO0FBRXRDLE1BQU1DLG1CQUFtQkEsTUFBTTtBQUM3QkYsYUFBVztBQUNiO0FBRUEsTUFBTUcsa0JBQWtCQSxNQUFNO0FBQzVCRixZQUFVO0FBQ1o7QUFFQSxNQUFNRyxRQUFRQSxNQUFNO0FBQUFDLEtBQUE7QUFDbEIsUUFBTUMsWUFBWVosT0FBTyxJQUFJO0FBQzdCLFFBQU0sQ0FBQ2EsV0FBV0MsWUFBWSxJQUFJYixTQUFTLEtBQUs7QUFFaEQsU0FDRSx1QkFBQyxTQUFJLFdBQVUsT0FDYixpQ0FBQyxZQUFPLFdBQVUsY0FDaEI7QUFBQSwyQkFBQyxTQUFJLE9BQU8sRUFBQ2MsVUFBVSxZQUFZQyxLQUFLLElBQUlDLE9BQU8sR0FBRSxHQUNuRDtBQUFBLDZCQUFDLFlBQU8sV0FBVSw0QkFBMkIsT0FBTyxFQUFDQyxjQUFjLEdBQUUsR0FBRyxTQUFTVixrQkFBaUIsMkJBQWxHO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFFQTtBQUFBLE1BQ0EsdUJBQUMsWUFBTyxXQUFVLDRCQUEyQixTQUFTQyxpQkFBZ0IsMEJBQXRFO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFFQTtBQUFBLFNBTkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQU9BO0FBQUEsSUFDQSx1QkFBQyxTQUFJLEtBQUtOLE1BQU0sV0FBVSxZQUFXLEtBQUksVUFBekM7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUErQztBQUFBLElBQy9DLHVCQUFDLE9BQUUsMkNBQUg7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQUE4QjtBQUFBLElBQzdCLENBQUNVLGFBQ0EsbUNBQ0U7QUFBQTtBQUFBLFFBQUM7QUFBQTtBQUFBLFVBQ0MsV0FBVTtBQUFBLFVBQ1YsU0FBUyxZQUFZO0FBQ25CLGtCQUFNTSxTQUFTO0FBQ2ZQLHNCQUFVUSxRQUFRQyxRQUFRRjtBQUMxQkcsb0JBQVFDLElBQUksaUJBQWlCO0FBQzdCbkIsMENBQThCLEVBQUVvQixNQUFNLFlBQVlMLE9BQU8sQ0FBQztBQUMxREwseUJBQWEsSUFBSTtBQUFBLFVBQ25CO0FBQUEsVUFBRTtBQUFBO0FBQUEsUUFSSjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUFXQTtBQUFBLE1BQ0E7QUFBQSxRQUFDO0FBQUE7QUFBQSxVQUNDLEtBQUtGO0FBQUFBLFVBQ0wsTUFBSztBQUFBLFVBQ0wsYUFBWTtBQUFBLFVBRVosV0FBVTtBQUFBO0FBQUEsUUFMWjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUFLc0M7QUFBQSxNQUV0QztBQUFBLFFBQUM7QUFBQTtBQUFBLFVBQ0MsU0FBUyxZQUFZO0FBQ25CVSxvQkFBUUMsSUFBSSxpQkFBaUI7QUFDN0IsZ0JBQUlYLFVBQVVRLFFBQVFDLE1BQU1JLFdBQVc7QUFBRztBQUMxQ3JCLDBDQUE4QixFQUFFb0IsTUFBTSxZQUFZTCxRQUFRUCxVQUFVUSxRQUFRQyxNQUFNLENBQUM7QUFDbkZQLHlCQUFhLElBQUk7QUFBQSxVQUNuQjtBQUFBLFVBQ0EsTUFBSztBQUFBLFVBQ0wsT0FBTTtBQUFBLFVBQ04sV0FBVTtBQUFBO0FBQUEsUUFUWjtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUFTc0M7QUFBQSxTQTdCeEM7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQStCQTtBQUFBLElBRURELGFBQWEsdUJBQUMsT0FBRSwyQkFBSDtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBQWM7QUFBQSxPQTdDOUI7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQThDQSxLQS9DRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBZ0RBO0FBRUo7QUFBQ0YsR0F2REtELE9BQUs7QUFBQWdCLEtBQUxoQjtBQXlETixlQUFlQTtBQUFLLElBQUFnQjtBQUFBQyxhQUFBRCxJQUFBIiwibmFtZXMiOlsidXNlUmVmIiwidXNlU3RhdGUiLCJ1c2VFZmZlY3QiLCJsb2dvIiwic2VuZE1lc3NhZ2VUb0JhY2tncm91bmRTY3JpcHQiLCJzZW5kTWVzc2FnZVRvQ29... (3737 more characters)"
+        }
+      },
+      "id": 2,
+      "thread_id": 0,
+      "parent_id": 1,
+      "elapsed": 0.000652062997687608
+    }
+  ],
+  "version": "1.12",
+  "metadata": {
+    "client": {
+      "name": "appmap-node",
+      "version": "2.23.0",
+      "url": "https://github.com/getappmap/appmap-node"
+    },
+    "language": {
+      "name": "javascript",
+      "engine": "Node.js",
+      "version": "v18.19.0"
+    },
+    "app": "clickolas-cage",
+    "recorder": {
+      "type": "requests",
+      "name": "requests"
+    },
+    "name": "GET /src/popup/Popup.jsx (200) — 2024-06-12T19:14:31.639Z"
+  },
+  "classMap": [
+    {
+      "type": "http",
+      "name": "HTTP server requests",
+      "children": [
+        {
+          "type": "route",
+          "name": "GET /src/popup/Popup.jsx"
+        }
+      ]
+    }
+  ]
+}

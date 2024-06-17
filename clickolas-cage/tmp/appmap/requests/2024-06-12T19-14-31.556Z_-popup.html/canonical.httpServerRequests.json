@@ -1,0 +1,7 @@
+[
+  {
+    "route": "GET /popup.html",
+    "parameters": "(t)",
+    "status": 200
+  }
+]

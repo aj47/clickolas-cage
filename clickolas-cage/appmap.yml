@@ -1,0 +1,8 @@
+name: clickolas-cage
+language: javascript
+appmap_dir: tmp/appmap
+packages:
+  - path: .
+    exclude:
+      - node_modules
+      - .yarn
