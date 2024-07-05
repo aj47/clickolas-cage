@@ -45,20 +45,17 @@ const navURL = (url) => {
 /**
  * Marks the current task as completed and sends a message to the target tab to proceed with the next step.
  */
-const completedTask = () => {
-  if (currentStep >= currentPlan.length) {
-    console.log('plan complete.')
-    return
-  }
-  console.log(currentStep, 'before')
+const completedTask = async () => {
+  console.log('Completed task. Current step:', currentStep)
   currentStep++
-  const messagePayload = {
-    currentStep: currentStep - 1,
-    originalPlan: currentPlan,
-    originalPrompt,
+  console.log('Moving to next step:', currentStep)
+  if (currentStep >= currentPlan.length) {
+    console.log('Current plan completed. Generating next step.')
+    await getNextStep()
+  } else {
+    console.log('Executing next step in current plan.')
+    await executeCurrentStep()
   }
-  console.log(currentStep)
-  sendMessageToTab(targetTab, messagePayload)
 }
 
 /**
@@ -74,24 +71,32 @@ const addStepToPlan = (step) => {
  * Executes the current step in the plan based on its action type.
  */
 const executeCurrentStep = async () => {
-  console.log('inside execute current step')
+  console.log('Executing current step')
+  console.log('Current step:', currentStep)
+  console.log('Current plan:', JSON.stringify(currentPlan))
   try {
-    if (currentPlan[currentStep].action === 'NAVURL') {
-      await navURL(currentPlan[currentStep].param)
-    } else if (currentPlan[currentStep].action === 'CLICKBTN') {
-      //Send message to Content Script to get the element
-      //Then it's sent back to Background script to execute click in debug mode
+    const currentAction = currentPlan[currentStep]
+    if (!currentAction) {
+      console.error('No action found for current step')
+      return
+    }
+    console.log('Current action:', currentAction.action)
+    if (currentAction.action === 'NAVURL') {
+      await navURL(currentAction.param)
+      await completedTask()
+    } else if (currentAction.action === 'CLICKBTN') {
+      console.log('Executing CLICKBTN action:', currentAction.ariaLabel)
       await sendMessageToTab(targetTab, {
         type: 'clickElement',
-        ariaLabel: currentPlan[currentStep].ariaLabel,
+        ariaLabel: currentAction.ariaLabel,
       })
-    } else if (currentPlan[currentStep].action === 'ASKUSER') {
-      // if the action is ASKUSER
+      // Note: completedTask() will be called from clickElement function
+    } else if (currentAction.action === 'ASKUSER') {
       // TODO: Handle ASKUSER
+    } else {
+      console.error('Unknown action type:', currentAction.action)
     }
-    console.log(currentStep, 'step')
-    currentStep++
-    await getNextStep()
+    console.log('Step execution completed:', currentStep)
   } catch (error) {
     console.error('Error executing current step:', error)
   }
@@ -101,22 +106,26 @@ const executeCurrentStep = async () => {
  * Checks if the next step can be executed and sends a message to the target tab to generate the next step.
  */
 const getNextStep = async () => {
-  console.log('inside next step ting')
-  // Check if the tab is completely loaded before sending a message
-  console.log(targetTab)
-  console.log(currentStep, 'step')
-  const messagePayload = {
-    type: 'generateNextStep',
-    currentStep: currentStep,
-    originalPlan: currentPlan,
-    originalPrompt,
-  }
+  console.log('inside getNextStep function')
+  console.log('Current step:', currentStep)
+  console.log('Current plan:', JSON.stringify(currentPlan))
+  console.log('Target tab:', targetTab)
+
   try {
-    console.log('Sending message payload:', JSON.stringify(messagePayload))
-    await sendMessageToTab(targetTab, messagePayload)
-    console.log('Message successfully sent to generateNextStep', JSON.stringify(messagePayload))
+    const nextStepWithElements = await getNextStepFromLLM(
+      originalPrompt,
+      currentURL,
+      currentPlan,
+      currentStep,
+      focusedElements.map((item) => item.cleanLabel)
+    )
+    console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
+    addStepToPlan(nextStepWithElements)
+    console.log('Step added to plan. New current step:', currentStep)
+    console.log('Updated plan:', JSON.stringify(currentPlan))
+    await executeCurrentStep()
   } catch (error) {
-    console.error('Failed to send message from getNextStep:', error)
+    console.error('Failed to generate next step:', error)
   }
 }
 
@@ -160,15 +169,26 @@ const processResponse = async (request, sender, sendResponse) => {
         break
       case 'next_step_with_elements':
         console.log('-------------------------------------')
-        const nextStepWithElements = await getNextStepFromLLM(
-          originalPrompt,
-          currentURL,
-          currentPlan,
-          currentStep,
-          request.elements,
-        )
-        console.log('next step', nextStepWithElements)
-        addStepToPlan(nextStepWithElements)
+        console.log('Received next_step_with_elements')
+        console.log('Current step:', currentStep)
+        console.log('Current plan:', JSON.stringify(currentPlan))
+        if (currentStep < currentPlan.length) {
+          console.log('Executing current step')
+          await executeCurrentStep()
+        } else {
+          console.log('Generating next step')
+          const nextStepWithElements = await getNextStepFromLLM(
+            originalPrompt,
+            currentURL,
+            currentPlan,
+            currentStep,
+            request.elements,
+          )
+          console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
+          addStepToPlan(nextStepWithElements)
+          console.log('Step added to plan. New current step:', currentStep)
+          console.log('Updated plan:', JSON.stringify(currentPlan))
+        }
         break
       case 'next_step':
         console.log('-------------------------------------')
@@ -388,7 +408,7 @@ async function clickElementAt(tabId, x, y) {
  */
 async function clickElement(tabId, selector) {
   try {
-    console.log(selector, 'selector')
+    console.log('Clicking element with selector:', selector)
     await attachDebugger(tabId)
     const root = await getDocumentRoot(tabId)
     const nodeId = await querySelectorNode(tabId, root, selector)
@@ -400,9 +420,9 @@ async function clickElement(tabId, selector) {
     await clickElementAt(tabId, x, y)
     chrome.debugger.detach({ tabId })
     await sleep(2000)
-    completedTask()
+    await completedTask()
   } catch (e) {
-    console.log(e, 'e')
+    console.error('Error in clickElement:', e)
   }
 }
 
