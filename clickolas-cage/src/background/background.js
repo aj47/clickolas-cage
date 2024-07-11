@@ -51,7 +51,7 @@ const completedTask = async () => {
   console.log('Moving to next step:', currentStep)
   if (currentStep >= currentPlan.length) {
     console.log('Current plan completed. Generating next step.')
-    await getNextStep()
+    sendMessageToTab(targetTab, { type: 'generateNextStep' })
   } else {
     console.log('Executing next step in current plan.')
     await executeCurrentStep()
@@ -99,33 +99,6 @@ const executeCurrentStep = async () => {
     console.log('Step execution completed:', currentStep)
   } catch (error) {
     console.error('Error executing current step:', error)
-  }
-}
-
-/**
- * Checks if the next step can be executed and sends a message to the target tab to generate the next step.
- */
-const getNextStep = async () => {
-  console.log('inside getNextStep function')
-  console.log('Current step:', currentStep)
-  console.log('Current plan:', JSON.stringify(currentPlan))
-  console.log('Target tab:', targetTab)
-
-  try {
-    const nextStepWithElements = await getNextStepFromLLM(
-      originalPrompt,
-      currentURL,
-      currentPlan,
-      currentStep,
-      focusedElements.map((item) => item.cleanLabel)
-    )
-    console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
-    addStepToPlan(nextStepWithElements)
-    console.log('Step added to plan. New current step:', currentStep)
-    console.log('Updated plan:', JSON.stringify(currentPlan))
-    await executeCurrentStep()
-  } catch (error) {
-    console.error('Failed to generate next step:', error)
   }
 }
 
