@@ -251,8 +251,6 @@ export const SidePanel = () => {
   const handleRequest = async (request, sender, sendResponse) => {
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
-      // } else if (request.type === 'addThought') {
-      //   setCurrentStep(request.currentStep)
     } else if (request.type === 'clickElement') {
       setCurrentStep(request.currentStep)
       setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
@@ -260,16 +258,17 @@ export const SidePanel = () => {
         type: 'click_element',
         selector: locateCorrectElement(request.ariaLabel),
       })
-      setCurrentStep(request.currentStep)
     } else if (request.type === 'generateNextStep') {
       setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
       setCurrentStep(request.currentStep)
       console.log('current step', request.currentStep)
-      // runPressTabInTabWithNextStep(10, 250);
       sendResponse({
         type: 'next_step_with_elements',
         elements: getClickableElements().clickableElementLabels.slice(0, 75),
       })
+    } else if (request.type === 'updatePlan') {
+      setOriginalPlan(request.plan)
+      setCurrentStep(request.currentStep)
     }
     sendResponse('complete')
   }

@@ -1,15 +1,18 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 const model = 'gemini-1.5-flash-latest'
+// const model = 'gpt-4o'
 
 const openai = new OpenAI({
   // apiKey: 'not-needed', // defaults to process.env[""]
   apiKey: import.meta.env.VITE_GEMINI_API_KEY, // defaults to process.env[""]
+  // apiKey: import.meta.env.VITE_OPENAI_API_KEY,
   // apiKey: "",
   baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: createHeaders({
     provider: 'google',
+    // provider: 'openai',
   }),
 })
 
