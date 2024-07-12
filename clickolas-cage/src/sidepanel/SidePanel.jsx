@@ -150,7 +150,7 @@ export const SidePanel = () => {
       })
     })
     const cleanedArray = [
-      ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null)),
+      ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY')),
     ]
     return { clickableElements, clickableElementLabels: cleanedArray }
   }
