@@ -1,9 +1,6 @@
 import { sendMessageToContentScript, sleep } from '../utils'
 
-import {
-  getNextStepFromLLM,
-  promptToFirstStep,
-} from '../llm-utils'
+import { getNextStepFromLLM, promptToFirstStep } from '../llm-utils'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -15,28 +12,28 @@ let state = {
   originalPrompt: '',
   currentURL: '',
   allowedTabs: new Set(),
-  focusedElements: []
-};
-
-// Function to update currentPlan and notify the side panel
-const updateCurrentPlan = (newPlan) => {
-  state.currentPlan = newPlan;
-  if (state.targetTab) {
-    sendMessageToTab(state.targetTab, {
-      type: 'updatePlan',
-      plan: state.currentPlan,
-      currentStep: state.currentStep
-    });
-  }
+  focusedElements: [],
 }
 
+// Function to update currentPlan and notify the side panel
+// const updateCurrentPlan = (newPlan) => {
+//   state.currentPlan = newPlan
+//   if (state.targetTab) {
+//     sendMessageToTab(state.targetTab, {
+//       type: 'updatePlan',
+//       plan: state.currentPlan,
+//       currentStep: state.currentStep,
+//     })
+//   }
+// }
+
 // Function to get the current state
-const getState = () => ({...state});
+const getState = () => ({ ...state })
 
 // Function to update the state
 const updateState = (newState) => {
-  state = {...state, ...newState};
-  console.log('State updated:', state);
+  state = { ...state, ...newState }
+  console.log('State updated:', state)
 }
 
 /**
@@ -46,7 +43,7 @@ const updateState = (newState) => {
  */
 const navURL = (url) => {
   console.log(url, 'url')
-  updateState({currentURL: url});
+  updateState({ currentURL: url })
   //Needs http otherwise does not go to absolute URL
   if (url.indexOf('http') !== 0) {
     url = 'http://' + url
@@ -57,12 +54,12 @@ const navURL = (url) => {
         // If there's an error during tab creation, reject the promise
         reject(new Error(chrome.runtime.lastError))
       } else {
-        const newAllowedTabs = new Set(getState().allowedTabs);
-        newAllowedTabs.add(tab.id);
+        const newAllowedTabs = new Set(getState().allowedTabs)
+        newAllowedTabs.add(tab.id)
         updateState({
           allowedTabs: newAllowedTabs,
-          targetTab: tab.id
-        });
+          targetTab: tab.id,
+        })
         resolve(tab) // Resolve the promise with the tab object
       }
     })
@@ -73,14 +70,18 @@ const navURL = (url) => {
  * Marks the current task as completed and sends a message to the target tab to proceed with the next step.
  */
 const completedTask = async () => {
-  const currentState = getState();
-  console.log('Completed task. Current step:', currentState.currentStep)
-  updateState({ currentStep: currentState.currentStep + 1 });
-  const updatedState = getState();
+  const currentState = getState()
+  console.log('Completed task. Step:', currentState.currentStep)
+  updateState({ currentStep: currentState.currentStep + 1 })
+  const updatedState = getState()
   console.log('Moving to next step:', updatedState.currentStep)
   if (updatedState.currentStep >= updatedState.currentPlan.length) {
     console.log('Current plan completed. Generating next step.')
-    sendMessageToTab(updatedState.targetTab, { type: 'generateNextStep' })
+    sendMessageToTab(updatedState.targetTab, {
+      type: 'generateNextStep',
+      currentStep: updateState.currentStep,
+      originalPlan: updateState.currentPlan,
+    })
   } else {
     console.log('Executing next step in current plan.')
     await executeCurrentStep()
@@ -92,10 +93,10 @@ const completedTask = async () => {
  * @param {Object} step - The step to add to the plan.
  */
 const addStepToPlan = (step) => {
-  const currentState = getState();
-  const newPlan = [...currentState.currentPlan, step];
-  updateCurrentPlan(newPlan);
-  updateState({currentPlan: newPlan});
+  const currentState = getState()
+  const newPlan = [...currentState.currentPlan, step]
+  // updateCurrentPlan(newPlan)
+  updateState({ currentPlan: newPlan })
   executeCurrentStep()
 }
 
@@ -103,7 +104,8 @@ const addStepToPlan = (step) => {
  * Executes the current step in the plan based on its action type.
  */
 const executeCurrentStep = async () => {
-  const currentState = getState();
+
+  const currentState = getState()
   console.log('Executing current step')
   console.log('Current step:', currentState.currentStep)
   console.log('Current plan:', JSON.stringify(currentState.currentPlan))
@@ -122,6 +124,8 @@ const executeCurrentStep = async () => {
       await sendMessageToTab(currentState.targetTab, {
         type: 'clickElement',
         ariaLabel: currentAction.ariaLabel,
+        originalPlan: currentState.currentPlan,
+        currentStep: currentState.currentStep,
       })
       // Note: completedTask() will be called from clickElement function
     } else if (currentAction.action === 'ASKUSER') {
@@ -144,15 +148,12 @@ const executeCurrentStep = async () => {
  */
 const processResponse = async (request, sender, sendResponse) => {
   console.log('recieved', JSON.stringify(request))
-  let currentState = getState();
+  let currentState = getState()
   try {
     switch (request.type) {
       case 'checkTabAllowed':
         const isAllowed = currentState.allowedTabs.has(sender.tab.id)
         return sendResponse({ isAllowed: isAllowed })
-      case 'nav_url':
-        navURL(request.url)
-        break
       case 'completed_task':
         completedTask()
         break
@@ -160,8 +161,8 @@ const processResponse = async (request, sender, sendResponse) => {
         updateState({
           currentStep: 0,
           currentPlan: [],
-          originalPrompt: request.prompt
-        });
+          originalPrompt: request.prompt,
+        })
         const responseJSON = await promptToFirstStep(request.prompt)
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
@@ -175,16 +176,11 @@ const processResponse = async (request, sender, sendResponse) => {
         break
       case 'new_focused_element':
         updateState({
-          focusedElements: [...state.focusedElements, request.element]
-        });
+          focusedElements: [...state.focusedElements, request.element],
+        })
         break
       case 'next_step_with_elements':
-        console.log('-------------------------------------')
-        console.log('Received next_step_with_elements')
-        console.log('Current step:', currentState.currentStep)
-        console.log('Current plan:', JSON.stringify(currentState.currentPlan))
         if (currentState.currentStep < currentState.currentPlan.length) {
-          console.log('Executing current step')
           await executeCurrentStep()
         } else {
           console.log('Generating next step')
@@ -197,15 +193,6 @@ const processResponse = async (request, sender, sendResponse) => {
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           addStepToPlan(nextStepWithElements)
-          const updatedState = getState();
-          console.log('Step added to plan. New current step:', updatedState.currentStep)
-          console.log('Updated plan:', JSON.stringify(updatedState.currentPlan))
-          // Send the updated plan to the side panel
-          sendMessageToTab(updatedState.targetTab, {
-            type: 'updatePlan',
-            plan: updatedState.currentPlan,
-            currentStep: updatedState.currentStep
-          });
         }
         break
       case 'next_step':
@@ -247,7 +234,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 async function sendMessageToTab(tabId, message) {
   let retries = 3
-  const currentState = getState();
+  const currentState = getState()
   await checkTabReady(currentState.targetTab)
   while (retries > 0) {
     try {
@@ -511,8 +498,8 @@ async function dispatchTabKeyPress(tabId) {
  * Listens for tab removal events and removes the closed tab from the allowedTabs set.
  */
 chrome.tabs.onRemoved.addListener(function (tabId) {
-  const currentState = getState();
-  const newAllowedTabs = new Set(currentState.allowedTabs);
-  newAllowedTabs.delete(tabId);
-  updateState({ allowedTabs: newAllowedTabs });
+  const currentState = getState()
+  const newAllowedTabs = new Set(currentState.allowedTabs)
+  newAllowedTabs.delete(tabId)
+  updateState({ allowedTabs: newAllowedTabs })
 })
