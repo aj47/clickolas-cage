@@ -254,7 +254,7 @@ export const SidePanel = () => {
     } else if (request.type === 'clickElement') {
       setCurrentStep(request.currentStep)
       setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
-      return sendMessageToBackgroundScript({
+      sendResponse({
         type: 'click_element',
         selector: locateCorrectElement(request.ariaLabel),
       })
