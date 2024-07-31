@@ -118,41 +118,99 @@ export const SidePanel = () => {
 
   const getClickableElements = () => {
     const clickableElements = []
-    // Add all clickable elements in DOM to clickableElements array
-    document.querySelectorAll('*').forEach(function (node) {
-      if (
-        (node.tagName !== 'BODY' && node.tagName === 'BUTTON') ||
-        node.tagName === 'INPUT' ||
-        node.onclick ||
-        (node.hasAttribute('jsaction') &&
-          (node.getAttribute('jsaction').includes('click') ||
-            node.getAttribute('jsaction').includes('mousedown'))) ||
-        node.hasAttribute('onclick') ||
-        node.getAttribute('role') === 'button'
-      ) {
-        clickableElements.push(node)
-      }
-    })
     const clickableElementLabels = []
-    // Construct array of aria-labels and roles for each element
-    clickableElements.forEach((e) => {
-      // let renderedAtStep = 0
-      //cringe at this n^3 complexity
-      // for (const newNode of newNodes) {
-      //   for (const node of newNode.nodes) {
-      //     if (node.contains(e)) renderedAtStep = newNode.step
-      //   }
-      // }
-      clickableElementLabels.push({
-        role: e.getAttribute('role') || e.tagName,
-        ariaLabel: e.getAttribute('aria-label') || e.innerText,
-        // renderedAtStep,
-      })
-    })
+
+    const getAllElements = (root) => {
+      const elements = []
+      for (const element of Array.from(root.querySelectorAll("*"))) {
+        elements.push(element)
+        if (element.shadowRoot) {
+          elements.push(...getAllElements(element.shadowRoot))
+        }
+      }
+      return elements
+    }
+
+    const elements = getAllElements(document.documentElement)
+
+    for (const element of elements) {
+      const isClickable = isElementClickable(element)
+      if (isClickable) {
+        clickableElements.push(element)
+        clickableElementLabels.push({
+          role: element.getAttribute('role') || element.tagName,
+          ariaLabel: element.getAttribute('aria-label') || element.innerText,
+        })
+      }
+    }
+
     const cleanedArray = [
       ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY')),
     ]
     return { clickableElements, clickableElementLabels: cleanedArray }
+  }
+
+  const isElementClickable = (element) => {
+    const tagName = element.tagName.toLowerCase()
+    let isClickable = false
+
+    // Check for href attribute
+    if (element.href) return true
+
+    // Check for onclick attribute
+    if (element.hasAttribute("onclick")) return true
+
+    // Check for clickable roles
+    const clickableRoles = ["button", "tab", "link", "checkbox", "menuitem", "menuitemcheckbox", "menuitemradio", "radio"]
+    const role = element.getAttribute("role")
+    if (role && clickableRoles.includes(role.toLowerCase())) return true
+
+    // Check for contentEditable
+    const contentEditable = element.getAttribute("contentEditable")
+    if (contentEditable && ["", "contenteditable", "true"].includes(contentEditable.toLowerCase())) return true
+
+    // Check for jsaction
+    if (element.hasAttribute("jsaction")) {
+      const jsactionRules = element.getAttribute("jsaction").split(";")
+      for (const jsactionRule of jsactionRules) {
+        const ruleSplit = jsactionRule.trim().split(":")
+        if (ruleSplit.length >= 1 && ruleSplit.length <= 2) {
+          const [eventType, namespace, actionName] = ruleSplit.length === 1
+            ? ["click", ...ruleSplit[0].trim().split("."), "_"]
+            : [ruleSplit[0], ...ruleSplit[1].trim().split("."), "_"]
+          if (eventType === "click" && namespace !== "none" && actionName !== "_") return true
+        }
+      }
+    }
+
+    // Check for specific tag names
+    switch (tagName) {
+      case "a":
+      case "object":
+      case "embed":
+      case "details":
+        return true
+      case "textarea":
+        return !element.disabled && !element.readOnly
+      case "input":
+        return !(element.getAttribute("type")?.toLowerCase() === "hidden" || element.disabled || (element.readOnly && element.type !== "text"))
+      case "button":
+      case "select":
+        return !element.disabled
+      case "img":
+        return ["zoom-in", "zoom-out"].includes(element.style.cursor)
+      case "div":
+      case "ol":
+      case "ul":
+        return (element.clientHeight < element.scrollHeight) && isScrollableElement(element)
+    }
+
+    return isClickable
+  }
+
+  const isScrollableElement = (element) => {
+    const style = window.getComputedStyle(element)
+    return ['auto', 'scroll'].includes(style.overflowY) || ['auto', 'scroll'].includes(style.overflow)
   }
 
   /**
@@ -279,6 +337,7 @@ export const SidePanel = () => {
         <h2>Current Step: {currentStep}</h2>
         {originalPlan?.length > 0 ? (
           <>
+            version 0.01
             <h2>Clickolas Plan: </h2>
             <ul>
               {originalPlan.map((step, i) => {
