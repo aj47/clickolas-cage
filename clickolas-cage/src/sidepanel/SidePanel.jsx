@@ -150,7 +150,11 @@ export const SidePanel = () => {
       })
     })
     const cleanedArray = [
-      ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY')),
+      ...new Set(
+        clickableElementLabels.filter(
+          (e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY',
+        ),
+      ),
     ]
     return { clickableElements, clickableElementLabels: cleanedArray }
   }
@@ -217,27 +221,21 @@ export const SidePanel = () => {
 
   // Add a listener to log the focused element when it changes
   useEffect(() => {
-    if (!socketRef.current) {
-      socketRef.current = chrome.runtime.onMessage.addListener(
-        async function (request, sender, sendResponse) {
-          console.log('recieved request', JSON.stringify(request))
-          handleRequest(request, sender, sendResponse)
-          return true // Indicate that the response is asynchronous
-        },
-      )
+    const messageListener = async (request, sender, sendResponse) => {
+      console.log('Received request', JSON.stringify(request))
+      await handleRequest(request, sender, sendResponse)
+      return true // Indicate that the response is asynchronous
     }
 
-    document.addEventListener('focus', logFocusedElement, true) // Use capture phase to ensure the listener is executed
+    chrome.runtime.onMessage.addListener(messageListener)
+    document.addEventListener('focus', logFocusedElement, true)
 
-    // Cleanup the listener on component unmount
+    // Cleanup the listeners on component unmount
     return () => {
-      if (socketRef.current) {
-        chrome.runtime.onMessage.removeListener(socketRef.current)
-        socketRef.current = null
-      }
+      chrome.runtime.onMessage.removeListener(messageListener)
       document.removeEventListener('focus', logFocusedElement, true)
     }
-  }, [])
+  }, []) // Empty dependency array ensures this effect runs only once
 
   const runPressTabInTabWithNextStep = (times, delay) => {
     runFunctionXTimesWithDelay(pressTabInTab, times, delay).then(() => {
@@ -249,28 +247,37 @@ export const SidePanel = () => {
   }
 
   const handleRequest = async (request, sender, sendResponse) => {
-    if (request.type === 'showClick') {
-      createSquareAtLocation(request.x, request.y)
-    } else if (request.type === 'clickElement') {
-      setCurrentStep(request.currentStep)
-      setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
-      return sendMessageToBackgroundScript({
-        type: 'click_element',
-        selector: locateCorrectElement(request.ariaLabel),
-      })
-    } else if (request.type === 'generateNextStep') {
-      setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
-      setCurrentStep(request.currentStep)
-      console.log('current step', request.currentStep)
-      sendResponse({
-        type: 'next_step_with_elements',
-        elements: getClickableElements().clickableElementLabels.slice(0, 75),
-      })
-    } else if (request.type === 'updatePlan') {
-      setOriginalPlan(request.plan)
-      setCurrentStep(request.currentStep)
+    switch (request.type) {
+      case 'showClick':
+        createSquareAtLocation(request.x, request.y)
+        break
+      case 'clickElement':
+      case 'generateNextStep':
+      case 'updatePlan':
+        setOriginalPlan((prevPlan) => {
+          const newPlan = request.originalPlan
+            ? [...prevPlan, ...request.originalPlan]
+            : request.plan
+            ? request.plan
+            : prevPlan
+          setCurrentStep(request.currentStep)
+          return newPlan
+        })
+        if (request.type === 'clickElement') {
+          const selector = locateCorrectElement(request.ariaLabel)
+          await sendMessageToBackgroundScript({
+            type: 'click_element',
+            selector: selector,
+          })
+        } else if (request.type === 'generateNextStep') {
+          sendResponse({
+            type: 'next_step_with_elements',
+            elements: getClickableElements().clickableElementLabels.slice(0, 75),
+          })
+        }
+        break
     }
-    sendResponse('complete')
+    if (sendResponse) sendResponse('complete')
   }
 
   return (
