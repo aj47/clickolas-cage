@@ -81,8 +81,8 @@ const completedTask = async () => {
     console.log('Current plan completed. Generating next step.')
     sendMessageToTab(updatedState.targetTab, {
       type: 'generateNextStep',
-      currentStep: updateState.currentStep,
-      originalPlan: updateState.currentPlan,
+      currentStep: updatedState.currentStep,
+      plan: updatedState.currentPlan,
     })
   } else {
     console.log('Executing next step in current plan.')
@@ -126,7 +126,7 @@ const executeCurrentStep = async () => {
       await sendMessageToTab(currentState.targetTab, {
         type: 'locateElement',
         ariaLabel: currentAction.ariaLabel,
-        originalPlan: currentState.currentPlan,
+        plan: currentState.currentPlan,
         currentStep: currentState.currentStep,
       })
     } else if (currentAction.action === 'ASKUSER') {
@@ -206,7 +206,11 @@ const processResponse = async (request, sender, sendResponse) => {
           state.currentStep,
           state.focusedElements.map((item) => item.cleanLabel),
         )
-        sendMessageToTab(state.targetTab, { type: 'addThought', originalPlan: state.currentPlan })
+        sendMessageToTab(state.targetTab, {
+          type: 'updatePlan',
+          plan: state.currentPlan,
+          currentStep: state.currentStep
+        })
         addStepToPlan(nextStepData)
         break
     }

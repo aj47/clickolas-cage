@@ -6,7 +6,7 @@ import { sendPromptWithFeedback } from '../llm-utils'
 
 import './SidePanel.css'
 export const SidePanel = () => {
-  const [originalPlan, setOriginalPlan] = useState([])
+  const [plan, setPlan] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
   const socketRef = useRef(null)
 
@@ -311,13 +311,13 @@ export const SidePanel = () => {
       createSquareAtLocation(request.x, request.y)
     } else if (request.type === 'locateElement') {
       setCurrentStep(request.currentStep)
-      setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
+      setPlan(request.plan)
       sendResponse({
         type: 'click_element',
         selector: locateCorrectElement(request.ariaLabel),
       })
     } else if (request.type === 'generateNextStep') {
-      setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
+      setPlan(request.plan)
       setCurrentStep(request.currentStep)
       console.log('current step', request.currentStep)
       sendResponse({
@@ -325,7 +325,7 @@ export const SidePanel = () => {
         elements: getClickableElements().clickableElementLabels.slice(0, 200),
       })
     } else if (request.type === 'updatePlan') {
-      setOriginalPlan(request.plan)
+      setPlan(request.plan)
       setCurrentStep(request.currentStep)
     }
     sendResponse({ type: 'completed_task' })
@@ -335,12 +335,12 @@ export const SidePanel = () => {
     <div className="sidePanel">
       <div className="plan">
         <h2>Current Step: {currentStep}</h2>
-        {originalPlan?.length > 0 ? (
+        {plan?.length > 0 ? (
           <>
             version 0.01
             <h2>Clickolas Plan: </h2>
             <ul>
-              {originalPlan.map((step, i) => {
+              {plan.map((step, i) => {
                 return (
                   <div className="step" key={i}>
                     {i + 1} - {step.thought}
