@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 
 import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from '../utils'
 
-import { sendPromptWithFeedback } from '../llm-utils'
-
 import './SidePanel.css'
 export const SidePanel = () => {
   const [plan, setPlan] = useState([])
