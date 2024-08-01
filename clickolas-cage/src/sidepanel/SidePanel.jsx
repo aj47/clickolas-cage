@@ -9,6 +9,7 @@ export const SidePanel = () => {
   const [plan, setPlan] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
   const socketRef = useRef(null)
+  const stepsListRef = useRef(null)  // New ref for the steps list
 
   const delayBetweenKeystrokes = 100
 
@@ -331,23 +332,27 @@ export const SidePanel = () => {
     sendResponse({ type: 'completed_task' })
   }
 
+  useEffect(() => {
+    // New effect to scroll the steps list to bottom when plan updates
+    if (stepsListRef.current) {
+      stepsListRef.current.scrollTop = stepsListRef.current.scrollHeight
+    }
+  }, [plan])  // This effect runs whenever plan changes
+
   return (
     <div className="sidePanel">
       <div className="plan">
         <h2>Current Step: {currentStep}</h2>
         {plan?.length > 0 ? (
           <>
-            version 0.01
             <h2>Clickolas Plan: </h2>
-            <ul>
-              {plan.map((step, i) => {
-                return (
-                  <div className="step" key={i}>
-                    {i + 1} - {step.thought}
-                  </div>
-                )
-              })}
-            </ul>
+            <div className="steps-list" ref={stepsListRef}>  {/* New scrollable container */}
+              {plan.map((step, i) => (
+                <div className="step" key={i}>
+                  {i + 1} - {step.thought}
+                </div>
+              ))}
+            </div>
           </>
         ) : (
           <h2> Thinking...</h2>

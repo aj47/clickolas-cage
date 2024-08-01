@@ -2,21 +2,29 @@
   position: fixed;
   top: 120px;
   right: 20px;
-  width: 200px;
+  width: 250px;
+  max-height: 80vh;
   background-color: #001c24;
   opacity: 0.95;
   font-size: 18px;
   z-index: 99999;
   border-radius: 5px;
   box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
-  width: 250px;
-  .plan {
-    color: white;
-    margin: 10px;
-    overflow-y: scroll;
-    max-height: 60vh;
-    .step {
-      padding: 10px 5px;
-    }
-  }
+  overflow-y: auto;
+}
+
+.sidePanel .plan {
+  color: white;
+  margin: 10px;
+}
+
+.sidePanel .plan .steps-list {
+  max-height: calc(80vh - 150px);
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.sidePanel .plan .steps-list .step {
+  padding: 10px 5px;
+  margin-bottom: 10px;
 }
