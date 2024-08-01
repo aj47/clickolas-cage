@@ -309,7 +309,7 @@ export const SidePanel = () => {
   const handleRequest = async (request, sender, sendResponse) => {
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
-    } else if (request.type === 'clickElement') {
+    } else if (request.type === 'locateElement') {
       setCurrentStep(request.currentStep)
       setOriginalPlan((prevPlan) => request.originalPlan ? [...prevPlan, ...request.originalPlan] : prevPlan)
       sendResponse({
@@ -322,13 +322,13 @@ export const SidePanel = () => {
       console.log('current step', request.currentStep)
       sendResponse({
         type: 'next_step_with_elements',
-        elements: getClickableElements().clickableElementLabels.slice(0, 75),
+        elements: getClickableElements().clickableElementLabels.slice(0, 200),
       })
     } else if (request.type === 'updatePlan') {
       setOriginalPlan(request.plan)
       setCurrentStep(request.currentStep)
     }
-    sendResponse('complete')
+    sendResponse({ type: 'completed_task' })
   }
 
   return (

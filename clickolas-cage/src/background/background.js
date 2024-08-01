@@ -73,6 +73,8 @@ const completedTask = async () => {
   const currentState = getState()
   console.log('Completed task. Step:', currentState.currentStep)
   updateState({ currentStep: currentState.currentStep + 1 })
+  console.log('sleeping 3s...')
+  await sleep(3000)
   const updatedState = getState()
   console.log('Moving to next step:', updatedState.currentStep)
   if (updatedState.currentStep >= updatedState.currentPlan.length) {
@@ -122,12 +124,11 @@ const executeCurrentStep = async () => {
     } else if (currentAction.action === 'CLICKBTN') {
       console.log('Executing CLICKBTN action:', currentAction.ariaLabel)
       await sendMessageToTab(currentState.targetTab, {
-        type: 'clickElement',
+        type: 'locateElement',
         ariaLabel: currentAction.ariaLabel,
         originalPlan: currentState.currentPlan,
         currentStep: currentState.currentStep,
       })
-      // Note: completedTask() will be called from clickElement function
     } else if (currentAction.action === 'ASKUSER') {
       // TODO: Handle ASKUSER
     } else {
@@ -426,7 +427,6 @@ async function clickElement(tabId, selector) {
     await clickElementAt(tabId, x, y)
     chrome.debugger.detach({ tabId })
     await sleep(2000)
-    await completedTask()
   } catch (e) {
     console.error('Error in clickElement:', e)
   }
