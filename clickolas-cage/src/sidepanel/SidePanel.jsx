@@ -7,9 +7,14 @@ export const SidePanel = () => {
   const [plan, setPlan] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
   const socketRef = useRef(null)
-  const stepsListRef = useRef(null)  // New ref for the steps list
+  const stepsListRef = useRef(null) // New ref for the steps list
 
   const delayBetweenKeystrokes = 100
+
+  const [lastObservedTime, setLastObservedTime] = useState(Date.now())
+  const observerRef = useRef(null)
+
+  const [isInitialRenderComplete, setIsInitialRenderComplete] = useState(false)
 
   /**
    * Simulates typing text into a given HTML element
@@ -56,20 +61,9 @@ export const SidePanel = () => {
   async function createSquareAtLocation(x, y) {
     // Create a div element
     let square = document.createElement('div')
-
-    // Set its position and size
-    square.style.position = 'absolute'
-    square.style.left = x - 25 + 'px'
-    square.style.top = y - 25 + 'px'
-    square.style.width = '50px'
-    square.style.height = '50px'
-    square.style.zIndex = '9999'
-
-    // Set its color to red
-    square.style.backgroundColor = 'red'
-    square.style.opacity = 0.5
-
-    // Append it to the body of the document
+    square.className = 'clickolas-click-indicator'
+    square.style.left = `${x - 25}px`
+    square.style.top = `${y - 25}px`
     document.body.appendChild(square)
   }
 
@@ -121,7 +115,7 @@ export const SidePanel = () => {
 
     const getAllElements = (root) => {
       const elements = []
-      for (const element of Array.from(root.querySelectorAll("*"))) {
+      for (const element of Array.from(root.querySelectorAll('*'))) {
         elements.push(element)
         if (element.shadowRoot) {
           elements.push(...getAllElements(element.shadowRoot))
@@ -131,20 +125,30 @@ export const SidePanel = () => {
     }
 
     const elements = getAllElements(document.documentElement)
+    const currentTime = Date.now()
 
     for (const element of elements) {
       const isClickable = isElementClickable(element)
       if (isClickable) {
+        const isNew =
+          element.dataset.observedTime && parseInt(element.dataset.observedTime) > lastObservedTime
         clickableElements.push(element)
         clickableElementLabels.push({
           role: element.getAttribute('role') || element.tagName,
           ariaLabel: element.getAttribute('aria-label') || element.innerText,
+          isNew: isNew,
         })
       }
     }
 
+    setLastObservedTime(currentTime)
+
     const cleanedArray = [
-      ...new Set(clickableElementLabels.filter((e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY')),
+      ...new Set(
+        clickableElementLabels.filter(
+          (e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY',
+        ),
+      ),
     ]
     return { clickableElements, clickableElementLabels: cleanedArray }
   }
@@ -157,51 +161,66 @@ export const SidePanel = () => {
     if (element.href) return true
 
     // Check for onclick attribute
-    if (element.hasAttribute("onclick")) return true
+    if (element.hasAttribute('onclick')) return true
 
     // Check for clickable roles
-    const clickableRoles = ["button", "tab", "link", "checkbox", "menuitem", "menuitemcheckbox", "menuitemradio", "radio"]
-    const role = element.getAttribute("role")
+    const clickableRoles = [
+      'button',
+      'tab',
+      'link',
+      'checkbox',
+      'menuitem',
+      'menuitemcheckbox',
+      'menuitemradio',
+      'radio',
+    ]
+    const role = element.getAttribute('role')
     if (role && clickableRoles.includes(role.toLowerCase())) return true
 
     // Check for contentEditable
-    const contentEditable = element.getAttribute("contentEditable")
-    if (contentEditable && ["", "contenteditable", "true"].includes(contentEditable.toLowerCase())) return true
+    const contentEditable = element.getAttribute('contentEditable')
+    if (contentEditable && ['', 'contenteditable', 'true'].includes(contentEditable.toLowerCase()))
+      return true
 
     // Check for jsaction
-    if (element.hasAttribute("jsaction")) {
-      const jsactionRules = element.getAttribute("jsaction").split(";")
+    if (element.hasAttribute('jsaction')) {
+      const jsactionRules = element.getAttribute('jsaction').split(';')
       for (const jsactionRule of jsactionRules) {
-        const ruleSplit = jsactionRule.trim().split(":")
+        const ruleSplit = jsactionRule.trim().split(':')
         if (ruleSplit.length >= 1 && ruleSplit.length <= 2) {
-          const [eventType, namespace, actionName] = ruleSplit.length === 1
-            ? ["click", ...ruleSplit[0].trim().split("."), "_"]
-            : [ruleSplit[0], ...ruleSplit[1].trim().split("."), "_"]
-          if (eventType === "click" && namespace !== "none" && actionName !== "_") return true
+          const [eventType, namespace, actionName] =
+            ruleSplit.length === 1
+              ? ['click', ...ruleSplit[0].trim().split('.'), '_']
+              : [ruleSplit[0], ...ruleSplit[1].trim().split('.'), '_']
+          if (eventType === 'click' && namespace !== 'none' && actionName !== '_') return true
         }
       }
     }
 
     // Check for specific tag names
     switch (tagName) {
-      case "a":
-      case "object":
-      case "embed":
-      case "details":
+      case 'a':
+      case 'object':
+      case 'embed':
+      case 'details':
         return true
-      case "textarea":
+      case 'textarea':
         return !element.disabled && !element.readOnly
-      case "input":
-        return !(element.getAttribute("type")?.toLowerCase() === "hidden" || element.disabled || (element.readOnly && element.type !== "text"))
-      case "button":
-      case "select":
+      case 'input':
+        return !(
+          element.getAttribute('type')?.toLowerCase() === 'hidden' ||
+          element.disabled ||
+          (element.readOnly && element.type !== 'text')
+        )
+      case 'button':
+      case 'select':
         return !element.disabled
-      case "img":
-        return ["zoom-in", "zoom-out"].includes(element.style.cursor)
-      case "div":
-      case "ol":
-      case "ul":
-        return (element.clientHeight < element.scrollHeight) && isScrollableElement(element)
+      case 'img':
+        return ['zoom-in', 'zoom-out'].includes(element.style.cursor)
+      case 'div':
+      case 'ol':
+      case 'ul':
+        return element.clientHeight < element.scrollHeight && isScrollableElement(element)
     }
 
     return isClickable
@@ -209,7 +228,9 @@ export const SidePanel = () => {
 
   const isScrollableElement = (element) => {
     const style = window.getComputedStyle(element)
-    return ['auto', 'scroll'].includes(style.overflowY) || ['auto', 'scroll'].includes(style.overflow)
+    return (
+      ['auto', 'scroll'].includes(style.overflowY) || ['auto', 'scroll'].includes(style.overflow)
+    )
   }
 
   /**
@@ -318,10 +339,10 @@ export const SidePanel = () => {
     } else if (request.type === 'generateNextStep') {
       setPlan(request.plan)
       setCurrentStep(request.currentStep)
-      console.log('current step', request.currentStep)
+      const { clickableElementLabels } = getClickableElements()
       sendResponse({
         type: 'next_step_with_elements',
-        elements: getClickableElements().clickableElementLabels.slice(0, 200),
+        elements: clickableElementLabels.slice(0, 200),
       })
     } else if (request.type === 'updatePlan') {
       setPlan(request.plan)
@@ -335,7 +356,67 @@ export const SidePanel = () => {
     if (stepsListRef.current) {
       stepsListRef.current.scrollTop = stepsListRef.current.scrollHeight
     }
-  }, [plan])  // This effect runs whenever plan changes
+  }, [plan]) // This effect runs whenever plan changes
+
+  //----------  start DOM change check --------
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialRenderComplete(true)
+    }, 1000) // Adjust this delay as needed
+    return () => clearTimeout(timer)
+  }, [])
+  useEffect(() => {
+    if (!isInitialRenderComplete) return
+    observerRef.current = new MutationObserver((mutations) => {
+      const currentTime = Date.now()
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE && !isIgnoredElement(node)) {
+              if (isRelevantElement(node)) {
+                node.dataset.observedTime = currentTime
+              }
+              // Check for child elements with role="menuitem"
+              if (node.querySelectorAll) {
+                node.querySelectorAll('[role="menuitem"]').forEach((menuItem) => {
+                  menuItem.dataset.observedTime = currentTime
+                })
+              }
+            }
+          })
+        }
+      })
+    })
+    observerRef.current.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: false,
+      characterData: false,
+    })
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [isInitialRenderComplete])
+  const isRelevantElement = (element) => {
+    return (
+      element.tagName === 'UL' ||
+      element.tagName === 'SELECT' ||
+      element.classList.contains('dropdown') ||
+      element.getAttribute('role') === 'listbox' ||
+      element.getAttribute('role') === 'menu' ||
+      element.getAttribute('role') === 'menuitem'
+    )
+  }
+  const isIgnoredElement = (element) => {
+    // Check if the element is part of the step list or a click square
+    return (
+      element.closest('.steps-list') !== null ||
+      element.classList.contains('clickolas-click-indicator')
+    )
+  }
+  //----------  end DOM change check --------
 
   return (
     <div className="sidePanel">
@@ -344,7 +425,7 @@ export const SidePanel = () => {
         {plan?.length > 0 ? (
           <>
             <h2>Clickolas Plan: </h2>
-            <div className="steps-list" ref={stepsListRef}>  {/* New scrollable container */}
+            <div className="steps-list" ref={stepsListRef}>
               {plan.map((step, i) => (
                 <div className="step" key={i}>
                   {i + 1} - {step.thought}
