@@ -150,6 +150,14 @@ export const SidePanel = () => {
         ),
       ),
     ]
+
+    // Sort the array to place new elements at the top
+    cleanedArray.sort((a, b) => {
+      if (a.isNew && !b.isNew) return -1;
+      if (!a.isNew && b.isNew) return 1;
+      return 0;
+    });
+
     return { clickableElements, clickableElementLabels: cleanedArray }
   }
 
@@ -342,7 +350,7 @@ export const SidePanel = () => {
       const { clickableElementLabels } = getClickableElements()
       sendResponse({
         type: 'next_step_with_elements',
-        elements: clickableElementLabels.slice(0, 200),
+        elements: clickableElementLabels.slice(0, 70),
       })
     } else if (request.type === 'updatePlan') {
       setPlan(request.plan)
