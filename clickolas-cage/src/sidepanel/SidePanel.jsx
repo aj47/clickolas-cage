@@ -137,6 +137,7 @@ export const SidePanel = () => {
           role: element.getAttribute('role') || element.tagName,
           ariaLabel: element.getAttribute('aria-label') || element.innerText,
           isNew: isNew,
+          tabIndex: element.tabIndex,
         })
       }
     }
@@ -153,10 +154,10 @@ export const SidePanel = () => {
 
     // Sort the array to place new elements at the top
     cleanedArray.sort((a, b) => {
-      if (a.isNew && !b.isNew) return -1;
-      if (!a.isNew && b.isNew) return 1;
-      return 0;
-    });
+      if (a.isNew && !b.isNew) return -1
+      if (!a.isNew && b.isNew) return 1
+      return 0
+    })
 
     return { clickableElements, clickableElementLabels: cleanedArray }
   }
@@ -350,7 +351,7 @@ export const SidePanel = () => {
       const { clickableElementLabels } = getClickableElements()
       sendResponse({
         type: 'next_step_with_elements',
-        elements: clickableElementLabels.slice(0, 70),
+        elements: clickableElementLabels.slice(0, 200),
       })
     } else if (request.type === 'updatePlan') {
       setPlan(request.plan)
@@ -378,21 +379,23 @@ export const SidePanel = () => {
     observerRef.current = new MutationObserver((mutations) => {
       const currentTime = Date.now()
       mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
           mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE && !isIgnoredElement(node)) {
+            if (!isIgnoredElement(node)) {
               if (isRelevantElement(node)) {
                 node.dataset.observedTime = currentTime
               }
-              // Check for child elements with role="menuitem"
+              // Check for all relevant child elements
               if (node.querySelectorAll) {
-                node.querySelectorAll('[role="menuitem"]').forEach((menuItem) => {
-                  menuItem.dataset.observedTime = currentTime
-                })
+                node
+                  .querySelectorAll(
+                    'ul, select, .dropdown, [role="listbox"], [role="menu"], [role="menuitem"]',
+                  )
+                  .forEach((relevantChild) => {
+                    relevantChild.dataset.observedTime = currentTime
+                  })
               }
             }
-          })
-        }
+        })
       })
     })
     observerRef.current.observe(document.body, {
@@ -420,7 +423,7 @@ export const SidePanel = () => {
   const isIgnoredElement = (element) => {
     // Check if the element is part of the step list or a click square
     return (
-      element.closest('.steps-list') !== null ||
+      element.closest('.sidePanel') !== null ||
       element.classList.contains('clickolas-click-indicator')
     )
   }
