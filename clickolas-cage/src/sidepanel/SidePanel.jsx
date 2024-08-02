@@ -17,12 +17,13 @@ export const SidePanel = () => {
   const [isInitialRenderComplete, setIsInitialRenderComplete] = useState(false)
 
   /**
-   * Simulates typing text into a given HTML element
-   * @param {string} text - The string of text to be typed into an HTML element
-   * @param {HTMLElement} element - The target HTML element where the text will be typed
+   * Simulates typing text into an element identified by its aria-label or innerText
+   * @param {string} text - The string of text to be typed
+   * @param {string} initialLabel - The aria-label or innerText of the target element
    */
-  async function typeText(text, element) {
+  async function typeText(text, initialLabel) {
     return new Promise(async (resolve) => {
+      const element = document.querySelector(locateCorrectElement(initialLabel))
       element.focus() // Ensure the element has focus before typing
 
       for (const char of text) {
@@ -336,18 +337,20 @@ export const SidePanel = () => {
   }
 
   const handleRequest = async (request, sender, sendResponse) => {
+    if (request.plan && request.currentStep) {
+      setPlan(request.plan)
+      setCurrentStep(request.currentStep)
+    }
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
     } else if (request.type === 'locateElement') {
-      setCurrentStep(request.currentStep)
-      setPlan(request.plan)
       sendResponse({
         type: 'click_element',
         selector: locateCorrectElement(request.ariaLabel),
       })
+    } else if (request.type === 'typeText') {
+      await typeText(request.text, request.ariaLabel)
     } else if (request.type === 'generateNextStep') {
-      setPlan(request.plan)
-      setCurrentStep(request.currentStep)
       const { clickableElementLabels } = getClickableElements()
       sendResponse({
         type: 'next_step_with_elements',
@@ -379,22 +382,22 @@ export const SidePanel = () => {
     observerRef.current = new MutationObserver((mutations) => {
       const currentTime = Date.now()
       mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (!isIgnoredElement(node)) {
-              if (isRelevantElement(node)) {
-                node.dataset.observedTime = currentTime
-              }
-              // Check for all relevant child elements
-              if (node.querySelectorAll) {
-                node
-                  .querySelectorAll(
-                    'ul, select, .dropdown, [role="listbox"], [role="menu"], [role="menuitem"]',
-                  )
-                  .forEach((relevantChild) => {
-                    relevantChild.dataset.observedTime = currentTime
-                  })
-              }
+        mutation.addedNodes.forEach((node) => {
+          if (!isIgnoredElement(node)) {
+            if (isRelevantElement(node)) {
+              node.dataset.observedTime = currentTime
             }
+            // Check for all relevant child elements
+            if (node.querySelectorAll) {
+              node
+                .querySelectorAll(
+                  'ul, select, .dropdown, [role="listbox"], [role="menu"], [role="menuitem"]',
+                )
+                .forEach((relevantChild) => {
+                  relevantChild.dataset.observedTime = currentTime
+                })
+            }
+          }
         })
       })
     })
@@ -421,11 +424,15 @@ export const SidePanel = () => {
     )
   }
   const isIgnoredElement = (element) => {
-    // Check if the element is part of the step list or a click square
-    return (
-      element.closest('.sidePanel') !== null ||
-      element.classList.contains('clickolas-click-indicator')
-    )
+    // Check if the element is an HTML element
+    if (element instanceof Element) {
+      // Check if the element is part of the step list or a click square
+      return (
+        element.closest('.sidePanel') !== null ||
+        element.classList.contains('clickolas-click-indicator')
+      )
+    }
+    return false
   }
   //----------  end DOM change check --------
 

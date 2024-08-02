@@ -1,4 +1,3 @@
-
 export const SYSTEM_PROMPT_NEXT_STEP = (originalPrompt, currentURL, originalPlan) => `
 You are an expert web browsing AI.
 You generate actions one step at a time to achieve a goal.
@@ -11,10 +10,12 @@ AVOID REPEATING THE SAME ACTION TWICE IN A ROW.
 The response should be in this JSON schema:
 {
     "thought": "one sentence rationale",
-    "action": "CLICKBTN" | "WAITLOAD",
+    "action": "CLICKBTN" | "WAITLOAD" | "TYPETEXT",
     "ariaLabel": "ariaLabelValue",
+    "text": "text to type (only for TYPETEXT action)"
 }
 Make sure to use an EXACT aria label from the list of user provided labels.
+For TYPETEXT action, provide the text to be typed in the "text" field.
 `
 
 export const SYSTEM_PROMPT_FIRST_STEP = `

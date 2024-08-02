@@ -106,7 +106,6 @@ const addStepToPlan = (step) => {
  * Executes the current step in the plan based on its action type.
  */
 const executeCurrentStep = async () => {
-
   const currentState = getState()
   console.log('Executing current step')
   console.log('Current step:', currentState.currentStep)
@@ -126,6 +125,15 @@ const executeCurrentStep = async () => {
       await sendMessageToTab(currentState.targetTab, {
         type: 'locateElement',
         ariaLabel: currentAction.ariaLabel,
+        plan: currentState.currentPlan,
+        currentStep: currentState.currentStep,
+      })
+    } else if (currentAction.action === 'TYPETEXT') {
+      console.log('Executing TYPETEXT action:', currentAction.text)
+      await sendMessageToTab(currentState.targetTab, {
+        type: 'typeText',
+        ariaLabel: currentAction.ariaLabel,
+        text: currentAction.text,
         plan: currentState.currentPlan,
         currentStep: currentState.currentStep,
       })
