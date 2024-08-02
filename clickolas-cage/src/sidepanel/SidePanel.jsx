@@ -220,22 +220,17 @@ export const SidePanel = () => {
    * depending on whether it finds a matching element.
    */
   const locateCorrectElement = (initialLabel) => {
-    console.log('looking for element:', initialLabel)
     const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
     // If an element matches the initialLabel, return the path to the element
     for (const el of clickableElements) {
-      // console.log(el.getAttribute('aria-label'), el.innerText, "e.getAttribute(ari");
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
-        console.log('LOCATED ELEMENT: ')
-        console.log(el)
         const boundingBox = el.getBoundingClientRect()
         if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) returnEl = getPathTo(el)
       }
     }
     if (returnEl) return returnEl
-    else console.log('NO ELEMENT FOUND :(')
-    return false
+    else return false
   }
 
   /**
@@ -277,7 +272,6 @@ export const SidePanel = () => {
     if (!socketRef.current) {
       socketRef.current = chrome.runtime.onMessage.addListener(
         async function (request, sender, sendResponse) {
-          console.log('recieved request', JSON.stringify(request))
           handleRequest(request, sender, sendResponse)
           return true // Indicate that the response is asynchronous
         },
@@ -298,7 +292,6 @@ export const SidePanel = () => {
 
   const runPressTabInTabWithNextStep = (times, delay) => {
     runFunctionXTimesWithDelay(pressTabInTab, times, delay).then(() => {
-      console.log('ready for next step...')
       sendMessageToBackgroundScript({
         type: 'next_step',
       })
@@ -318,7 +311,6 @@ export const SidePanel = () => {
     } else if (request.type === 'generateNextStep') {
       setPlan(request.plan)
       setCurrentStep(request.currentStep)
-      console.log('current step', request.currentStep)
       sendResponse({
         type: 'next_step_with_elements',
         elements: getClickableElements().clickableElementLabels.slice(0, 200),
