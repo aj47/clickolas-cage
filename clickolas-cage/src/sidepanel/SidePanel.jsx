@@ -39,13 +39,13 @@ export const SidePanel = () => {
           metaKey: false,
         }
 
-        element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
-        element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
+        // element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
+        // element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
         element.value += char
-        element.dispatchEvent(
-          new InputEvent('input', { inputType: 'insertText', ...eventInitDict }),
-        )
-        element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
+        // element.dispatchEvent(
+        //   new InputEvent('input', { inputType: 'insertText', ...eventInitDict }),
+        // )
+        // element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
 
         await sleep(delayBetweenKeystrokes)
       }
@@ -349,7 +349,7 @@ export const SidePanel = () => {
         selector: locateCorrectElement(request.ariaLabel),
       })
     } else if (request.type === 'typeText') {
-      await typeText(request.text, request.ariaLabel)
+      typeText(request.text, request.ariaLabel)
     } else if (request.type === 'generateNextStep') {
       const { clickableElementLabels } = getClickableElements()
       sendResponse({
@@ -417,7 +417,7 @@ export const SidePanel = () => {
     return (
       element.tagName === 'UL' ||
       element.tagName === 'SELECT' ||
-      element.classList.contains('dropdown') ||
+      element.classList?.contains('dropdown') ||
       element.getAttribute('role') === 'listbox' ||
       element.getAttribute('role') === 'menu' ||
       element.getAttribute('role') === 'menuitem'
@@ -429,7 +429,7 @@ export const SidePanel = () => {
       // Check if the element is part of the step list or a click square
       return (
         element.closest('.sidePanel') !== null ||
-        element.classList.contains('clickolas-click-indicator')
+        element.classList?.contains('clickolas-click-indicator')
       )
     }
     return false
