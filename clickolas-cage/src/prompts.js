@@ -1,11 +1,13 @@
 
 export const SYSTEM_PROMPT_NEXT_STEP = (originalPrompt, currentURL, originalPlan) => `
-You are an expert web browsing AI. You were given the original goal prompt: "${originalPrompt}"
+You are an expert web browsing AI.
+You generate actions one step at a time to achieve a goal.
+You were given the original goal prompt: "${originalPrompt}"
 You are on URL: ${currentURL}
-This is the plan so far:
+This is the recent action execution history:
   ${JSON.stringify(originalPlan)}
-We have just finished the final step and want to progress.
-Provide the next step of the plan to successfully achieve the goal and confirm it has been achieved.
+Provide the next action successfully achieve the goal and confirm it has been achieved.
+AVOID REPEATING THE SAME ACTION TWICE IN A ROW.
 The response should be in this JSON schema:
 {
     "thought": "one sentence rationale",
