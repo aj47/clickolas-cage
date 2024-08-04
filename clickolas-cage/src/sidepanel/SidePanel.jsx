@@ -117,6 +117,9 @@ export const SidePanel = () => {
     const getAllElements = (root) => {
       const elements = []
       for (const element of Array.from(root.querySelectorAll('*'))) {
+        // Skip elements inside .sidePanel
+        if (element.closest('.sidePanel')) continue
+
         elements.push(element)
         if (element.shadowRoot) {
           elements.push(...getAllElements(element.shadowRoot))
@@ -131,15 +134,19 @@ export const SidePanel = () => {
     for (const element of elements) {
       const isClickable = isElementClickable(element)
       if (isClickable) {
-        const isNew =
-          element.dataset.observedTime && parseInt(element.dataset.observedTime) > lastObservedTime
-        clickableElements.push(element)
-        clickableElementLabels.push({
-          role: element.getAttribute('role') || element.tagName,
-          ariaLabel: element.getAttribute('aria-label') || element.innerText,
-          isNew: isNew,
-          tabIndex: element.tabIndex,
-        })
+        const boundingBox = element.getBoundingClientRect()
+        if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) {
+          const isNew =
+            element.dataset.observedTime && parseInt(element.dataset.observedTime) > lastObservedTime
+          clickableElements.push(element)
+          clickableElementLabels.push({
+            role: element.getAttribute('role') || element.tagName,
+            ariaLabel: element.getAttribute('aria-label') || element.innerText,
+            isNew: isNew,
+            tabIndex: element.tabIndex,
+            isFocused: element === document.activeElement,
+          })
+        }
       }
     }
 
@@ -254,14 +261,11 @@ export const SidePanel = () => {
     console.log('looking for element:', initialLabel)
     const { clickableElements, clickableElementLabels } = getClickableElements()
     let returnEl = null
-    // If an element matches the initialLabel, return the path to the element
     for (const el of clickableElements) {
-      // console.log(el.getAttribute('aria-label'), el.innerText, "e.getAttribute(ari");
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
         console.log('LOCATED ELEMENT: ')
         console.log(el)
-        const boundingBox = el.getBoundingClientRect()
-        if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) returnEl = getPathTo(el)
+        returnEl = getPathTo(el)
       }
     }
     if (returnEl) return returnEl
@@ -414,6 +418,9 @@ export const SidePanel = () => {
     }
   }, [isInitialRenderComplete])
   const isRelevantElement = (element) => {
+    if (!(element instanceof Element)) {
+      return false;
+    }
     return (
       element.tagName === 'UL' ||
       element.tagName === 'SELECT' ||
