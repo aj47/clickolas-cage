@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
 const model = 'gemini-1.5-flash-latest'
+// const model = 'gemini-1.5-flash-latest'
 // const model = 'gpt-4o'
 
 const openai = new OpenAI({
@@ -94,25 +95,34 @@ async function openAiCallWithRetry(call, retryCount = 3) {
  * @param {string} originalPrompt - The original prompt given to the AI.
  * @param {string} currentURL - The current URL.
  * @param {string} originalPlan - The original plan created by the AI.
- * @param {string} currentStep - The current step being executed.
  * @param {any[]} textOptions - An array of user-provided node aria-labels.
+ * @param {Object} focusedElement - The focused element.
+ * @param {string} notFoundElement - The aria-label of the element that was not found.
  * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
  */
 export const getNextStepFromLLM = async (
   originalPrompt,
   currentURL,
   originalPlan,
-  currentStep,
   textOptions,
+  focusedElement,
+  notFoundElement = null
 ) => {
+  const systemPrompt = SYSTEM_PROMPT_NEXT_STEP(originalPrompt, currentURL, originalPlan)
+
+  let userContent = `nodes: ${JSON.stringify(textOptions)}\n\nfocused element: ${JSON.stringify(focusedElement)}`
+  if (notFoundElement !== null) {
+    userContent += `\n\nThe element with aria-label "${notFoundElement}" was not found. Please provide an alternative action or suggestion.`
+  }
+
   const chatCompletion = await openAiChatCompletionWithLogging([
     {
       role: 'system',
-      content: SYSTEM_PROMPT_NEXT_STEP(originalPrompt, currentURL, originalPlan),
+      content: systemPrompt,
     },
     {
       role: 'user',
-      content: `nodes: ${JSON.stringify(textOptions)}`,
+      content: userContent,
     },
   ])
   return extractJsonObject(chatCompletion.choices[0].message.content)

@@ -130,6 +130,7 @@ export const SidePanel = () => {
 
     const elements = getAllElements(document.documentElement)
     const currentTime = Date.now()
+    const focusedElement = document.activeElement
 
     for (const element of elements) {
       const isClickable = isElementClickable(element)
@@ -144,7 +145,6 @@ export const SidePanel = () => {
             ariaLabel: element.getAttribute('aria-label') || element.innerText,
             isNew: isNew,
             tabIndex: element.tabIndex,
-            isFocused: element === document.activeElement,
           })
         }
       }
@@ -167,7 +167,15 @@ export const SidePanel = () => {
       return 0
     })
 
-    return { clickableElements, clickableElementLabels: cleanedArray }
+    return {
+      clickableElements,
+      clickableElementLabels: cleanedArray,
+      focusedElement: focusedElement ? {
+        role: focusedElement.getAttribute('role') || focusedElement.tagName,
+        ariaLabel: focusedElement.getAttribute('aria-label') || focusedElement.innerText,
+        tabIndex: focusedElement.tabIndex,
+      } : null
+    }
   }
 
   const isElementClickable = (element) => {
@@ -269,8 +277,14 @@ export const SidePanel = () => {
       }
     }
     if (returnEl) return returnEl
-    else console.log('NO ELEMENT FOUND :(')
-    return false
+    else {
+      console.log('NO ELEMENT FOUND :(')
+      return {
+        type: 'element_not_found',
+        ariaLabel: initialLabel,
+        elements: clickableElementLabels
+      }
+    }
   }
 
   /**
@@ -280,34 +294,6 @@ export const SidePanel = () => {
     sendMessageToBackgroundScript({ type: 'press_tab_key' })
   }
 
-  // Function to get the text of the currently focused element or its accessible name
-  const logFocusedElement = async () => {
-    return new Promise((resolve, reject) => {
-      try {
-        const focusedElementObj = { element: document.activeElement } // Get the currently focused element
-
-        if (focusedElementObj.element && focusedElementObj.element.getAttribute('aria-label')) {
-          // Check if there's an aria-label for accessibility; if so, return that
-          focusedElementObj.label = focusedElementObj.element.getAttribute('aria-label')
-        } else {
-          // Otherwise, return the text content or innerText
-          focusedElementObj.label = focusedElementObj.element
-            ? focusedElementObj.element.textContent || focusedElementObj.element.innerText
-            : ''
-        }
-        focusedElementObj.cleanLabel = focusedElementObj.label.trim()
-        sendMessageToBackgroundScript({
-          type: 'new_focused_element',
-          element: focusedElementObj,
-        })
-        resolve(focusedElementObj) // Resolve the promise with the focused element object
-      } catch (error) {
-        reject(error) // Reject the promise in case of any errors
-      }
-    })
-  }
-
-  // Add a listener to log the focused element when it changes
   useEffect(() => {
     if (!socketRef.current) {
       socketRef.current = chrome.runtime.onMessage.addListener(
@@ -319,27 +305,6 @@ export const SidePanel = () => {
       )
     }
 
-    document.addEventListener('focus', logFocusedElement, true) // Use capture phase to ensure the listener is executed
-
-    // Cleanup the listener on component unmount
-    return () => {
-      if (socketRef.current) {
-        chrome.runtime.onMessage.removeListener(socketRef.current)
-        socketRef.current = null
-      }
-      document.removeEventListener('focus', logFocusedElement, true)
-    }
-  }, [])
-
-  const runPressTabInTabWithNextStep = (times, delay) => {
-    runFunctionXTimesWithDelay(pressTabInTab, times, delay).then(() => {
-      console.log('ready for next step...')
-      sendMessageToBackgroundScript({
-        type: 'next_step',
-      })
-    })
-  }
-
   const handleRequest = async (request, sender, sendResponse) => {
     if (request.plan && request.currentStep) {
       setPlan(request.plan)
@@ -348,17 +313,23 @@ export const SidePanel = () => {
     if (request.type === 'showClick') {
       createSquareAtLocation(request.x, request.y)
     } else if (request.type === 'locateElement') {
-      sendResponse({
-        type: 'click_element',
-        selector: locateCorrectElement(request.ariaLabel),
-      })
+      const result = locateCorrectElement(request.ariaLabel)
+      if (typeof result === 'string') {
+        sendResponse({
+          type: 'click_element',
+          selector: result,
+        })
+      } else {
+        sendResponse(result) // This will send the 'element_not_found' response
+      }
     } else if (request.type === 'typeText') {
       typeText(request.text, request.ariaLabel)
     } else if (request.type === 'generateNextStep') {
-      const { clickableElementLabels } = getClickableElements()
+      const { clickableElementLabels, focusedElement } = getClickableElements()
       sendResponse({
         type: 'next_step_with_elements',
         elements: clickableElementLabels.slice(0, 200),
+        focusedElement: focusedElement
       })
     } else if (request.type === 'updatePlan') {
       setPlan(request.plan)

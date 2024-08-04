@@ -12,7 +12,6 @@ let state = {
   originalPrompt: '',
   currentURL: '',
   allowedTabs: new Set(),
-  focusedElements: [],
 }
 
 // Function to update currentPlan and notify the side panel
@@ -156,7 +155,7 @@ const executeCurrentStep = async () => {
  * @returns {Promise<string>} A promise that resolves with a string indicating the completion status.
  */
 const processResponse = async (request, sender, sendResponse) => {
-  console.log('recieved', JSON.stringify(request))
+  console.log('received', JSON.stringify(request))
   let currentState = getState()
   try {
     switch (request.type) {
@@ -183,11 +182,6 @@ const processResponse = async (request, sender, sendResponse) => {
       case 'press_tab_key':
         await pressTabKey(state.targetTab)
         break
-      case 'new_focused_element':
-        updateState({
-          focusedElements: [...state.focusedElements, request.element],
-        })
-        break
       case 'next_step_with_elements':
         if (currentState.currentStep < currentState.currentPlan.length) {
           await executeCurrentStep()
@@ -197,30 +191,25 @@ const processResponse = async (request, sender, sendResponse) => {
             currentState.originalPrompt,
             currentState.currentURL,
             currentState.currentPlan,
-            currentState.currentStep,
             request.elements,
+            request.focusedElement
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           addStepToPlan(nextStepWithElements)
         }
         break
-      case 'next_step':
-        console.log('-------------------------------------')
-        console.log(state.focusedElements, 'focusedElements')
-        const nextStepData = await getNextStepFromLLM(
-          state.originalPrompt,
-          state.currentURL,
-          state.currentPlan,
-          state.currentStep,
-          state.focusedElements.map((item) => item.cleanLabel),
+      case 'element_not_found':
+        // Handle the case when an element is not found
+        console.log('Element not found:', request.ariaLabel)
+        const nextStepAfterFailure = await getNextStepFromLLM(
+          currentState.originalPrompt,
+          currentState.currentURL,
+          currentState.currentPlan,
+          request.elements,
+          request.ariaLabel // Pass the aria-label of the element that wasn't found
         )
-        sendMessageToTab(state.targetTab, {
-          type: 'updatePlan',
-          plan: state.currentPlan,
-          currentStep: state.currentStep
-        })
-        addStepToPlan(nextStepData)
-        break
+        addStepToPlan(nextStepAfterFailure)
+        break;
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
