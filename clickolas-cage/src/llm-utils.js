@@ -32,6 +32,7 @@ const openAiChatCompletionWithLogging = async (messages) => {
   const response = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
       model: model,
+      frequency_penalty: 0.5,
       seed: 1,
       response_format: { type: 'json_object' },
       messages: messages,

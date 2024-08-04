@@ -3,10 +3,10 @@
   top: 120px;
   right: 20px;
   width: 250px;
-  max-height: 80vh;
+  height: 30vh;
   background-color: #001c24;
-  opacity: 0.95;
-  font-size: 18px;
+  opacity: 0.75;
+  font-size: 0.8rem;
   z-index: 99999;
   border-radius: 5px;
   box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
@@ -21,12 +21,12 @@
 .sidePanel .plan .steps-list {
   max-height: calc(80vh - 150px);
   overflow-y: auto;
-  padding-right: 10px;
+  padding-right: 5px;
 }
 
 .sidePanel .plan .steps-list .step {
-  padding: 10px 5px;
-  margin-bottom: 10px;
+  padding: 5px 2px;
+  margin-bottom: 5px;
 }
 
 .clickolas-click-indicator {

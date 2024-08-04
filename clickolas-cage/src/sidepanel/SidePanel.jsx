@@ -287,13 +287,6 @@ export const SidePanel = () => {
     }
   }
 
-  /**
-   * Sends a message to the background script to press the Tab key.
-   */
-  const pressTabInTab = () => {
-    sendMessageToBackgroundScript({ type: 'press_tab_key' })
-  }
-
   useEffect(() => {
     if (!socketRef.current) {
       socketRef.current = chrome.runtime.onMessage.addListener(
@@ -304,6 +297,7 @@ export const SidePanel = () => {
         },
       )
     }
+  }, [])
 
   const handleRequest = async (request, sender, sendResponse) => {
     if (request.plan && request.currentStep) {
@@ -415,13 +409,12 @@ export const SidePanel = () => {
   //----------  end DOM change check --------
 
   return (
-    <div className="sidePanel">
+    <div className="sidePanel" ref={stepsListRef}>
       <div className="plan">
-        <h2>Current Step: {currentStep}</h2>
         {plan?.length > 0 ? (
           <>
-            <h2>Clickolas Plan: </h2>
-            <div className="steps-list" ref={stepsListRef}>
+            <h2>Plan: </h2>
+            <div className="steps-list">
               {plan.map((step, i) => (
                 <div className="step" key={i}>
                   {i + 1} - {step.thought}
