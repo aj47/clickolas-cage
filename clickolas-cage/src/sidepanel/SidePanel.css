@@ -1,25 +1,61 @@
 .sidePanel {
   position: fixed;
-  top: 120px;
-  right: 20px;
   width: 250px;
   height: 30vh;
   background-color: #001c24;
   opacity: 0.75;
-  font-size: 0.8rem;
+  font-size: 1rem;
   z-index: 99999;
   border-radius: 5px;
   box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: height 0.3s ease-in-out;
+}
+
+.sidePanel.minimized {
+  height: 30px;
+}
+
+.sidePanel .topBar {
+  background-color: #00384a;
+  padding: 5px 10px;
+  cursor: move;
+  user-select: none;
+  color: white;
+  font-weight: bold;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidePanel .topBar .minimizeButton {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  margin: 0;
 }
 
 .sidePanel .plan {
   color: white;
   margin: 10px;
+  flex-grow: 1;
+  overflow-y: auto;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.sidePanel.minimized .plan {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sidePanel .plan .steps-list {
-  max-height: calc(80vh - 150px);
+  max-height: calc(100% - 40px);
   overflow-y: auto;
   padding-right: 5px;
 }
