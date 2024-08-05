@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
-import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../utils'
-import { exportLogs, clearLogs } from '../llm-utils'
+import { sendMessageToBackgroundScript } from '../utils'
+import { getSharedState, setSharedState } from '../shared-state'
+import { setModelAndProvider } from '../llm-utils'
 
 const handleExportLogs = () => {
   exportLogs()
@@ -12,9 +13,50 @@ const handleClearLogs = () => {
   clearLogs()
 }
 
+const getProviderFromModel = (model) => {
+  if (model.startsWith('gemini')) return 'google'
+  if (model.startsWith('gpt')) return 'openai'
+  if (model.startsWith('llama2') || model.startsWith('mixtral')) return 'groq'
+  return 'custom'
+}
+
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [model, setModel] = useState('')
+  const [provider, setProvider] = useState('')
+  const [customModel, setCustomModel] = useState('')
+
+  useEffect(() => {
+    const loadSharedState = async () => {
+      const { currentModel, currentProvider } = await getSharedState()
+      setModel(currentModel)
+      setProvider(currentProvider)
+    }
+    loadSharedState()
+  }, [])
+
+  const handleModelChange = async (e) => {
+    const selectedModel = e.target.value
+    setModel(selectedModel)
+    if (selectedModel !== 'custom') {
+      const newProvider = getProviderFromModel(selectedModel)
+      setProvider(newProvider)
+      await setModelAndProvider(selectedModel, newProvider)
+    }
+  }
+
+  const handleCustomModelChange = (e) => {
+    const customModelValue = e.target.value
+    setCustomModel(customModelValue)
+    setModelAndProvider(customModelValue, provider)
+  }
+
+  const handleProviderChange = async (e) => {
+    const newProvider = e.target.value
+    setProvider(newProvider)
+    await setModelAndProvider(model === 'custom' ? customModel : model, newProvider)
+  }
 
   return (
     <div className="App">
@@ -31,6 +73,39 @@ const Popup = () => {
         <p>HELLO! I AM CLICKOLAS CAGE!</p>
         {!isLoading && (
           <>
+            <div className="model-provider-selector">
+              <select value={model} onChange={handleModelChange} className="input-common input-small">
+                <optgroup label="Google">
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                  <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+                </optgroup>
+                <optgroup label="OpenAI">
+                  <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                  <option value="gpt-4">GPT-4</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                </optgroup>
+                <optgroup label="Groq">
+                  <option value="llama2-70b-4096">LLaMA2 70B</option>
+                  <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                </optgroup>
+                <option value="custom">Custom</option>
+              </select>
+              {model === 'custom' && (
+                <input
+                  type="text"
+                  value={customModel}
+                  onChange={handleCustomModelChange}
+                  placeholder="Enter custom model"
+                  className="input-common input-small custom-model-input"
+                />
+              )}
+              <select value={provider} onChange={handleProviderChange} className="input-common input-small">
+                <option value="google">Google</option>
+                <option value="openai">OpenAI</option>
+                <option value="groq">Groq</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
             <button
               className="input-common input-small"
               onClick={async () => {
