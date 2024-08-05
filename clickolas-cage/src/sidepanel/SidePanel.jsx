@@ -17,6 +17,54 @@ export const SidePanel = () => {
 
   const [isInitialRenderComplete, setIsInitialRenderComplete] = useState(false)
 
+  const [position, setPosition] = useState({ x: 20, y: 120 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  const handleMouseDown = (e) => {
+    console.log('Mouse down event triggered');
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 250));
+      const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - 30));
+      setPosition({
+        x: newX,
+        y: newY
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const toggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, position]);
+
   /**
    * Shows a click indicator at the given location using the logo image.
    * @param {number} x - The x-coordinate of the click location.
@@ -386,7 +434,21 @@ export const SidePanel = () => {
   //----------  end DOM change check --------
 
   return (
-    <div className="sidePanel" ref={stepsListRef}>
+    <div
+      className={`sidePanel ${isMinimized ? 'minimized' : ''}`}
+      ref={stepsListRef}
+      style={{
+        top: `${position.y}px`,
+        left: `${position.x}px`,
+        right: 'auto'
+      }}
+    >
+      <div className="topBar" onMouseDown={handleMouseDown}>
+        <span>Clickolas Cage</span>
+        <button className="minimizeButton" onClick={toggleMinimize}>
+          {isMinimized ? '▲' : '▼'}
+        </button>
+      </div>
       <div className="plan">
         {plan?.length > 0 ? (
           <>
