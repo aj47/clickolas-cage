@@ -140,12 +140,16 @@ export const SidePanel = () => {
           const isNew =
             element.dataset.observedTime && parseInt(element.dataset.observedTime) > lastObservedTime
           clickableElements.push(element)
-          clickableElementLabels.push({
+          const elementInfo = {
             role: element.getAttribute('role') || element.tagName,
             ariaLabel: element.getAttribute('aria-label') || element.innerText,
             isNew: isNew,
             tabIndex: element.tabIndex,
-          })
+          }
+          if (element.tagName.toLowerCase() === 'input') {
+            elementInfo.value = element.value
+          }
+          clickableElementLabels.push(elementInfo)
         }
       }
     }
@@ -259,11 +263,10 @@ export const SidePanel = () => {
   }
 
   /**
-   * Locates the correct element based on an initial label. If it finds a matching element, \
-   * it returns its path; otherwise, it logs an error message and returns false.
+   * Locates the correct element based on an initial label, and scrolls to it if found.
+   * If it finds a matching element, it returns its path; otherwise, it logs an error message and returns false.
    * @param {string} initialLabel - The initial guess of the element's label.
-   * @returns {Promise<Array<HTMLElement>|boolean>} A promise that resolves to either an array of paths or false, \
-   * depending on whether it finds a matching element.
+   * @returns {Promise<string|Object>} A promise that resolves to either a string path or an object with error information.
    */
   const locateCorrectElement = (initialLabel) => {
     console.log('looking for element:', initialLabel)
@@ -273,11 +276,14 @@ export const SidePanel = () => {
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
         console.log('LOCATED ELEMENT: ')
         console.log(el)
-        returnEl = getPathTo(el)
+        returnEl = el
+        break
       }
     }
-    if (returnEl) return returnEl
-    else {
+    if (returnEl) {
+      returnEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return getPathTo(returnEl)
+    } else {
       console.log('NO ELEMENT FOUND :(')
       return {
         type: 'element_not_found',
