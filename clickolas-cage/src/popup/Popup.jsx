@@ -12,6 +12,13 @@ const handleClearLogs = () => {
   clearLogs()
 }
 
+const getProviderFromModel = (model) => {
+  if (model.startsWith('gemini')) return 'google'
+  if (model.startsWith('gpt')) return 'openai'
+  if (model.startsWith('llama2') || model.startsWith('mixtral')) return 'groq'
+  return 'custom'
+}
+
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -23,18 +30,22 @@ const Popup = () => {
     const selectedModel = e.target.value
     setModel(selectedModel)
     if (selectedModel !== 'custom') {
-      setModelAndProvider(selectedModel, provider)
+      const newProvider = getProviderFromModel(selectedModel)
+      setProvider(newProvider)
+      setModelAndProvider(selectedModel, newProvider)
     }
   }
 
   const handleCustomModelChange = (e) => {
-    setCustomModel(e.target.value)
-    setModelAndProvider(e.target.value, provider)
+    const customModelValue = e.target.value
+    setCustomModel(customModelValue)
+    setModelAndProvider(customModelValue, provider)
   }
 
   const handleProviderChange = (e) => {
-    setProvider(e.target.value)
-    setModelAndProvider(model === 'custom' ? customModel : model, e.target.value)
+    const newProvider = e.target.value
+    setProvider(newProvider)
+    setModelAndProvider(model === 'custom' ? customModel : model, newProvider)
   }
 
   return (
@@ -82,6 +93,7 @@ const Popup = () => {
                 <option value="google">Google</option>
                 <option value="openai">OpenAI</option>
                 <option value="groq">Groq</option>
+                <option value="custom">Custom</option>
               </select>
             </div>
             <button
