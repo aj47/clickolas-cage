@@ -1,30 +1,20 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
-import { getSharedState, setSharedState } from './shared-state.js'
-
-const DEFAULT_MODEL = 'gpt-3.5-turbo'
-const DEFAULT_PROVIDER = 'openai'
-
-export const setModelAndProvider = async (model, provider) => {
-  await setSharedState({ currentModel: model, currentProvider: provider });
-
-  // Update OpenAI configuration
-  const { currentModel, currentProvider } = await getSharedState();
-  openai.apiKey = currentProvider === 'openai'
-    ? import.meta.env.VITE_OPENAI_API_KEY
-    : currentProvider === 'groq'
-    ? import.meta.env.VITE_GROQ_API_KEY
-    : import.meta.env.VITE_GEMINI_API_KEY;
-  openai.defaultHeaders = createHeaders({ provider: currentProvider });
-}
+const model = 'gemini-1.5-flash-latest'
+// const model = 'gemini-1.5-flash-latest'
+// const model = 'gpt-4o'
 
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // Default to OpenAI API key
+  // apiKey: 'not-needed', // defaults to process.env[""]
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY, // defaults to process.env[""]
+  // apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  // apiKey: "",
   baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: createHeaders({
-    provider: DEFAULT_PROVIDER,
+    provider: 'google',
+    // provider: 'openai',
   }),
 })
 
@@ -34,8 +24,6 @@ const openai = new OpenAI({
  * @returns {Promise<Object>} - The response from the OpenAI API.
  */
 const openAiChatCompletionWithLogging = async (messages) => {
-  const { currentModel = DEFAULT_MODEL, currentProvider = DEFAULT_PROVIDER } = await getSharedState();
-
   chrome.storage.local.get({ logs: [] }, (result) => {
     const logs = result.logs
     logs.push({ messages })
@@ -43,13 +31,11 @@ const openAiChatCompletionWithLogging = async (messages) => {
   })
   const response = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: currentModel,
+      model: model,
       frequency_penalty: 0.5,
       seed: 1,
       response_format: { type: 'json_object' },
       messages: messages,
-      // Add temperature parameter for OpenAI models
-      ...(currentProvider === 'openai' && { temperature: 0.7 }),
     }),
   )
   chrome.storage.local.get({ logs: [] }, (result) => {
