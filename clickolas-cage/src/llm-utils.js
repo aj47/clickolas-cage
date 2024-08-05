@@ -1,29 +1,30 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
+import { getSharedState, setSharedState } from './shared-state.js'
 
-let currentModel = 'gemini-1.5-flash-latest'
-let currentProvider = 'google'
+const DEFAULT_MODEL = 'gpt-3.5-turbo'
+const DEFAULT_PROVIDER = 'openai'
 
-export const setModelAndProvider = (model, provider) => {
-  currentModel = model
-  currentProvider = provider
+export const setModelAndProvider = async (model, provider) => {
+  await setSharedState({ currentModel: model, currentProvider: provider });
 
   // Update OpenAI configuration
-  openai.apiKey = provider === 'openai'
+  const { currentModel, currentProvider } = await getSharedState();
+  openai.apiKey = currentProvider === 'openai'
     ? import.meta.env.VITE_OPENAI_API_KEY
-    : provider === 'groq'
+    : currentProvider === 'groq'
     ? import.meta.env.VITE_GROQ_API_KEY
-    : import.meta.env.VITE_GEMINI_API_KEY
-  openai.defaultHeaders = createHeaders({ provider })
+    : import.meta.env.VITE_GEMINI_API_KEY;
+  openai.defaultHeaders = createHeaders({ provider: currentProvider });
 }
 
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // Default to OpenAI API key
   baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: createHeaders({
-    provider: currentProvider,
+    provider: DEFAULT_PROVIDER,
   }),
 })
 
@@ -33,6 +34,8 @@ const openai = new OpenAI({
  * @returns {Promise<Object>} - The response from the OpenAI API.
  */
 const openAiChatCompletionWithLogging = async (messages) => {
+  const { currentModel = DEFAULT_MODEL, currentProvider = DEFAULT_PROVIDER } = await getSharedState();
+
   chrome.storage.local.get({ logs: [] }, (result) => {
     const logs = result.logs
     logs.push({ messages })

@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
-import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../utils'
-import { exportLogs, clearLogs, setModelAndProvider } from '../llm-utils'
+import { sendMessageToBackgroundScript } from '../utils'
+import { getSharedState, setSharedState } from '../shared-state'
+import { setModelAndProvider } from '../llm-utils'
 
 const handleExportLogs = () => {
   exportLogs()
@@ -22,17 +23,26 @@ const getProviderFromModel = (model) => {
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [model, setModel] = useState('gemini-1.5-flash-latest')
-  const [provider, setProvider] = useState('google')
+  const [model, setModel] = useState('')
+  const [provider, setProvider] = useState('')
   const [customModel, setCustomModel] = useState('')
 
-  const handleModelChange = (e) => {
+  useEffect(() => {
+    const loadSharedState = async () => {
+      const { currentModel, currentProvider } = await getSharedState()
+      setModel(currentModel)
+      setProvider(currentProvider)
+    }
+    loadSharedState()
+  }, [])
+
+  const handleModelChange = async (e) => {
     const selectedModel = e.target.value
     setModel(selectedModel)
     if (selectedModel !== 'custom') {
       const newProvider = getProviderFromModel(selectedModel)
       setProvider(newProvider)
-      setModelAndProvider(selectedModel, newProvider)
+      await setModelAndProvider(selectedModel, newProvider)
     }
   }
 
@@ -42,10 +52,10 @@ const Popup = () => {
     setModelAndProvider(customModelValue, provider)
   }
 
-  const handleProviderChange = (e) => {
+  const handleProviderChange = async (e) => {
     const newProvider = e.target.value
     setProvider(newProvider)
-    setModelAndProvider(model === 'custom' ? customModel : model, newProvider)
+    await setModelAndProvider(model === 'custom' ? customModel : model, newProvider)
   }
 
   return (
