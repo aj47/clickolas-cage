@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../utils'
-import { exportLogs, clearLogs } from '../llm-utils'
+import { exportLogs, clearLogs, setModelAndProvider } from '../llm-utils'
 
 const handleExportLogs = () => {
   exportLogs()
@@ -15,6 +15,27 @@ const handleClearLogs = () => {
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [model, setModel] = useState('gemini-1.5-flash-latest')
+  const [provider, setProvider] = useState('google')
+  const [customModel, setCustomModel] = useState('')
+
+  const handleModelChange = (e) => {
+    const selectedModel = e.target.value
+    setModel(selectedModel)
+    if (selectedModel !== 'custom') {
+      setModelAndProvider(selectedModel, provider)
+    }
+  }
+
+  const handleCustomModelChange = (e) => {
+    setCustomModel(e.target.value)
+    setModelAndProvider(e.target.value, provider)
+  }
+
+  const handleProviderChange = (e) => {
+    setProvider(e.target.value)
+    setModelAndProvider(model === 'custom' ? customModel : model, e.target.value)
+  }
 
   return (
     <div className="App">
@@ -31,6 +52,38 @@ const Popup = () => {
         <p>HELLO! I AM CLICKOLAS CAGE!</p>
         {!isLoading && (
           <>
+            <div className="model-provider-selector">
+              <select value={model} onChange={handleModelChange} className="input-common input-small">
+                <optgroup label="Google">
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                  <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+                </optgroup>
+                <optgroup label="OpenAI">
+                  <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                  <option value="gpt-4">GPT-4</option>
+                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                </optgroup>
+                <optgroup label="Groq">
+                  <option value="llama2-70b-4096">LLaMA2 70B</option>
+                  <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                </optgroup>
+                <option value="custom">Custom</option>
+              </select>
+              {model === 'custom' && (
+                <input
+                  type="text"
+                  value={customModel}
+                  onChange={handleCustomModelChange}
+                  placeholder="Enter custom model"
+                  className="input-common input-small custom-model-input"
+                />
+              )}
+              <select value={provider} onChange={handleProviderChange} className="input-common input-small">
+                <option value="google">Google</option>
+                <option value="openai">OpenAI</option>
+                <option value="groq">Groq</option>
+              </select>
+            </div>
             <button
               className="input-common input-small"
               onClick={async () => {

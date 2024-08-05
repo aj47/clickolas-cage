@@ -1,20 +1,29 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
-const model = 'gemini-1.5-flash-latest'
-// const model = 'gemini-1.5-flash-latest'
-// const model = 'gpt-4o'
+
+let currentModel = 'gemini-1.5-flash-latest'
+let currentProvider = 'google'
+
+export const setModelAndProvider = (model, provider) => {
+  currentModel = model
+  currentProvider = provider
+
+  // Update OpenAI configuration
+  openai.apiKey = provider === 'openai'
+    ? import.meta.env.VITE_OPENAI_API_KEY
+    : provider === 'groq'
+    ? import.meta.env.VITE_GROQ_API_KEY
+    : import.meta.env.VITE_GEMINI_API_KEY
+  openai.defaultHeaders = createHeaders({ provider })
+}
 
 const openai = new OpenAI({
-  // apiKey: 'not-needed', // defaults to process.env[""]
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY, // defaults to process.env[""]
-  // apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  // apiKey: "",
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
   baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: createHeaders({
-    provider: 'google',
-    // provider: 'openai',
+    provider: currentProvider,
   }),
 })
 
@@ -31,11 +40,13 @@ const openAiChatCompletionWithLogging = async (messages) => {
   })
   const response = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: model,
+      model: currentModel,
       frequency_penalty: 0.5,
       seed: 1,
       response_format: { type: 'json_object' },
       messages: messages,
+      // Add temperature parameter for OpenAI models
+      ...(currentProvider === 'openai' && { temperature: 0.7 }),
     }),
   )
   chrome.storage.local.get({ logs: [] }, (result) => {

@@ -79,3 +79,32 @@
   50%{background-position:100% 19%}
   100%{background-position:0% 82%}
 }
+
+.model-provider-selector {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.model-provider-selector select,
+.model-provider-selector input {
+  height: auto;
+  font-size: 14px;
+  padding: 5px;
+  max-width: 200px;
+}
+
+.custom-model-input {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.model-provider-selector select optgroup {
+  font-weight: bold;
+}
+
+.model-provider-selector select option {
+  font-weight: normal;
+}
