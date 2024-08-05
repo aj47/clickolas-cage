@@ -1,12 +1,15 @@
-- "Active" discussions on discord: https://discord.gg/wD3Ufgmj
+discord: https://discord.gg/wD3Ufgmj
+
+
+https://github.com/user-attachments/assets/f9b3ec93-c350-431c-afff-c071aada9a0a
+[view short explanation](https://www.youtube.com/watch?v=HVevc5XnKJU)
 
 # clickolas-cage
 
 > a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using LLM as a brain).
+)
 
-![image](https://github.com/aj47/clickolas-cage/assets/8023513/3c358fb4-480d-4e6c-87d8-e0e7f709075d)
 
-[Demo on youtube](https://www.youtube.com/watch?v=HVevc5XnKJU)
 
 ## Installing
 
