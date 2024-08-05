@@ -1,7 +1,6 @@
 discord: https://discord.gg/wD3Ufgmj
 
 
-https://github.com/user-attachments/assets/f9b3ec93-c350-431c-afff-c071aada9a0a
 [view short explanation](https://www.youtube.com/watch?v=HVevc5XnKJU)
 
 # clickolas-cage
