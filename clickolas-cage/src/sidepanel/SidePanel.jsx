@@ -17,7 +17,6 @@ export const SidePanel = () => {
 
   const [isInitialRenderComplete, setIsInitialRenderComplete] = useState(false)
 
-  const [position, setPosition] = useState({ x: 20, y: 120 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
@@ -32,6 +31,7 @@ export const SidePanel = () => {
     });
   };
 
+  const [position, setPosition] = useState({ x: window.innerWidth - 250, y: window.innerHeight -240 })
   const handleMouseMove = (e) => {
     if (isDragging) {
       const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 250));
@@ -451,8 +451,6 @@ export const SidePanel = () => {
       </div>
       <div className="plan">
         {plan?.length > 0 ? (
-          <>
-            <h2>Plan: </h2>
             <div className="steps-list">
               {plan.map((step, i) => (
                 <div className="step" key={i}>
@@ -460,7 +458,6 @@ export const SidePanel = () => {
                 </div>
               ))}
             </div>
-          </>
         ) : (
           <h2> Thinking...</h2>
         )}
