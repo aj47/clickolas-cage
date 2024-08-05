@@ -17,43 +17,6 @@ export const SidePanel = () => {
   const [isInitialRenderComplete, setIsInitialRenderComplete] = useState(false)
 
   /**
-   * Simulates typing text into an element identified by its aria-label or innerText
-   * @param {string} text - The string of text to be typed
-   * @param {string} initialLabel - The aria-label or innerText of the target element
-   */
-  async function typeText(text, initialLabel) {
-    return new Promise(async (resolve) => {
-      const element = document.querySelector(locateCorrectElement(initialLabel))
-      element.focus() // Ensure the element has focus before typing
-
-      for (const char of text) {
-        const charCode = char.charCodeAt(0)
-        const eventInitDict = {
-          key: char,
-          char: char,
-          keyCode: charCode,
-          which: charCode,
-          shiftKey: false,
-          ctrlKey: false,
-          altKey: false,
-          metaKey: false,
-        }
-
-        // element.dispatchEvent(new KeyboardEvent('keypress', eventInitDict))
-        // element.dispatchEvent(new KeyboardEvent('keydown', eventInitDict))
-        element.value += char
-        // element.dispatchEvent(
-        //   new InputEvent('input', { inputType: 'insertText', ...eventInitDict }),
-        // )
-        // element.dispatchEvent(new KeyboardEvent('keyup', eventInitDict))
-
-        await sleep(delayBetweenKeystrokes)
-      }
-      resolve()
-    })
-  }
-
-  /**
    * Creates a square at the given location. The x and y parameters are in pixel values.
    * Used for showing where clickolas has clicked.
    * @param {number} x - The x-coordinate of the top left corner of the square.
@@ -316,14 +279,14 @@ export const SidePanel = () => {
       const result = locateCorrectElement(request.ariaLabel)
       if (typeof result === 'string') {
         sendResponse({
-          type: 'click_element',
+          type: 'element_located',
           selector: result,
+          action: request.action,
+          text: request.text, // Only used for TYPETEXT
         })
       } else {
         sendResponse(result) // This will send the 'element_not_found' response
       }
-    } else if (request.type === 'typeText') {
-      typeText(request.text, request.ariaLabel)
     } else if (request.type === 'generateNextStep') {
       const { clickableElementLabels, focusedElement } = getClickableElements()
       sendResponse({

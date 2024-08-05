@@ -93,12 +93,12 @@ const completedTask = async () => {
  * Adds a new step to the current plan and executes it.
  * @param {Object} step - The step to add to the plan.
  */
-const addStepToPlan = (step) => {
+const addStepToPlan = async(step) => {
   const currentState = getState()
   const newPlan = [...currentState.currentPlan, step]
   // updateCurrentPlan(newPlan)
   updateState({ currentPlan: newPlan })
-  executeCurrentStep()
+  await executeCurrentStep()
 }
 
 /**
@@ -124,17 +124,15 @@ const executeCurrentStep = async () => {
       await sendMessageToTab(currentState.targetTab, {
         type: 'locateElement',
         ariaLabel: currentAction.ariaLabel,
-        plan: currentState.currentPlan,
-        currentStep: currentState.currentStep,
+        action: currentAction.action,
       })
     } else if (currentAction.action === 'TYPETEXT') {
       console.log('Executing TYPETEXT action:', currentAction.text)
       await sendMessageToTab(currentState.targetTab, {
-        type: 'typeText',
+        type: 'locateElement',
         ariaLabel: currentAction.ariaLabel,
+        action: currentAction.action,
         text: currentAction.text,
-        plan: currentState.currentPlan,
-        currentStep: currentState.currentStep,
       })
     } else if (currentAction.action === 'ASKUSER') {
       // TODO: Handle ASKUSER
@@ -174,7 +172,7 @@ const processResponse = async (request, sender, sendResponse) => {
         const responseJSON = await promptToFirstStep(request.prompt)
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
-        addStepToPlan(responseJSON)
+        await addStepToPlan(responseJSON)
         break
       case 'click_element':
         clickElement(state.targetTab, request.selector)
@@ -195,7 +193,15 @@ const processResponse = async (request, sender, sendResponse) => {
             request.focusedElement
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
-          addStepToPlan(nextStepWithElements)
+          await addStepToPlan(nextStepWithElements)
+        }
+        break
+      case 'element_located':
+        if (request.action === 'CLICKBTN') {
+          await clickElement(currentState.targetTab, request.selector)
+        } else if (request.action === 'TYPETEXT') {
+          await typeText(currentState.targetTab, request.selector, request.text)
+          completedTask()
         }
         break
       case 'element_not_found':
@@ -208,7 +214,7 @@ const processResponse = async (request, sender, sendResponse) => {
           request.elements,
           request.ariaLabel // Pass the aria-label of the element that wasn't found
         )
-        addStepToPlan(nextStepAfterFailure)
+        await addStepToPlan(nextStepAfterFailure)
         break;
     }
     if (sendResponse) sendResponse('completed')
@@ -489,6 +495,54 @@ async function dispatchTabKeyPress(tabId) {
           )
         }
       },
+    )
+  })
+}
+
+async function typeText(tabId, selector, text) {
+  try {
+    console.log('Typing text into element with selector:', selector)
+    await attachDebugger(tabId)
+    const root = await getDocumentRoot(tabId)
+    const nodeId = await querySelectorNode(tabId, root, selector)
+
+    // Focus the element
+    await chrome.debugger.sendCommand({ tabId }, 'DOM.focus', { nodeId })
+
+    // Type each character
+    for (const char of text) {
+      await dispatchKeyEvent(tabId, 'keyDown', char)
+      await dispatchKeyEvent(tabId, 'keyUp', char)
+      await sleep(100) // Add a small delay between keystrokes
+    }
+
+    chrome.debugger.detach({ tabId })
+  } catch (e) {
+    console.error('Error in typeText:', e)
+  }
+}
+
+async function dispatchKeyEvent(tabId, type, key) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand(
+      { tabId },
+      'Input.dispatchKeyEvent',
+      {
+        type,
+        text: key,
+        unmodifiedText: key,
+        key,
+        code: `Key${key.toUpperCase()}`,
+        windowsVirtualKeyCode: key.charCodeAt(0),
+        nativeVirtualKeyCode: key.charCodeAt(0),
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError.message)
+        } else {
+          resolve()
+        }
+      }
     )
   })
 }
