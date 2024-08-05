@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from '../utils'
 
 import './SidePanel.css'
+
 export const SidePanel = () => {
   const [plan, setPlan] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
@@ -17,18 +18,25 @@ export const SidePanel = () => {
   const [isInitialRenderComplete, setIsInitialRenderComplete] = useState(false)
 
   /**
-   * Creates a square at the given location. The x and y parameters are in pixel values.
-   * Used for showing where clickolas has clicked.
-   * @param {number} x - The x-coordinate of the top left corner of the square.
-   * @param {number} y - The y-coordinate of the top left corner of the square.
+   * Shows a click indicator at the given location using the logo image.
+   * @param {number} x - The x-coordinate of the click location.
+   * @param {number} y - The y-coordinate of the click location.
    */
-  async function createSquareAtLocation(x, y) {
-    // Create a div element
-    let square = document.createElement('div')
-    square.className = 'clickolas-click-indicator'
-    square.style.left = `${x - 25}px`
-    square.style.top = `${y - 25}px`
-    document.body.appendChild(square)
+  async function showClickIndicator(x, y) {
+    const clickIndicator = document.createElement('img')
+    clickIndicator.src = chrome.runtime.getURL('img/logo-48.png')
+    clickIndicator.className = 'clickolas-click-indicator'
+    clickIndicator.style.position = 'absolute'
+    clickIndicator.style.left = `${x - 17}px`  // Center the 34px image
+    clickIndicator.style.top = `${y - 17}px`   // Center the 34px image
+    clickIndicator.style.zIndex = '9999'
+    clickIndicator.style.pointerEvents = 'none'  // Ensure it doesn't interfere with clicks
+    document.body.appendChild(clickIndicator)
+
+    // Remove the indicator after a short delay
+    setTimeout(() => {
+      document.body.removeChild(clickIndicator)
+    }, 2000)  // Adjust this value to change how long the indicator stays visible
   }
 
   /**
@@ -257,6 +265,7 @@ export const SidePanel = () => {
   }
 
   useEffect(() => {
+    showClickIndicator(500, 500);
     if (!socketRef.current) {
       socketRef.current = chrome.runtime.onMessage.addListener(
         async function (request, sender, sendResponse) {
@@ -274,7 +283,7 @@ export const SidePanel = () => {
       setCurrentStep(request.currentStep)
     }
     if (request.type === 'showClick') {
-      createSquareAtLocation(request.x, request.y)
+      showClickIndicator(request.x, request.y)
     } else if (request.type === 'locateElement') {
       const result = locateCorrectElement(request.ariaLabel)
       if (typeof result === 'string') {
