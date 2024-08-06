@@ -32,8 +32,8 @@ export const SidePanel = () => {
   }
 
   const [position, setPosition] = useState({
-    x: window.innerWidth - 250,
-    y: window.innerHeight - 240,
+    x: window.innerWidth - 350,
+    y: window.innerHeight - 350,
   })
   const handleMouseMove = (e) => {
     if (isDragging) {

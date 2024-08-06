@@ -66,7 +66,7 @@
 .input-common[type="button"] {
   background: linear-gradient(270deg, #000000, #2f2f2f, #5e5e5e, #8d8d8d, #bcbcbc);
   background-size: 1400% 1400%;
-  width: calc(80% + 8px);
+  width: calc(80% + 26px);
 }
 
 @keyframes rainbow {
@@ -102,4 +102,14 @@
 
 .model-provider-selector select option {
   font-weight: normal;
+}
+
+.expandable-textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 38px;
+  max-height: 150px;
+  transition: height 0.1s ease;
+  padding: 8px 12px;
+  line-height: 1.5;
 }

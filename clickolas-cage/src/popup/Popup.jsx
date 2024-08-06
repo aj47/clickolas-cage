@@ -58,15 +58,36 @@ const Popup = () => {
     await setModelAndProvider(model === 'custom' ? customModel : model, newProvider)
   }
 
+  const handleTextareaChange = (e) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <div style={{position: 'absolute', top: 15, right: 15}}>
-          <button className="input-common input-small" style={{marginBottom: 15}} onClick={handleExportLogs}>
+        <div style={{ position: 'absolute', top: 15, right: 15 }}>
+          <button className="input-common input-small" onClick={handleExportLogs}>
             Export Logs
           </button>
-          <button className="input-common input-small" onClick={handleClearLogs}>
+          <button
+            style={{ marginBottom: 15, marginTop: 15 }}
+            className="input-common input-small"
+            onClick={handleClearLogs}
+          >
             Clear Logs
+          </button>
+          <button
+            className="input-common input-small"
+            onClick={async () => {
+              const prompt = "Create a google calendar event at 2pm labeled 'hello world'"
+              promptRef.current.value = prompt
+              console.log('submit clicked.')
+              sendMessageToBackgroundScript({ type: 'new_goal', prompt })
+              setIsLoading(true)
+            }}
+          >
+            Quick Add Event
           </button>
         </div>
         <img src={logo} className="App-logo" alt="logo" />
@@ -74,7 +95,11 @@ const Popup = () => {
         {!isLoading && (
           <>
             <div className="model-provider-selector">
-              <select value={model} onChange={handleModelChange} className="input-common input-small">
+              <select
+                value={model}
+                onChange={handleModelChange}
+                className="input-common input-small"
+              >
                 <optgroup label="Google">
                   <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                   <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
@@ -101,36 +126,28 @@ const Popup = () => {
                   className="input-common input-small custom-model-input"
                 />
               )}
-              <select value={provider} onChange={handleProviderChange} className="input-common input-small">
+              <select
+                value={provider}
+                onChange={handleProviderChange}
+                className="input-common input-small"
+              >
                 <option value="google">Google</option>
                 <option value="openai">OpenAI</option>
                 <option value="groq">Groq</option>
                 <option value="custom">Custom</option>
               </select>
             </div>
-            {/* <button
-              className="input-common input-small"
-              onClick={async () => {
-                const prompt = "Create a google calendar event at 2pm labeled 'hello world'";
-                promptRef.current.value = prompt;
-                console.log('submit clicked.')
-                sendMessageToBackgroundScript({ type: 'new_goal', prompt });
-                setIsLoading(true);
-              }}
-            >
-              Quick Add Event
-            </button> */}
-            <input
+            <textarea
               ref={promptRef}
-              type="text"
-              placeholder="Add event x to
- google calendar"
-              className="input-common input-large"
+              placeholder="Add event x to google calendar"
+              className="input-common input-large expandable-textarea"
+              onChange={handleTextareaChange}
+              rows="1"
             />
             <input
               onClick={async () => {
                 console.log('submit clicked.')
-                if (promptRef.current.value.length === 0) return
+                if (promptRef.current.value.trim().length === 0) return
                 sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
                 setIsLoading(true)
               }}
