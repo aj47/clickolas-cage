@@ -135,6 +135,7 @@ export const SidePanel = () => {
   const getClickableElements = () => {
     const clickableElements = []
     const clickableElementLabels = []
+    const seenAriaLabels = new Set()
 
     const getAllElements = (root) => {
       const elements = []
@@ -163,29 +164,31 @@ export const SidePanel = () => {
             element.dataset.observedTime &&
             parseInt(element.dataset.observedTime) > lastObservedTime
           clickableElements.push(element)
-          const elementInfo = {
-            role: element.getAttribute('role') || element.tagName,
-            ariaLabel: element.getAttribute('aria-label') || element.innerText,
-            isNew: isNew,
-            tabIndex: element.tabIndex,
+          const ariaLabel = element.getAttribute('aria-label') || element.innerText
+
+          // Check if this aria label has been seen before
+          if (!seenAriaLabels.has(ariaLabel)) {
+            seenAriaLabels.add(ariaLabel)
+            const elementInfo = {
+              role: element.getAttribute('role') || element.tagName,
+              ariaLabel: ariaLabel,
+              isNew: isNew,
+              tabIndex: element.tabIndex,
+            }
+            if (element.tagName.toLowerCase() === 'input') {
+              elementInfo.value = element.value
+            }
+            clickableElementLabels.push(elementInfo)
           }
-          if (element.tagName.toLowerCase() === 'input') {
-            elementInfo.value = element.value
-          }
-          clickableElementLabels.push(elementInfo)
         }
       }
     }
 
     setLastObservedTime(currentTime)
 
-    const cleanedArray = [
-      ...new Set(
-        clickableElementLabels.filter(
-          (e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY',
-        ),
-      ),
-    ]
+    const cleanedArray = clickableElementLabels.filter(
+      (e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY'
+    )
 
     // Sort the array to place new elements at the top
     cleanedArray.sort((a, b) => {
@@ -354,7 +357,7 @@ export const SidePanel = () => {
       const { clickableElementLabels, focusedElement } = getClickableElements()
       sendResponse({
         type: 'next_step_with_elements',
-        elements: clickableElementLabels.slice(0, 200),
+        elements: clickableElementLabels.slice(0, 400),
         focusedElement: focusedElement,
       })
     } else if (request.type === 'updatePlan') {

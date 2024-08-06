@@ -14,18 +14,6 @@ let state = {
   allowedTabs: new Set(),
 }
 
-// Function to update currentPlan and notify the side panel
-// const updateCurrentPlan = (newPlan) => {
-//   state.currentPlan = newPlan
-//   if (state.targetTab) {
-//     sendMessageToTab(state.targetTab, {
-//       type: 'updatePlan',
-//       plan: state.currentPlan,
-//       currentStep: state.currentStep,
-//     })
-//   }
-// }
-
 // Function to get the current state
 const getState = () => ({ ...state })
 
@@ -93,10 +81,10 @@ const completedTask = async () => {
  * Adds a new step to the current plan and executes it.
  * @param {Object} step - The step to add to the plan.
  */
-const addStepToPlan = async(step) => {
+const addStepToPlan = async (step) => {
   const currentState = getState()
   const newPlan = [...currentState.currentPlan, step]
-  // updateCurrentPlan(newPlan)
+  console.log('new plan', newPlan)
   updateState({ currentPlan: newPlan })
   await executeCurrentStep()
 }
@@ -190,7 +178,7 @@ const processResponse = async (request, sender, sendResponse) => {
             currentState.currentURL,
             currentState.currentPlan,
             request.elements,
-            request.focusedElement
+            request.focusedElement,
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           await addStepToPlan(nextStepWithElements)
@@ -207,16 +195,18 @@ const processResponse = async (request, sender, sendResponse) => {
       case 'element_not_found':
         // Handle the case when an element is not found
         console.log('Element not found:', request.ariaLabel)
+        updateState({ currentStep: currentState.currentStep + 1 })
         const nextStepAfterFailure = await getNextStepFromLLM(
           currentState.originalPrompt,
           currentState.currentURL,
           currentState.currentPlan,
           request.elements,
           request.focusedElement, // Pass the aria-label of the element that wasn't found
-          request.ariaLabel // Pass the aria-label of the element that wasn't found
+          request.ariaLabel, // Pass the aria-label of the element that wasn't found
         )
+        console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
         await addStepToPlan(nextStepAfterFailure)
-        break;
+        break
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
@@ -502,13 +492,14 @@ async function dispatchTabKeyPress(tabId) {
 
 async function typeText(tabId, selector, text) {
   try {
-    console.log('Typing text into element with selector:', selector)
-    await attachDebugger(tabId)
-    const root = await getDocumentRoot(tabId)
-    const nodeId = await querySelectorNode(tabId, root, selector)
-
-    // Focus the element
-    await chrome.debugger.sendCommand({ tabId }, 'DOM.focus', { nodeId })
+    if (selector) {
+      console.log('Typing text into element with selector:', selector)
+      await attachDebugger(tabId)
+      const root = await getDocumentRoot(tabId)
+      const nodeId = await querySelectorNode(tabId, root, selector)
+      // Focus the element
+      await chrome.debugger.sendCommand({ tabId }, 'DOM.focus', { nodeId })
+    }
 
     // Type each character
     for (const char of text) {
@@ -543,7 +534,7 @@ async function dispatchKeyEvent(tabId, type, key) {
         } else {
           resolve()
         }
-      }
+      },
     )
   })
 }

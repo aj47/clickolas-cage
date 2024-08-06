@@ -79,8 +79,9 @@ const Popup = () => {
           </button>
           <button
             className="input-common input-small"
+            style={{ marginBottom: 15 }}
             onClick={async () => {
-              const prompt = "Create a google calendar event at 2pm labeled 'hello world'"
+              const prompt = "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
               promptRef.current.value = prompt
               console.log('submit clicked.')
               sendMessageToBackgroundScript({ type: 'new_goal', prompt })

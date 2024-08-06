@@ -10,7 +10,7 @@ AVOID REPEATING THE SAME ACTION TWICE IN A ROW.
 The response should be in this JSON schema:
 {
     "thought": "one sentence rationale",
-    "action": "CLICKBTN" | "WAITLOAD" | "TYPETEXT",
+    "action": "CLICKBTN" | "TYPETEXT",
     "ariaLabel": "ariaLabelValue",
     "text": "text to type (only for TYPETEXT action)"
 }
