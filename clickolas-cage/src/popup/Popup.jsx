@@ -3,7 +3,7 @@ import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript } from '../utils'
 import { getSharedState, setSharedState } from '../shared-state'
-import { setModelAndProvider } from '../llm-utils'
+import { setModelAndProvider, exportLogs, clearLogs } from '../llm-utils'
 
 const handleExportLogs = () => {
   exportLogs()

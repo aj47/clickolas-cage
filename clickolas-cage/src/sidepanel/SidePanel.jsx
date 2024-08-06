@@ -295,7 +295,7 @@ export const SidePanel = () => {
    */
   const locateCorrectElement = (initialLabel) => {
     console.log('looking for element:', initialLabel)
-    const { clickableElements, clickableElementLabels } = getClickableElements()
+    const { clickableElements, clickableElementLabels, focusedElement } = getClickableElements()
     let returnEl = null
     for (const el of clickableElements) {
       if (el.getAttribute('aria-label') === initialLabel || el.innerText === initialLabel) {
@@ -314,6 +314,7 @@ export const SidePanel = () => {
         type: 'element_not_found',
         ariaLabel: initialLabel,
         elements: clickableElementLabels,
+        focusedElement: focusedElement,
       }
     }
   }
@@ -347,7 +348,7 @@ export const SidePanel = () => {
           text: request.text, // Only used for TYPETEXT
         })
       } else {
-        sendResponse(result) // This will send the 'element_not_found' response
+        sendResponse(result) // This will send the 'element_not_found' response with focusedElement
       }
     } else if (request.type === 'generateNextStep') {
       const { clickableElementLabels, focusedElement } = getClickableElements()
