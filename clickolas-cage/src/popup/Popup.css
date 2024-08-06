@@ -51,7 +51,6 @@
   font-size: 20px;
   display: block;
   cursor: pointer;
-  transition: transform .2s;
 }
 
 .input-large {
@@ -64,14 +63,10 @@
   opacity: 0.5;
 }
 
-.input-common:hover {
-  transform: scale(1.1);
-}
-
 .input-common[type="button"] {
   background: linear-gradient(270deg, #000000, #2f2f2f, #5e5e5e, #8d8d8d, #bcbcbc);
   background-size: 1400% 1400%;
-  animation: rainbow 3s ease infinite;
+  width: calc(80% + 8px);
 }
 
 @keyframes rainbow {

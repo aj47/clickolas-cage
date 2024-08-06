@@ -17,53 +17,56 @@ export const SidePanel = () => {
 
   const [isInitialRenderComplete, setIsInitialRenderComplete] = useState(false)
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false)
 
   const handleMouseDown = (e) => {
-    console.log('Mouse down event triggered');
-    setIsDragging(true);
+    console.log('Mouse down event triggered')
+    setIsDragging(true)
     setDragOffset({
       x: e.clientX - position.x,
-      y: e.clientY - position.y
-    });
-  };
+      y: e.clientY - position.y,
+    })
+  }
 
-  const [position, setPosition] = useState({ x: window.innerWidth - 250, y: window.innerHeight -240 })
+  const [position, setPosition] = useState({
+    x: window.innerWidth - 250,
+    y: window.innerHeight - 240,
+  })
   const handleMouseMove = (e) => {
     if (isDragging) {
-      const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 250));
-      const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - 30));
+      const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 250))
+      const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - 30))
       setPosition({
         x: newX,
-        y: newY
-      });
+        y: newY,
+      })
     }
-  };
+  }
 
   const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+    setIsDragging(false)
+  }
 
   const toggleMinimize = () => {
-    setIsMinimized(!isMinimized);
-  };
+    setIsMinimized(!isMinimized)
+  }
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
     } else {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
     }
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, position]);
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragOffset, position])
 
   /**
    * Shows a click indicator at the given location using the logo image.
@@ -73,18 +76,18 @@ export const SidePanel = () => {
   async function showClickIndicator(x, y) {
     const clickIndicator = document.createElement('img')
     clickIndicator.src = chrome.runtime.getURL('img/logo-48.png')
-    clickIndicator.style.opacity = 0.9;
+    clickIndicator.style.opacity = 0.9
     clickIndicator.style.position = 'absolute'
-    clickIndicator.style.left = `${x - 17}px`  // Center the 34px image
-    clickIndicator.style.top = `${y - 17}px`   // Center the 34px image
+    clickIndicator.style.left = `${x - 17}px` // Center the 34px image
+    clickIndicator.style.top = `${y - 17}px` // Center the 34px image
     clickIndicator.style.zIndex = '9999'
-    clickIndicator.style.pointerEvents = 'none'  // Ensure it doesn't interfere with clicks
+    clickIndicator.style.pointerEvents = 'none' // Ensure it doesn't interfere with clicks
     document.body.appendChild(clickIndicator)
 
     // Remove the indicator after a short delay
     setTimeout(() => {
       document.body.removeChild(clickIndicator)
-    }, 2000)  // Adjust this value to change how long the indicator stays visible
+    }, 2000) // Adjust this value to change how long the indicator stays visible
   }
 
   /**
@@ -157,7 +160,8 @@ export const SidePanel = () => {
         const boundingBox = element.getBoundingClientRect()
         if (boundingBox && boundingBox.x !== 0 && boundingBox.y !== 0) {
           const isNew =
-            element.dataset.observedTime && parseInt(element.dataset.observedTime) > lastObservedTime
+            element.dataset.observedTime &&
+            parseInt(element.dataset.observedTime) > lastObservedTime
           clickableElements.push(element)
           const elementInfo = {
             role: element.getAttribute('role') || element.tagName,
@@ -193,11 +197,13 @@ export const SidePanel = () => {
     return {
       clickableElements,
       clickableElementLabels: cleanedArray,
-      focusedElement: focusedElement ? {
-        role: focusedElement.getAttribute('role') || focusedElement.tagName,
-        ariaLabel: focusedElement.getAttribute('aria-label') || focusedElement.innerText,
-        tabIndex: focusedElement.tabIndex,
-      } : null
+      focusedElement: focusedElement
+        ? {
+            role: focusedElement.getAttribute('role') || focusedElement.tagName,
+            ariaLabel: focusedElement.getAttribute('aria-label') || focusedElement.innerText,
+            tabIndex: focusedElement.tabIndex,
+          }
+        : null,
     }
   }
 
@@ -307,7 +313,7 @@ export const SidePanel = () => {
       return {
         type: 'element_not_found',
         ariaLabel: initialLabel,
-        elements: clickableElementLabels
+        elements: clickableElementLabels,
       }
     }
   }
@@ -348,7 +354,7 @@ export const SidePanel = () => {
       sendResponse({
         type: 'next_step_with_elements',
         elements: clickableElementLabels.slice(0, 200),
-        focusedElement: focusedElement
+        focusedElement: focusedElement,
       })
     } else if (request.type === 'updatePlan') {
       setPlan(request.plan)
@@ -409,7 +415,7 @@ export const SidePanel = () => {
   }, [isInitialRenderComplete])
   const isRelevantElement = (element) => {
     if (!(element instanceof Element)) {
-      return false;
+      return false
     }
     return (
       element.tagName === 'UL' ||
@@ -436,11 +442,10 @@ export const SidePanel = () => {
   return (
     <div
       className={`sidePanel ${isMinimized ? 'minimized' : ''}`}
-      ref={stepsListRef}
       style={{
         top: `${position.y}px`,
         left: `${position.x}px`,
-        right: 'auto'
+        right: 'auto',
       }}
     >
       <div className="topBar" onMouseDown={handleMouseDown}>
@@ -451,13 +456,13 @@ export const SidePanel = () => {
       </div>
       <div className="plan">
         {plan?.length > 0 ? (
-            <div className="steps-list">
-              {plan.map((step, i) => (
-                <div className="step" key={i}>
-                  {i + 1} - {step.thought}
-                </div>
-              ))}
-            </div>
+          <div ref={stepsListRef} className="steps-list">
+            {plan.map((step, i) => (
+              <div className="step" key={i}>
+                {i + 1} - {step.thought}
+              </div>
+            ))}
+          </div>
         ) : (
           <h2> Thinking...</h2>
         )}

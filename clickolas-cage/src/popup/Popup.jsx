@@ -82,6 +82,8 @@ const Popup = () => {
                 <optgroup label="OpenAI">
                   <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
                   <option value="gpt-4">GPT-4</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-4o-mini">GPT-4o-mini</option>
                   <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                 </optgroup>
                 <optgroup label="Groq">
@@ -106,7 +108,7 @@ const Popup = () => {
                 <option value="custom">Custom</option>
               </select>
             </div>
-            <button
+            {/* <button
               className="input-common input-small"
               onClick={async () => {
                 const prompt = "Create a google calendar event at 2pm labeled 'hello world'";
@@ -117,7 +119,7 @@ const Popup = () => {
               }}
             >
               Quick Add Event
-            </button>
+            </button> */}
             <input
               ref={promptRef}
               type="text"
