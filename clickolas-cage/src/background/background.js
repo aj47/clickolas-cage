@@ -72,8 +72,8 @@ const completedTask = async () => {
   const currentState = getState()
   console.log('Completed task. Step:', currentState.currentStep)
   updateState({ currentStep: currentState.currentStep + 1 })
-  // console.log('sleeping 3s...')
-  // await sleep(3000)
+  console.log('sleeping 3s...')
+  await sleep(3000)
   const updatedState = getState()
   console.log('Moving to next step:', updatedState.currentStep)
   if (updatedState.currentStep >= updatedState.currentPlan.length) {
