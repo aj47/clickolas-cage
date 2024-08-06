@@ -23,8 +23,8 @@ const getProviderFromModel = (model) => {
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [model, setModel] = useState('')
-  const [provider, setProvider] = useState('')
+  const [model, setModel] = useState('gemini-1.5-flash-latest')
+  const [provider, setProvider] = useState('google')
   const [customModel, setCustomModel] = useState('')
 
   useEffect(() => {

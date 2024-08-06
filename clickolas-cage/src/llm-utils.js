@@ -3,8 +3,8 @@ import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
 import { getSharedState, setSharedState } from './shared-state.js'
 
-const DEFAULT_MODEL = 'gpt-3.5-turbo'
-const DEFAULT_PROVIDER = 'openai'
+const DEFAULT_MODEL = 'gemini-1.5-flash-latest'
+const DEFAULT_PROVIDER = 'google'
 
 export const setModelAndProvider = async (model, provider) => {
   await setSharedState({ currentModel: model, currentProvider: provider });
@@ -20,7 +20,7 @@ export const setModelAndProvider = async (model, provider) => {
 }
 
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY, // Default to OpenAI API key
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY, // Default to OpenAI API key
   baseURL: 'http://localhost:8787/v1',
   dangerouslyAllowBrowser: true,
   defaultHeaders: createHeaders({
