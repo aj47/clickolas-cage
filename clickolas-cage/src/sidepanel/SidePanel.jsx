@@ -213,6 +213,7 @@ export const SidePanel = () => {
 
     // Check for clickable roles
     const clickableRoles = [
+      'option',
       'button',
       'tab',
       'link',

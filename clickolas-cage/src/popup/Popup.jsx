@@ -2,9 +2,6 @@ import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript } from '../utils'
-import { getSharedState, setSharedState } from '../shared-state'
-import { setModelAndProvider, exportLogs, clearLogs } from '../llm-utils'
-import { sendMessageToBackgroundScript, sendMessageToContentScript } from '../utils'
 import { exportLogs, clearLogs } from '../llm-utils'
 
 const handleExportLogs = () => {
