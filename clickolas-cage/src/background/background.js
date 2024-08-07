@@ -223,6 +223,12 @@ const processResponse = async (request, sender, sendResponse) => {
     return sendResponse('error')
   }
 }
+chrome.commands.onCommand.addListener((command) => {
+  if (command === 'open-extension') {
+    chrome.tabs.create({ url: 'popup.html' });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   processResponse(request, sender, sendResponse)
     .then(() => {
