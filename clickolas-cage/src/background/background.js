@@ -212,6 +212,7 @@ const processResponse = async (request, sender, sendResponse) => {
           currentState.currentURL,
           currentState.currentPlan,
           request.elements,
+          request.focusedElement, // Pass the aria-label of the element that wasn't found
           request.ariaLabel // Pass the aria-label of the element that wasn't found
         )
         await addStepToPlan(nextStepAfterFailure)
