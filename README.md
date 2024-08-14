@@ -14,20 +14,24 @@ discord: https://discord.gg/wD3Ufgmj
 ## Installing
 
 1. Check if your `Node.js` version is >= **14**.
-2. Run `npm install` to install the dependencies.
+2. To install the dependencies:
+```shell
+cd clickolas-cage
+npm install
+```
 3. replace your GEMINI api key in `.env.template` and rename the file  to `.env`
 
 ## Developing
 
 run these commands to run everything locally:
 ```shell
-$ cd clickolas-cage
+cd clickolas-cage
 
-$ npm run dev
+npm run dev
 ```
 and in a seperate terminal:
 ```shell
-$ npx @portkey-ai/gateway
+npx @portkey-ai/gateway
 ```
 This runs the chrome extension locally.
 
