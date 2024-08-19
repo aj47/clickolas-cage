@@ -14,18 +14,6 @@ let state = {
   allowedTabs: new Set(),
 }
 
-// Function to update currentPlan and notify the side panel
-// const updateCurrentPlan = (newPlan) => {
-//   state.currentPlan = newPlan
-//   if (state.targetTab) {
-//     sendMessageToTab(state.targetTab, {
-//       type: 'updatePlan',
-//       plan: state.currentPlan,
-//       currentStep: state.currentStep,
-//     })
-//   }
-// }
-
 // Function to get the current state
 const getState = () => ({ ...state })
 
@@ -206,6 +194,7 @@ const processResponse = async (request, sender, sendResponse) => {
         break
       case 'element_not_found':
         // Handle the case when an element is not found
+        updateState({ currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
         const nextStepAfterFailure = await getNextStepFromLLM(
           currentState.originalPrompt,

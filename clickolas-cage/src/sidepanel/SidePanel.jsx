@@ -331,32 +331,36 @@ export const SidePanel = () => {
       setPlan(request.plan)
       setCurrentStep(request.currentStep)
     }
-    if (request.type === 'showClick') {
-      showClickIndicator(request.x, request.y)
-    } else if (request.type === 'locateElement') {
-      const result = locateCorrectElement(request.ariaLabel)
-      if (typeof result === 'string') {
+    switch (request.type) {
+      case 'ping':
+        sendResponse({ type: 'ready' })
+        break
+      case 'showClick':
+        showClickIndicator(request.x, request.y)
+        sendResponse({ type: 'completed_task' })
+        break
+      case 'locateElement':
+        const result = locateCorrectElement(request.ariaLabel)
+        if (typeof result === 'string') {
+          sendResponse({
+            type: 'element_located',
+            selector: result,
+            action: request.action,
+            text: request.text, // Only used for TYPETEXT
+          })
+        } else {
+          sendResponse(result) // This will send the 'element_not_found' response with focusedElement
+        }
+        break
+      case 'generateNextStep':
+        const { clickableElementLabels, focusedElement } = getClickableElements()
         sendResponse({
-          type: 'element_located',
-          selector: result,
-          action: request.action,
-          text: request.text, // Only used for TYPETEXT
+          type: 'next_step_with_elements',
+          elements: clickableElementLabels.slice(0, 200),
+          focusedElement: focusedElement
         })
-      } else {
-        sendResponse(result) // This will send the 'element_not_found' response with focusedElement
-      }
-    } else if (request.type === 'generateNextStep') {
-      const { clickableElementLabels, focusedElement } = getClickableElements()
-      sendResponse({
-        type: 'next_step_with_elements',
-        elements: clickableElementLabels.slice(0, 200),
-        focusedElement: focusedElement
-      })
-    } else if (request.type === 'updatePlan') {
-      setPlan(request.plan)
-      setCurrentStep(request.currentStep)
+        break
     }
-    sendResponse({ type: 'completed_task' })
   }
 
   useEffect(() => {
