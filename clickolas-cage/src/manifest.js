@@ -1,5 +1,5 @@
 import { defineManifest } from '@crxjs/vite-plugin'
-import packageData from '../package.json' assert { type: 'json' }
+const packageData = require('../package.json');
 
 export default defineManifest({
   name: packageData.name,
@@ -39,6 +39,15 @@ export default defineManifest({
     },
   ],
   permissions: ['activeTab', 'sidePanel', 'storage', 'debugger', 'scripting'],
+  commands: {
+    "open-extension": {
+      suggested_key: {
+        default: "Ctrl+Shift+L",
+        mac: "Command+Shift+L"
+      },
+      description: "Open the extension"
+    }
+  }
   // chrome_url_overrides: {
   //   newtab: 'newtab.html',
   // },

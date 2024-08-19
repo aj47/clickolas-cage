@@ -60,8 +60,8 @@ const completedTask = async () => {
   const currentState = getState()
   console.log('Completed task. Step:', currentState.currentStep)
   updateState({ currentStep: currentState.currentStep + 1 })
-  console.log('sleeping 3s...')
-  await sleep(3000)
+  console.log('sleeping 1s...')
+  await sleep(1000)
   const updatedState = getState()
   console.log('Moving to next step:', updatedState.currentStep)
   if (updatedState.currentStep >= updatedState.currentPlan.length) {
@@ -194,6 +194,7 @@ const processResponse = async (request, sender, sendResponse) => {
         break
       case 'element_not_found':
         // Handle the case when an element is not found
+        updateState({ currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
         updateState({ currentStep: currentState.currentStep + 1 })
         const nextStepAfterFailure = await getNextStepFromLLM(
@@ -202,7 +203,7 @@ const processResponse = async (request, sender, sendResponse) => {
           currentState.currentPlan,
           request.elements,
           request.focusedElement, // Pass the aria-label of the element that wasn't found
-          request.ariaLabel, // Pass the aria-label of the element that wasn't found
+          request.ariaLabel // Pass the aria-label of the element that wasn't found
         )
         console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
         await addStepToPlan(nextStepAfterFailure)
@@ -214,6 +215,12 @@ const processResponse = async (request, sender, sendResponse) => {
     return sendResponse('error')
   }
 }
+chrome.commands.onCommand.addListener((command) => {
+  if (command === 'open-extension') {
+    chrome.tabs.create({ url: 'popup.html' });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   processResponse(request, sender, sendResponse)
     .then(() => {

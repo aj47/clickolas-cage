@@ -32,8 +32,8 @@ export const SidePanel = () => {
   }
 
   const [position, setPosition] = useState({
-    x: window.innerWidth - 350,
-    y: window.innerHeight - 350,
+    x: window.innerWidth - 250,
+    y: window.innerHeight - 240,
   })
   const handleMouseMove = (e) => {
     if (isDragging) {
@@ -222,6 +222,7 @@ export const SidePanel = () => {
 
     // Check for clickable roles
     const clickableRoles = [
+      'option',
       'button',
       'tab',
       'link',
@@ -339,36 +340,41 @@ export const SidePanel = () => {
       setPlan(request.plan)
       setCurrentStep(request.currentStep)
     }
-    if (request.type === 'showClick') {
-      showClickIndicator(request.x, request.y)
-    } else if (request.type === 'locateElement') {
-      const result = locateCorrectElement(request.ariaLabel)
-      if (typeof result === 'string') {
+    switch (request.type) {
+      case 'ping':
+        sendResponse({ type: 'ready' })
+        break
+      case 'showClick':
+        showClickIndicator(request.x, request.y)
+        sendResponse({ type: 'completed_task' })
+        break
+      case 'locateElement':
+        const result = locateCorrectElement(request.ariaLabel)
+        if (typeof result === 'string') {
+          sendResponse({
+            type: 'element_located',
+            selector: result,
+            action: request.action,
+            text: request.text, // Only used for TYPETEXT
+          })
+        } else {
+          sendResponse(result) // This will send the 'element_not_found' response with focusedElement
+        }
+        break
+      case 'generateNextStep':
+        const { clickableElementLabels, focusedElement } = getClickableElements()
         sendResponse({
-          type: 'element_located',
-          selector: result,
-          action: request.action,
-          text: request.text, // Only used for TYPETEXT
+          type: 'next_step_with_elements',
+          elements: clickableElementLabels.slice(0, 200),
+          focusedElement: focusedElement,
         })
-      } else {
-        sendResponse(result) // This will send the 'element_not_found' response with focusedElement
-      }
-    } else if (request.type === 'generateNextStep') {
-      const { clickableElementLabels, focusedElement } = getClickableElements()
-      sendResponse({
-        type: 'next_step_with_elements',
-        elements: clickableElementLabels.slice(0, 400),
-        focusedElement: focusedElement,
-      })
-    } else if (request.type === 'updatePlan') {
-      setPlan(request.plan)
-      setCurrentStep(request.currentStep)
+        break
     }
-    sendResponse({ type: 'completed_task' })
   }
 
   useEffect(() => {
     // New effect to scroll the steps list to bottom when plan updates
+    console.log(stepsListRef.current)
     if (stepsListRef.current) {
       stepsListRef.current.scrollTop = stepsListRef.current.scrollHeight
     }
@@ -460,7 +466,7 @@ export const SidePanel = () => {
       </div>
       <div className="plan">
         {plan?.length > 0 ? (
-          <div ref={stepsListRef} className="steps-list">
+          <div className="steps-list" ref={stepsListRef}>
             {plan.map((step, i) => (
               <div className="step" key={i}>
                 {i + 1} - {step.thought}
