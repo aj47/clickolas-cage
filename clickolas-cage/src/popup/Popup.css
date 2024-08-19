@@ -50,7 +50,6 @@
   font-size: 20px;
   display: block;
   cursor: pointer;
-  transition: transform .2s;
 }
 
 .input-large {
@@ -63,18 +62,53 @@
   opacity: 0.5;
 }
 
-.input-common:hover {
-  transform: scale(1.1);
-}
-
 .input-common[type="button"] {
   background: linear-gradient(270deg, #000000, #2f2f2f, #5e5e5e, #8d8d8d, #bcbcbc);
   background-size: 1400% 1400%;
-  animation: rainbow 3s ease infinite;
+  width: calc(80% + 26px);
 }
 
 @keyframes rainbow {
   0%{background-position:0% 82%}
   50%{background-position:100% 19%}
   100%{background-position:0% 82%}
+}
+
+.model-provider-selector {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.model-provider-selector select,
+.model-provider-selector input {
+  height: auto;
+  font-size: 14px;
+  padding: 5px;
+  width: 206px;
+}
+
+.custom-model-input {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.model-provider-selector select optgroup {
+  font-weight: bold;
+}
+
+.model-provider-selector select option {
+  font-weight: normal;
+}
+
+.expandable-textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 38px;
+  max-height: 150px;
+  transition: height 0.1s ease;
+  padding: 8px 12px;
+  line-height: 1.5;
 }

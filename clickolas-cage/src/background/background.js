@@ -1,6 +1,5 @@
 import { sendMessageToContentScript, sleep } from '../utils'
-
-import { getNextStepFromLLM, promptToFirstStep } from '../llm-utils'
+import { getNextStepFromLLM, promptToFirstStep, setModelAndProvider } from '../llm-utils'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -12,6 +11,8 @@ let state = {
   originalPrompt: '',
   currentURL: '',
   allowedTabs: new Set(),
+  currentModel: 'gemini-1.5-flash-latest',
+  currentProvider: 'google',
 }
 
 // Function to get the current state
@@ -81,10 +82,10 @@ const completedTask = async () => {
  * Adds a new step to the current plan and executes it.
  * @param {Object} step - The step to add to the plan.
  */
-const addStepToPlan = async(step) => {
+const addStepToPlan = async (step) => {
   const currentState = getState()
   const newPlan = [...currentState.currentPlan, step]
-  // updateCurrentPlan(newPlan)
+  console.log('new plan', newPlan)
   updateState({ currentPlan: newPlan })
   await executeCurrentStep()
 }
@@ -157,7 +158,11 @@ const processResponse = async (request, sender, sendResponse) => {
           currentPlan: [],
           originalPrompt: request.prompt,
         })
-        const responseJSON = await promptToFirstStep(request.prompt)
+        const responseJSON = await promptToFirstStep(
+          request.prompt,
+          currentState.currentModel,
+          currentState.currentProvider,
+        )
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
         await addStepToPlan(responseJSON)
@@ -178,7 +183,10 @@ const processResponse = async (request, sender, sendResponse) => {
             currentState.currentURL,
             currentState.currentPlan,
             request.elements,
-            request.focusedElement
+            request.focusedElement,
+            null, // notFoundElement
+            currentState.currentModel,
+            currentState.currentProvider,
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           await addStepToPlan(nextStepWithElements)
@@ -196,16 +204,29 @@ const processResponse = async (request, sender, sendResponse) => {
         // Handle the case when an element is not found
         updateState({ currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
+        updateState({ currentStep: currentState.currentStep + 1 })
         const nextStepAfterFailure = await getNextStepFromLLM(
           currentState.originalPrompt,
           currentState.currentURL,
           currentState.currentPlan,
           request.elements,
-          request.focusedElement, // Pass the aria-label of the element that wasn't found
-          request.ariaLabel // Pass the aria-label of the element that wasn't found
+          request.focusedElement,
+          request.ariaLabel, // Pass the aria-label of the element that wasn't found
+          currentState.currentModel,
+          currentState.currentProvider,
         )
+        console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
         await addStepToPlan(nextStepAfterFailure)
-        break;
+        break
+      case 'updateModelAndProvider':
+        await updateModelAndProvider(request.model, request.provider)
+        break
+      case 'getModelAndProvider':
+        sendResponse({
+          currentModel: currentState.currentModel || 'gemini-1.5-flash-latest',
+          currentProvider: currentState.currentProvider || 'google',
+        })
+        return // Add this line to prevent further execution
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
@@ -213,11 +234,17 @@ const processResponse = async (request, sender, sendResponse) => {
     return sendResponse('error')
   }
 }
+
+const updateModelAndProvider = async (model, provider) => {
+  updateState({ currentModel: model, currentProvider: provider })
+  await setModelAndProvider(model, provider)
+}
+
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'open-extension') {
-    chrome.tabs.create({ url: 'popup.html' });
+    chrome.tabs.create({ url: 'popup.html' })
   }
-});
+})
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   processResponse(request, sender, sendResponse)
@@ -497,13 +524,14 @@ async function dispatchTabKeyPress(tabId) {
 
 async function typeText(tabId, selector, text) {
   try {
-    console.log('Typing text into element with selector:', selector)
-    await attachDebugger(tabId)
-    const root = await getDocumentRoot(tabId)
-    const nodeId = await querySelectorNode(tabId, root, selector)
-
-    // Focus the element
-    await chrome.debugger.sendCommand({ tabId }, 'DOM.focus', { nodeId })
+    if (selector) {
+      console.log('Typing text into element with selector:', selector)
+      await attachDebugger(tabId)
+      const root = await getDocumentRoot(tabId)
+      const nodeId = await querySelectorNode(tabId, root, selector)
+      // Focus the element
+      await chrome.debugger.sendCommand({ tabId }, 'DOM.focus', { nodeId })
+    }
 
     // Type each character
     for (const char of text) {
@@ -538,7 +566,7 @@ async function dispatchKeyEvent(tabId, type, key) {
         } else {
           resolve()
         }
-      }
+      },
     )
   })
 }

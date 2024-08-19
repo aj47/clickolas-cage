@@ -1,29 +1,36 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
-const model = 'gemini-1.5-flash-latest'
-// const model = 'gemini-1.5-flash-latest'
-// const model = 'gpt-4o'
 
-const openai = new OpenAI({
-  // apiKey: 'not-needed', // defaults to process.env[""]
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY, // defaults to process.env[""]
-  // apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  // apiKey: "",
-  baseURL: 'http://localhost:8787/v1',
-  dangerouslyAllowBrowser: true,
-  defaultHeaders: createHeaders({
-    provider: 'google',
-    // provider: 'openai',
-  }),
-})
+const DEFAULT_MODEL = 'gemini-1.5-flash-latest'
+const DEFAULT_PROVIDER = 'google'
+
+let openai;
+
+export const setModelAndProvider = async (model, provider) => {
+  const apiKey = provider === 'openai'
+    ? import.meta.env.VITE_OPENAI_API_KEY
+    : provider === 'groq'
+    ? import.meta.env.VITE_GROQ_API_KEY
+    : import.meta.env.VITE_GEMINI_API_KEY;
+
+  openai = new OpenAI({
+    apiKey: apiKey,
+    baseURL: 'http://localhost:8787/v1',
+    dangerouslyAllowBrowser: true,
+    defaultHeaders: createHeaders({ provider }),
+  });
+}
+
+// Initialize with default values
+setModelAndProvider(DEFAULT_MODEL, DEFAULT_PROVIDER);
 
 /**
  * Wrapper function for OpenAI chat completion calls with logging.
  * @param {Object} messages - The messages payload to send to the OpenAI API.
  * @returns {Promise<Object>} - The response from the OpenAI API.
  */
-const openAiChatCompletionWithLogging = async (messages) => {
+const openAiChatCompletionWithLogging = async (messages, model, provider) => {
   chrome.storage.local.get({ logs: [] }, (result) => {
     const logs = result.logs
     logs.push({ messages })
@@ -31,11 +38,13 @@ const openAiChatCompletionWithLogging = async (messages) => {
   })
   const response = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model: model,
+      model,
       frequency_penalty: 0.5,
       seed: 1,
       response_format: { type: 'json_object' },
       messages: messages,
+      // Add temperature parameter for OpenAI models
+      ...(provider === 'openai' && { temperature: 0.7 }),
     }),
   )
   chrome.storage.local.get({ logs: [] }, (result) => {
@@ -99,6 +108,8 @@ async function openAiCallWithRetry(call, retryCount = 3) {
  * @param {any[]} textOptions - An array of user-provided node aria-labels.
  * @param {Object} focusedElement - The focused element.
  * @param {string} notFoundElement - The aria-label of the element that was not found.
+ * @param {string} model - The current model.
+ * @param {string} provider - The current provider.
  * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
  */
 export const getNextStepFromLLM = async (
@@ -107,7 +118,9 @@ export const getNextStepFromLLM = async (
   originalPlan,
   textOptions,
   focusedElement,
-  notFoundElement = null
+  notFoundElement = null,
+  model,
+  provider
 ) => {
   const systemPrompt = SYSTEM_PROMPT_NEXT_STEP(originalPrompt, currentURL, originalPlan)
 
@@ -125,16 +138,18 @@ export const getNextStepFromLLM = async (
       role: 'user',
       content: userContent,
     },
-  ])
+  ], model, provider)
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
 /**
  * Sends a prompt to the OpenAI API and returns the first step in achieving the goal as a URL or Google search URL.
  * @param {string} prompt - The user's prompt describing the goal.
+ * @param {string} model - The current model.
+ * @param {string} provider - The current provider.
  * @returns {Promise<object>} - A promise that resolves to an object containing the thought and URL parameter.
  */
-export const promptToFirstStep = async (prompt) => {
+export const promptToFirstStep = async (prompt, model, provider) => {
   const chatCompletion = await openAiChatCompletionWithLogging([
     {
       role: 'system',
@@ -144,7 +159,7 @@ export const promptToFirstStep = async (prompt) => {
       role: 'user',
       content: `user prompt: ${prompt}`,
     },
-  ])
+  ], model, provider)
   return extractJsonObject(chatCompletion.choices[0].message.content + '}')
 }
 
