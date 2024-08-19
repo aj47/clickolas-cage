@@ -1,6 +1,5 @@
 import { sendMessageToContentScript, sleep } from '../utils'
-
-import { getNextStepFromLLM, promptToFirstStep } from '../llm-utils'
+import { getNextStepFromLLM, promptToFirstStep, setModelAndProvider } from '../llm-utils'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -12,6 +11,8 @@ let state = {
   originalPrompt: '',
   currentURL: '',
   allowedTabs: new Set(),
+  currentModel: 'gemini-1.5-flash-latest',
+  currentProvider: 'google',
 }
 
 // Function to get the current state
@@ -157,7 +158,11 @@ const processResponse = async (request, sender, sendResponse) => {
           currentPlan: [],
           originalPrompt: request.prompt,
         })
-        const responseJSON = await promptToFirstStep(request.prompt)
+        const responseJSON = await promptToFirstStep(
+          request.prompt,
+          currentState.currentModel,
+          currentState.currentProvider,
+        )
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
         await addStepToPlan(responseJSON)
@@ -179,6 +184,9 @@ const processResponse = async (request, sender, sendResponse) => {
             currentState.currentPlan,
             request.elements,
             request.focusedElement,
+            null, // notFoundElement
+            currentState.currentModel,
+            currentState.currentProvider,
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           await addStepToPlan(nextStepWithElements)
@@ -202,12 +210,23 @@ const processResponse = async (request, sender, sendResponse) => {
           currentState.currentURL,
           currentState.currentPlan,
           request.elements,
-          request.focusedElement, // Pass the aria-label of the element that wasn't found
-          request.ariaLabel // Pass the aria-label of the element that wasn't found
+          request.focusedElement,
+          request.ariaLabel, // Pass the aria-label of the element that wasn't found
+          currentState.currentModel,
+          currentState.currentProvider,
         )
         console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
         await addStepToPlan(nextStepAfterFailure)
         break
+      case 'updateModelAndProvider':
+        await updateModelAndProvider(request.model, request.provider)
+        break
+      case 'getModelAndProvider':
+        sendResponse({
+          currentModel: currentState.currentModel || 'gemini-1.5-flash-latest',
+          currentProvider: currentState.currentProvider || 'google',
+        })
+        return // Add this line to prevent further execution
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
@@ -215,11 +234,17 @@ const processResponse = async (request, sender, sendResponse) => {
     return sendResponse('error')
   }
 }
+
+const updateModelAndProvider = async (model, provider) => {
+  updateState({ currentModel: model, currentProvider: provider })
+  await setModelAndProvider(model, provider)
+}
+
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'open-extension') {
-    chrome.tabs.create({ url: 'popup.html' });
+    chrome.tabs.create({ url: 'popup.html' })
   }
-});
+})
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   processResponse(request, sender, sendResponse)

@@ -2,8 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript } from '../utils'
-import { getSharedState, setSharedState } from '../shared-state'
-import { setModelAndProvider, exportLogs, clearLogs } from '../llm-utils'
+import { exportLogs, clearLogs } from '../llm-utils'
 
 const handleExportLogs = () => {
   exportLogs()
@@ -28,12 +27,26 @@ const Popup = () => {
   const [customModel, setCustomModel] = useState('')
 
   useEffect(() => {
-    const loadSharedState = async () => {
-      const { currentModel, currentProvider } = await getSharedState()
-      setModel(currentModel)
-      setProvider(currentProvider)
+    const loadModelAndProvider = async () => {
+      try {
+        const response = await sendMessageToBackgroundScript({ type: 'getModelAndProvider' })
+        if (response && response.currentModel && response.currentProvider) {
+          setModel(response.currentModel)
+          setProvider(response.currentProvider)
+        } else {
+          console.error('Invalid response from background script:', response)
+          // Set default values if the response is invalid
+          setModel('gemini-1.5-flash-latest')
+          setProvider('google')
+        }
+      } catch (error) {
+        console.error('Error loading model and provider:', error)
+        // Set default values if there's an error
+        setModel('gemini-1.5-flash-latest')
+        setProvider('google')
+      }
     }
-    loadSharedState()
+    loadModelAndProvider()
   }, [])
 
   const handleModelChange = async (e) => {
@@ -42,26 +55,38 @@ const Popup = () => {
     if (selectedModel !== 'custom') {
       const newProvider = getProviderFromModel(selectedModel)
       setProvider(newProvider)
-      await setModelAndProvider(selectedModel, newProvider)
+      await sendMessageToBackgroundScript({
+        type: 'updateModelAndProvider',
+        model: selectedModel,
+        provider: newProvider,
+      })
     }
   }
 
   const handleCustomModelChange = (e) => {
     const customModelValue = e.target.value
     setCustomModel(customModelValue)
-    setModelAndProvider(customModelValue, provider)
+    sendMessageToBackgroundScript({
+      type: 'updateModelAndProvider',
+      model: customModelValue,
+      provider,
+    })
   }
 
   const handleProviderChange = async (e) => {
     const newProvider = e.target.value
     setProvider(newProvider)
-    await setModelAndProvider(model === 'custom' ? customModel : model, newProvider)
+    await sendMessageToBackgroundScript({
+      type: 'updateModelAndProvider',
+      model: model === 'custom' ? customModel : model,
+      provider: newProvider,
+    })
   }
 
   const handleTextareaChange = (e) => {
-    e.target.style.height = 'auto';
-    e.target.style.height = `${e.target.scrollHeight}px`;
-  };
+    e.target.style.height = 'auto'
+    e.target.style.height = `${e.target.scrollHeight}px`
+  }
 
   return (
     <div className="App">
@@ -81,7 +106,8 @@ const Popup = () => {
             className="input-common input-small"
             style={{ marginBottom: 15 }}
             onClick={async () => {
-              const prompt = "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
+              const prompt =
+                "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
               promptRef.current.value = prompt
               console.log('submit clicked.')
               sendMessageToBackgroundScript({ type: 'new_goal', prompt })
