@@ -112,3 +112,23 @@
   padding: 8px 12px;
   line-height: 1.5;
 }
+
+.settings-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 60px;
+  width: 80%;
+}
+
+.settings-menu .model-provider-selector {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.settings-menu .model-provider-selector select,
+.settings-menu .model-provider-selector input,
+.settings-menu button {
+  width: 100%;
+  margin-bottom: 5px;
+}

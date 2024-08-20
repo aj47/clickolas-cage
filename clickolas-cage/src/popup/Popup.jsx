@@ -25,6 +25,7 @@ const Popup = () => {
   const [model, setModel] = useState('gemini-1.5-flash-latest')
   const [provider, setProvider] = useState('google')
   const [customModel, setCustomModel] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     const loadModelAndProvider = async () => {
@@ -88,39 +89,20 @@ const Popup = () => {
     e.target.style.height = `${e.target.scrollHeight}px`
   }
 
+  const toggleSettings = () => {
+    setShowSettings(!showSettings)
+  }
+
   return (
     <div className="App">
       <header className="App-header">
         <div style={{ position: 'absolute', top: 15, right: 15 }}>
-          <button className="input-common input-small" onClick={handleExportLogs}>
-            Export Logs
-          </button>
-          <button
-            style={{ marginBottom: 15, marginTop: 15 }}
-            className="input-common input-small"
-            onClick={handleClearLogs}
-          >
-            Clear Logs
-          </button>
-          <button
-            className="input-common input-small"
-            style={{ marginBottom: 15 }}
-            onClick={async () => {
-              const prompt =
-                "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
-              promptRef.current.value = prompt
-              console.log('submit clicked.')
-              sendMessageToBackgroundScript({ type: 'new_goal', prompt })
-              setIsLoading(true)
-            }}
-          >
-            Quick Add Event
+          <button className="input-common input-small" onClick={toggleSettings}>
+            {showSettings ? 'Hide Settings' : 'Show Settings'}
           </button>
         </div>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>HELLO! I AM CLICKOLAS CAGE!</p>
-        {!isLoading && (
-          <>
+        {showSettings ? (
+          <div className="settings-menu">
             <div className="model-provider-selector">
               <select
                 value={model}
@@ -164,6 +146,17 @@ const Popup = () => {
                 <option value="custom">Custom</option>
               </select>
             </div>
+            <button className="input-common input-small" onClick={handleExportLogs}>
+              Export Logs
+            </button>
+            <button className="input-common input-small" onClick={handleClearLogs}>
+              Clear Logs
+            </button>
+          </div>
+        ) : !isLoading ? (
+          <>
+            <img src={logo} className="App-logo" alt="logo" />
+            <p>HELLO! I AM CLICKOLAS CAGE!</p>
             <textarea
               ref={promptRef}
               placeholder="Add event x to google calendar"
@@ -182,9 +175,24 @@ const Popup = () => {
               value="Submit"
               className="input-common input-large"
             />
+            <button
+              className="input-common input-small"
+              style={{ marginTop: 15 }}
+              onClick={async () => {
+                const prompt =
+                  "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
+                promptRef.current.value = prompt
+                console.log('submit clicked.')
+                sendMessageToBackgroundScript({ type: 'new_goal', prompt })
+                setIsLoading(true)
+              }}
+            >
+              Quick Add Event
+            </button>
           </>
+        ) : (
+          <p>Thinking...</p>
         )}
-        {isLoading && <p>Thinking...</p>}
       </header>
     </div>
   )
