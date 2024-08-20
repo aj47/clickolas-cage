@@ -13,6 +13,8 @@ let state = {
   allowedTabs: new Set(),
   currentModel: 'gemini-1.5-flash-latest',
   currentProvider: 'google',
+  isExecuting: false,
+  stopRequested: false,
 }
 
 // Function to get the current state
@@ -48,6 +50,8 @@ const navURL = (url) => {
           allowedTabs: newAllowedTabs,
           targetTab: tab.id,
         })
+        updateState({ isExecuting: true })
+        sendMessageToTab(tab.id, { type: 'execution_started' })
         resolve(tab) // Resolve the promise with the tab object
       }
     })
@@ -92,9 +96,18 @@ const completedTask = async () => {
  */
 const addStepToPlan = async (step) => {
   const currentState = getState()
+  if (currentState.stopRequested) {
+    console.log('Execution stopped, not adding new step to plan')
+    updateState({ isExecuting: false, stopRequested: false })
+    return
+  }
   const newPlan = [...currentState.currentPlan, step]
   console.log('new plan', newPlan)
   updateState({ currentPlan: newPlan })
+  if (!currentState.isExecuting) {
+    updateState({ isExecuting: true })
+    sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
+  }
   await executeCurrentStep()
 }
 
@@ -103,11 +116,24 @@ const addStepToPlan = async (step) => {
  */
 const executeCurrentStep = async () => {
   const currentState = getState()
-  console.log('Executing:', JSON.stringify(currentState.currentPlan[currentState.currentStep]))
+  if (!currentState.isExecuting) {
+    console.log('Execution is not in progress')
+    return
+  }
+  if (currentState.stopRequested) {
+    console.log('Execution stopped due to user request')
+    updateState({ isExecuting: false, stopRequested: false })
+    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
+    return
+  }
+  console.log('Executing current step')
+  console.log('Current step:', currentState.currentStep)
+  console.log('Current plan:', JSON.stringify(currentState.currentPlan))
   try {
     const currentAction = currentState.currentPlan[currentState.currentStep]
     if (!currentAction) {
       console.error('No action found for current step')
+      updateState({ isExecuting: false })
       return
     }
     console.log('Current action:', currentAction.action)
@@ -143,6 +169,8 @@ const executeCurrentStep = async () => {
     }
   } catch (error) {
     console.error('Error executing current step:', error)
+    updateState({ isExecuting: false })
+    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
   }
 }
 
@@ -169,7 +197,10 @@ const processResponse = async (request, sender, sendResponse) => {
           currentStep: 0,
           currentPlan: [],
           originalPrompt: request.prompt,
+          isExecuting: true,
+          stopRequested: false
         })
+        sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         const responseJSON = await promptToFirstStep(
           request.prompt,
           currentState.currentModel,
@@ -240,6 +271,10 @@ const processResponse = async (request, sender, sendResponse) => {
         })
         return // Add this line to prevent further execution
       case 'user_message':
+        if (!currentState.isExecuting) {
+          updateState({ isExecuting: true, stopRequested: false })
+          sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
+        }
         console.log('Generating next step based on user message')
         const nextStepWithElements = await getNextStepFromLLM(
           currentState.originalPrompt,
@@ -252,13 +287,26 @@ const processResponse = async (request, sender, sendResponse) => {
           currentState.currentProvider,
           request.message // Add the user's message to the LLM input
         )
+        // Check if stop was requested while waiting for LLM response
+        if (getState().stopRequested) {
+          console.log('Execution stopped, discarding LLM response')
+          updateState({ stopRequested: false })
+          break;
+        }
         console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
         await addStepToPlan(nextStepWithElements)
         break;
+      case 'stop_execution':
+        updateState({ isExecuting: false, stopRequested: true })
+        // Cancel any ongoing tasks or timers here
+        sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
+        break
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
     console.error('Error in processResponse:', error)
+    updateState({ isExecuting: false, stopRequested: false })
+    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
     return sendResponse('error')
   }
 }
