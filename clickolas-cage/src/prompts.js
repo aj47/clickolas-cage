@@ -10,13 +10,13 @@ AVOID REPEATING THE SAME ACTION TWICE IN A ROW.
 The response should be in this JSON schema:
 {
     "thought": "one sentence rationale",
-    "action": "CLICKBTN" | "TYPETEXT" | "COMPLETED",
+    "action": "CLICKBTN" | "TYPETEXT" | "GOAL_ACHIEVED",
     "ariaLabel": "ariaLabelValue",
     "text": "text to type (only for TYPETEXT action)"
 }
 Make sure to use an EXACT aria label from the list of user provided labels.
 For TYPETEXT action, provide the text to be typed in the "text" field.
-Use the COMPLETED action when you believe the goal has been achieved.
+Use the GOAL_ACHIEVED action when you believe the goal has been achieved.
 `
 
 export const SYSTEM_PROMPT_FIRST_STEP = `

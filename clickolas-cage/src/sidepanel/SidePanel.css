@@ -1,7 +1,7 @@
 .sidePanel {
   position: fixed;
   width: 250px;
-  height: 30vh;
+  height: 400px; /* Set a fixed height */
   background-color: #001c24;
   opacity: 0.75;
   font-size: 1rem;
@@ -45,7 +45,9 @@
   color: white;
   margin: 10px;
   flex-grow: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Change from overflow-y: auto to overflow: hidden */
   transition: opacity 0.3s ease-in-out;
 }
 
@@ -55,8 +57,9 @@
 }
 
 .sidePanel .plan .messages-list {
+  flex-grow: 1;
   overflow-y: auto;
-  max-height: 300px; /* Adjust as needed */
+  margin-bottom: 10px; /* Add some space between messages and input */
 }
 
 .sidePanel .plan .message {
@@ -72,6 +75,7 @@
   display: flex;
   padding: 10px;
   background-color: #f0f0f0;
+  /* Remove any margin-top if present */
 }
 
 .user-input-form input {

@@ -23,7 +23,7 @@ const getState = () => ({ ...state })
 // Function to update the state
 const updateState = (newState) => {
   state = { ...state, ...newState }
-  console.log('State updated:', state)
+  // console.log('State updated:', state)
 }
 
 /**
@@ -32,7 +32,7 @@ const updateState = (newState) => {
  * @returns {Promise<chrome.tabs.Tab>} A promise that resolves with the created tab object.
  */
 const navURL = (url) => {
-  console.log(url, 'url')
+  console.log('navigating to', url)
   updateState({ currentURL: url })
   //Needs http otherwise does not go to absolute URL
   if (url.indexOf('http') !== 0) {
@@ -70,9 +70,9 @@ const completedTask = async () => {
   const updatedState = getState()
   console.log('Moving to next step:', updatedState.currentStep)
 
-  // Check if the last action was COMPLETED
+  // Check if the last action was GOAL_ACHIEVED
   const lastAction = updatedState.currentPlan[updatedState.currentStep - 1]
-  if (lastAction && lastAction.action === 'COMPLETED') {
+  if (lastAction && lastAction.action === 'GOAL_ACHIEVED') {
     console.log('Goal achieved. Stopping execution.')
     return
   }
@@ -156,7 +156,7 @@ const executeCurrentStep = async () => {
         action: currentAction.action,
         text: currentAction.text,
       })
-    } else if (currentAction.action === 'COMPLETED') {
+    } else if (currentAction.action === 'GOAL_ACHIEVED') {
       console.log('Goal achieved. Execution completed.')
       await sendMessageToTab(currentState.targetTab, {
         type: 'goalCompleted',
@@ -167,11 +167,6 @@ const executeCurrentStep = async () => {
       // TODO: Handle ASKUSER
     } else {
       console.error('Unknown action type:', currentAction.action)
-    }
-
-    // Only call completedTask if the action is not COMPLETED
-    if (currentAction.action !== 'COMPLETED') {
-      await completedTask()
     }
   } catch (error) {
     console.error('Error executing current step:', error)
