@@ -29,9 +29,6 @@ export const initializeOpenAI = (apiKey, model, provider) => {
   });
 };
 
-// Initialize with default values
-initializeOpenAI(null, DEFAULT_MODEL, DEFAULT_PROVIDER);
-
 /**
  * Wrapper function for OpenAI chat completion calls with logging.
  * @param {Object} messages - The messages payload to send to the OpenAI API.

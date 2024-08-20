@@ -199,7 +199,7 @@ const processResponse = async (request, sender, sendResponse) => {
           currentPlan: [],
           originalPrompt: request.prompt,
           isExecuting: true,
-          stopRequested: false
+          stopRequested: false,
         })
         sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         const responseJSON = await promptToFirstStep(
@@ -266,12 +266,14 @@ const processResponse = async (request, sender, sendResponse) => {
         await updateModelAndProvider(request.model, request.provider, request.apiKey)
         break
       case 'getModelAndProvider':
+        const apiKey = await getApiKey()
+        await initializeOpenAI(apiKey, currentState.currentModel, currentState.currentProvider)
         sendResponse({
           currentModel: currentState.currentModel,
           currentProvider: currentState.currentProvider,
-          currentApiKey: currentState.currentApiKey,
+          currentApiKey: apiKey,
         })
-        return // Add this line to prevent further execution
+        return true // Indicate that we're sending a response asynchronously
       case 'user_message':
         if (!currentState.isExecuting) {
           updateState({ isExecuting: true, stopRequested: false })
@@ -287,17 +289,17 @@ const processResponse = async (request, sender, sendResponse) => {
           null, // notFoundElement
           currentState.currentModel,
           currentState.currentProvider,
-          request.message // Add the user's message to the LLM input
+          request.message, // Add the user's message to the LLM input
         )
         // Check if stop was requested while waiting for LLM response
         if (getState().stopRequested) {
           console.log('Execution stopped, discarding LLM response')
           updateState({ stopRequested: false })
-          break;
+          break
         }
         console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
         await addStepToPlan(nextStepWithElements)
-        break;
+        break
       case 'stop_execution':
         updateState({ isExecuting: false, stopRequested: true })
         // Cancel any ongoing tasks or timers here
@@ -313,10 +315,37 @@ const processResponse = async (request, sender, sendResponse) => {
   }
 }
 
+// Add these functions for handling secure storage
+const saveApiKey = (apiKey) => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.set({ apiKey: apiKey }, resolve)
+  })
+}
+
+const getApiKey = () => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['apiKey'], (result) => {
+      resolve(result.apiKey || null)
+    })
+  })
+}
+
+// Modify the updateModelAndProvider function
 const updateModelAndProvider = async (model, provider, apiKey) => {
-  updateState({ currentModel: model, currentProvider: provider, currentApiKey: apiKey })
+  updateState({ currentModel: model, currentProvider: provider })
+  if (apiKey) {
+    await saveApiKey(apiKey)
+    updateState({ currentApiKey: apiKey })
+  }
+  console.log(apiKey, 'apiKey - updated')
   await initializeOpenAI(apiKey, model, provider)
 }
+
+// Initialize the state with the API key on startup
+;(async () => {
+  const apiKey = await getApiKey()
+  updateState({ currentApiKey: apiKey })
+})()
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'open-extension') {
@@ -325,15 +354,20 @@ chrome.commands.onCommand.addListener((command) => {
 })
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  processResponse(request, sender, sendResponse)
-    .then(() => {
-      sendResponse('completed')
-    })
-    .catch((error) => {
-      console.error('Error processing response:', error)
-      sendResponse('error')
-    })
-  return true // Indicate that the response is asynchronous
+  if (request.type === 'getModelAndProvider') {
+    processResponse(request, sender, sendResponse)
+    return true // Indicate that we will send a response asynchronously
+  } else {
+    processResponse(request, sender, sendResponse)
+      .then(() => {
+        sendResponse('completed')
+      })
+      .catch((error) => {
+        console.error('Error processing response:', error)
+        sendResponse('error')
+      })
+    return true // Indicate that the response is asynchronous
+  }
 })
 
 /**

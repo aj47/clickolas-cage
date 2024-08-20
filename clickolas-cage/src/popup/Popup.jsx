@@ -27,11 +27,15 @@ const Popup = () => {
   const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true)
 
   useEffect(() => {
     const loadModelAndProvider = async () => {
       try {
-        const response = await sendMessageToBackgroundScript({ type: 'getModelAndProvider' })
+        setIsLoadingSettings(true)
+        const response = await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ type: 'getModelAndProvider' }, resolve);
+        });
         if (response && response.currentModel && response.currentProvider) {
           setModel(response.currentModel)
           setProvider(response.currentProvider)
@@ -47,6 +51,8 @@ const Popup = () => {
         // Set default values if there's an error
         setModel('gemini-1.5-flash-latest')
         setProvider('google')
+      } finally {
+        setIsLoadingSettings(false)
       }
     }
     loadModelAndProvider()
@@ -115,64 +121,70 @@ const Popup = () => {
           </button>
         </div>
         {showSettings ? (
-          <div className="settings-menu">
-            <div className="model-provider-selector">
-              <select
-                value={model}
-                onChange={handleModelChange}
-                className="input-common input-small"
-              >
-                <optgroup label="Google">
-                  <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                  <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                </optgroup>
-                <optgroup label="OpenAI">
-                  <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
-                  <option value="gpt-4">GPT-4</option>
-                  <option value="gpt-4o">GPT-4o</option>
-                  <option value="gpt-4o-mini">GPT-4o-mini</option>
-                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                </optgroup>
-                <optgroup label="Groq">
-                  <option value="llama2-70b-4096">LLaMA2 70B</option>
-                  <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
-                </optgroup>
-                <option value="custom">Custom</option>
-              </select>
-              {model === 'custom' && (
-                <input
-                  type="text"
-                  value={customModel}
-                  onChange={handleCustomModelChange}
-                  placeholder="Enter custom model"
-                  className="input-common input-small custom-model-input"
-                />
-              )}
-              <select
-                value={provider}
-                onChange={handleProviderChange}
-                className="input-common input-small"
-              >
-                <option value="google">Google</option>
-                <option value="openai">OpenAI</option>
-                <option value="groq">Groq</option>
-                <option value="custom">Custom</option>
-              </select>
+          isLoadingSettings ? (
+            <div className="settings-menu">
+              <p>Loading settings...</p>
             </div>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={handleApiKeyChange}
-              placeholder="Enter API Key"
-              className="input-common input-small"
-            />
-            <button className="input-common input-small" onClick={handleExportLogs}>
-              Export Logs
-            </button>
-            <button className="input-common input-small" onClick={handleClearLogs}>
-              Clear Logs
-            </button>
-          </div>
+          ) : (
+            <div className="settings-menu">
+              <div className="model-provider-selector">
+                <select
+                  value={model}
+                  onChange={handleModelChange}
+                  className="input-common input-small"
+                >
+                  <optgroup label="Google">
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                    <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
+                  </optgroup>
+                  <optgroup label="OpenAI">
+                    <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                    <option value="gpt-4">GPT-4</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gpt-4o-mini">GPT-4o-mini</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                  </optgroup>
+                  <optgroup label="Groq">
+                    <option value="llama2-70b-4096">LLaMA2 70B</option>
+                    <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                  </optgroup>
+                  <option value="custom">Custom</option>
+                </select>
+                {model === 'custom' && (
+                  <input
+                    type="text"
+                    value={customModel}
+                    onChange={handleCustomModelChange}
+                    placeholder="Enter custom model"
+                    className="input-common input-small custom-model-input"
+                  />
+                )}
+                <select
+                  value={provider}
+                  onChange={handleProviderChange}
+                  className="input-common input-small"
+                >
+                  <option value="google">Google</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="groq">Groq</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={handleApiKeyChange}
+                placeholder="Enter API Key"
+                className="input-common input-small"
+              />
+              <button className="input-common input-small" onClick={handleExportLogs}>
+                Export Logs
+              </button>
+              <button className="input-common input-small" onClick={handleClearLogs}>
+                Clear Logs
+              </button>
+            </div>
+          )
         ) : !isLoading ? (
           <>
             <img src={logo} className="App-logo" alt="logo" />
