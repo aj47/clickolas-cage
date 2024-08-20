@@ -127,8 +127,9 @@
 }
 
 .settings-menu .model-provider-selector select,
-.settings-menu .model-provider-selector input,
+.settings-menu input,
 .settings-menu button {
   width: 100%;
   margin-bottom: 5px;
 }
+

@@ -6,31 +6,38 @@ const DEFAULT_MODEL = 'gemini-1.5-flash-latest'
 const DEFAULT_PROVIDER = 'google'
 
 let openai;
+let currentApiKey = null;
+let currentModel = DEFAULT_MODEL;
+let currentProvider = DEFAULT_PROVIDER;
 
-export const setModelAndProvider = async (model, provider) => {
-  const apiKey = provider === 'openai'
+export const initializeOpenAI = (apiKey, model, provider) => {
+  currentApiKey = apiKey;
+  currentModel = model;
+  currentProvider = provider;
+
+  const effectiveApiKey = currentApiKey || (provider === 'openai'
     ? import.meta.env.VITE_OPENAI_API_KEY
     : provider === 'groq'
     ? import.meta.env.VITE_GROQ_API_KEY
-    : import.meta.env.VITE_GEMINI_API_KEY;
+    : import.meta.env.VITE_GEMINI_API_KEY);
 
   openai = new OpenAI({
-    apiKey: apiKey,
+    apiKey: effectiveApiKey,
     baseURL: 'http://localhost:8787/v1',
     dangerouslyAllowBrowser: true,
     defaultHeaders: createHeaders({ provider }),
   });
-}
+};
 
 // Initialize with default values
-setModelAndProvider(DEFAULT_MODEL, DEFAULT_PROVIDER);
+initializeOpenAI(null, DEFAULT_MODEL, DEFAULT_PROVIDER);
 
 /**
  * Wrapper function for OpenAI chat completion calls with logging.
  * @param {Object} messages - The messages payload to send to the OpenAI API.
  * @returns {Promise<Object>} - The response from the OpenAI API.
  */
-const openAiChatCompletionWithLogging = async (messages, model, provider) => {
+const openAiChatCompletionWithLogging = async (messages) => {
   chrome.storage.local.get({ logs: [] }, (result) => {
     const logs = result.logs
     logs.push({ messages })
@@ -38,13 +45,13 @@ const openAiChatCompletionWithLogging = async (messages, model, provider) => {
   })
   const response = await openAiCallWithRetry(() =>
     openai.chat.completions.create({
-      model,
+      model: currentModel,
       frequency_penalty: 0.5,
       seed: 1,
       response_format: { type: 'json_object' },
       messages: messages,
       // Add temperature parameter for OpenAI models
-      ...(provider === 'openai' && { temperature: 0.7 }),
+      ...(currentProvider === 'openai' && { temperature: 0.7 }),
     }),
   )
   chrome.storage.local.get({ logs: [] }, (result) => {
@@ -143,7 +150,7 @@ export const getNextStepFromLLM = async (
       role: 'user',
       content: userContent,
     },
-  ], model, provider)
+  ])
   return extractJsonObject(chatCompletion.choices[0].message.content)
 }
 
@@ -164,7 +171,7 @@ export const promptToFirstStep = async (prompt, model, provider) => {
       role: 'user',
       content: `user prompt: ${prompt}`,
     },
-  ], model, provider)
+  ])
   return extractJsonObject(chatCompletion.choices[0].message.content + '}')
 }
 

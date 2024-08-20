@@ -1,5 +1,5 @@
 import { sendMessageToContentScript, sleep } from '../utils'
-import { getNextStepFromLLM, promptToFirstStep, setModelAndProvider } from '../llm-utils'
+import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI } from '../llm-utils'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -13,6 +13,7 @@ let state = {
   allowedTabs: new Set(),
   currentModel: 'gemini-1.5-flash-latest',
   currentProvider: 'google',
+  currentApiKey: null,
   isExecuting: false,
   stopRequested: false,
 }
@@ -262,12 +263,13 @@ const processResponse = async (request, sender, sendResponse) => {
         await addStepToPlan(nextStepAfterFailure)
         break
       case 'updateModelAndProvider':
-        await updateModelAndProvider(request.model, request.provider)
+        await updateModelAndProvider(request.model, request.provider, request.apiKey)
         break
       case 'getModelAndProvider':
         sendResponse({
-          currentModel: currentState.currentModel || 'gemini-1.5-flash-latest',
-          currentProvider: currentState.currentProvider || 'google',
+          currentModel: currentState.currentModel,
+          currentProvider: currentState.currentProvider,
+          currentApiKey: currentState.currentApiKey,
         })
         return // Add this line to prevent further execution
       case 'user_message':
@@ -311,9 +313,9 @@ const processResponse = async (request, sender, sendResponse) => {
   }
 }
 
-const updateModelAndProvider = async (model, provider) => {
-  updateState({ currentModel: model, currentProvider: provider })
-  await setModelAndProvider(model, provider)
+const updateModelAndProvider = async (model, provider, apiKey) => {
+  updateState({ currentModel: model, currentProvider: provider, currentApiKey: apiKey })
+  await initializeOpenAI(apiKey, model, provider)
 }
 
 chrome.commands.onCommand.addListener((command) => {

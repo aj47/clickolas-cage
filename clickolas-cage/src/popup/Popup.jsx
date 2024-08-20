@@ -26,6 +26,7 @@ const Popup = () => {
   const [provider, setProvider] = useState('google')
   const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
+  const [apiKey, setApiKey] = useState('')
 
   useEffect(() => {
     const loadModelAndProvider = async () => {
@@ -34,6 +35,7 @@ const Popup = () => {
         if (response && response.currentModel && response.currentProvider) {
           setModel(response.currentModel)
           setProvider(response.currentProvider)
+          setApiKey(response.currentApiKey || '')
         } else {
           console.error('Invalid response from background script:', response)
           // Set default values if the response is invalid
@@ -81,6 +83,17 @@ const Popup = () => {
       type: 'updateModelAndProvider',
       model: model === 'custom' ? customModel : model,
       provider: newProvider,
+    })
+  }
+
+  const handleApiKeyChange = (e) => {
+    const newApiKey = e.target.value
+    setApiKey(newApiKey)
+    sendMessageToBackgroundScript({
+      type: 'updateModelAndProvider',
+      model: model === 'custom' ? customModel : model,
+      provider,
+      apiKey: newApiKey,
     })
   }
 
@@ -146,6 +159,13 @@ const Popup = () => {
                 <option value="custom">Custom</option>
               </select>
             </div>
+            <input
+              type="text"
+              value={apiKey}
+              onChange={handleApiKeyChange}
+              placeholder="Enter API Key"
+              className="input-common input-small"
+            />
             <button className="input-common input-small" onClick={handleExportLogs}>
               Export Logs
             </button>
