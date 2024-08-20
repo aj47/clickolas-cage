@@ -35,13 +35,14 @@ export const SidePanel = () => {
   }
 
   const [position, setPosition] = useState({
-    x: window.innerWidth - 250,
-    y: window.innerHeight - 240,
+    x: window.innerWidth - 260, // 10px margin from the right edge
+    y: window.innerHeight - 410, // 10px margin from the bottom edge when not minimized
   })
   const handleMouseMove = (e) => {
     if (isDragging) {
+      const panelHeight = isMinimized ? 30 : 400; // Use the actual height of the panel
       const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 250))
-      const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - 30))
+      const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - panelHeight))
       setPosition({
         x: newX,
         y: newY,
@@ -502,20 +503,16 @@ export const SidePanel = () => {
         </button>
       </div>
       <div className="plan">
-        {messages.length > 0 ? (
-          <div className="messages-list" ref={messagesListRef}>
-            {messages.map((message, i) => (
-              <div
-                className={`message ${message.type === 'completion' ? 'completion' : ''}`}
-                key={i}
-              >
-                {message.content}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <h2>Thinking...</h2>
-        )}
+        <div className="messages-list" ref={messagesListRef}>
+          {messages.map((message, i) => (
+            <div
+              className={`message ${message.type === 'completion' ? 'completion' : ''}`}
+              key={i}
+            >
+              {message.content}
+            </div>
+          ))}
+        </div>
       </div>
       <form onSubmit={handleUserInput} className="user-input-form">
         <input
