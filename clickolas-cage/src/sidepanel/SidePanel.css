@@ -54,13 +54,16 @@
   pointer-events: none;
 }
 
-.sidePanel .plan .steps-list {
-  max-height: calc(100% - 40px);
+.sidePanel .plan .messages-list {
   overflow-y: auto;
-  padding-right: 5px;
+  max-height: 300px; /* Adjust as needed */
 }
 
-.sidePanel .plan .steps-list .step {
-  padding: 5px 2px;
-  margin-bottom: 5px;
+.sidePanel .plan .message {
+  margin-bottom: 8px;
+}
+
+.sidePanel .plan .message.completion {
+  font-weight: bold;
+  color: #4CAF50; /* Green color for completion message */
 }

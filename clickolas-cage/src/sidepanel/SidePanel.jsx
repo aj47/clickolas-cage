@@ -5,10 +5,10 @@ import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from
 import './SidePanel.css'
 
 export const SidePanel = () => {
-  const [plan, setPlan] = useState([])
+  const [messages, setMessages] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
   const socketRef = useRef(null)
-  const stepsListRef = useRef(null) // New ref for the steps list
+  const messagesListRef = useRef(null)
 
   const delayBetweenKeystrokes = 100
 
@@ -337,7 +337,11 @@ export const SidePanel = () => {
 
   const handleRequest = async (request, sender, sendResponse) => {
     if (request.plan && request.currentStep) {
-      setPlan(request.plan)
+      const newMessages = request.plan.map((step, index) => ({
+        type: 'step',
+        content: `${index + 1} - ${step.thought}`,
+      }))
+      setMessages(newMessages)
       setCurrentStep(request.currentStep)
     }
     switch (request.type) {
@@ -369,16 +373,22 @@ export const SidePanel = () => {
           focusedElement: focusedElement,
         })
         break
+      case 'goalCompleted':
+        setMessages(prevMessages => [
+          ...prevMessages,
+          { type: 'completion', content: `Goal achieved: ${request.message}` }
+        ])
+        sendResponse({ type: 'completed_task' })
+        break
     }
   }
 
   useEffect(() => {
-    // New effect to scroll the steps list to bottom when plan updates
-    console.log(stepsListRef.current)
-    if (stepsListRef.current) {
-      stepsListRef.current.scrollTop = stepsListRef.current.scrollHeight
+    // Scroll to the bottom of the messages list when messages update
+    if (messagesListRef.current) {
+      messagesListRef.current.scrollTop = messagesListRef.current.scrollHeight
     }
-  }, [plan]) // This effect runs whenever plan changes
+  }, [messages])
 
   //----------  start DOM change check --------
   useEffect(() => {
@@ -465,16 +475,19 @@ export const SidePanel = () => {
         </button>
       </div>
       <div className="plan">
-        {plan?.length > 0 ? (
-          <div className="steps-list" ref={stepsListRef}>
-            {plan.map((step, i) => (
-              <div className="step" key={i}>
-                {i + 1} - {step.thought}
+        {messages.length > 0 ? (
+          <div className="messages-list" ref={messagesListRef}>
+            {messages.map((message, i) => (
+              <div
+                className={`message ${message.type === 'completion' ? 'completion' : ''}`}
+                key={i}
+              >
+                {message.content}
               </div>
             ))}
           </div>
         ) : (
-          <h2> Thinking...</h2>
+          <h2>Thinking...</h2>
         )}
       </div>
     </div>

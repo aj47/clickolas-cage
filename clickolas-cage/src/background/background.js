@@ -65,6 +65,14 @@ const completedTask = async () => {
   await sleep(1000)
   const updatedState = getState()
   console.log('Moving to next step:', updatedState.currentStep)
+
+  // Check if the last action was COMPLETED
+  const lastAction = updatedState.currentPlan[updatedState.currentStep - 1]
+  if (lastAction && lastAction.action === 'COMPLETED') {
+    console.log('Goal achieved. Stopping execution.')
+    return
+  }
+
   if (updatedState.currentStep >= updatedState.currentPlan.length) {
     console.log('Current plan completed. Generating next step.')
     sendMessageToTab(updatedState.targetTab, {
@@ -123,12 +131,23 @@ const executeCurrentStep = async () => {
         action: currentAction.action,
         text: currentAction.text,
       })
+    } else if (currentAction.action === 'COMPLETED') {
+      console.log('Goal achieved. Execution completed.')
+      await sendMessageToTab(currentState.targetTab, {
+        type: 'goalCompleted',
+        message: currentAction.thought,
+      })
+      // Don't call completedTask() here, as we want to stop execution
     } else if (currentAction.action === 'ASKUSER') {
       // TODO: Handle ASKUSER
     } else {
       console.error('Unknown action type:', currentAction.action)
     }
-    console.log('Step execution completed:', currentState.currentStep)
+
+    // Only call completedTask if the action is not COMPLETED
+    if (currentAction.action !== 'COMPLETED') {
+      await completedTask()
+    }
   } catch (error) {
     console.error('Error executing current step:', error)
   }
