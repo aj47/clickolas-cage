@@ -25,6 +25,9 @@ export const SidePanel = () => {
   const [userInput, setUserInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  const [isExecuting, setIsExecuting] = useState(false)
+  const [showStopButton, setShowStopButton] = useState(false)
+
   const handleMouseDown = (e) => {
     console.log('Mouse down event triggered')
     setIsDragging(true)
@@ -383,6 +386,14 @@ export const SidePanel = () => {
         ])
         sendResponse({ type: 'completed_task' })
         break
+      case 'execution_started':
+        setIsExecuting(true)
+        setShowStopButton(true)
+        break
+      case 'execution_completed':
+        setIsExecuting(false)
+        setShowStopButton(false)  // Reset the stop button visibility
+        break
     }
   }
 
@@ -486,6 +497,19 @@ export const SidePanel = () => {
     }
   }
 
+  const handleStopExecution = async () => {
+    try {
+      await sendMessageToBackgroundScript({
+        type: 'stop_execution',
+      })
+      // Don't set isExecuting or showStopButton here, wait for the 'execution_completed' message
+      setMessages(prevMessages => [...prevMessages, { type: 'system', content: 'Execution stopped.' }])
+    } catch (error) {
+      console.error('Error stopping execution:', error)
+      setMessages(prevMessages => [...prevMessages, { type: 'error', content: 'Failed to stop execution.' }])
+    }
+  }
+
   return (
     <div
       className={`sidePanel ${isMinimized ? 'minimized' : ''}`}
@@ -517,18 +541,24 @@ export const SidePanel = () => {
           <h2>Thinking...</h2>
         )}
       </div>
-      <form onSubmit={handleUserInput} className="user-input-form">
-        <input
-          type="text"
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          placeholder="Type your message..."
-          disabled={isLoading}
-        />
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Sending...' : 'Send'}
+      {showStopButton ? (
+        <button onClick={handleStopExecution} className="stop-execution-button">
+          Stop Execution
         </button>
-      </form>
+      ) : (
+        <form onSubmit={handleUserInput} className="user-input-form">
+          <input
+            type="text"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            placeholder="Type your message..."
+            disabled={isLoading}
+          />
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? 'Sending...' : 'Send'}
+          </button>
+        </form>
+      )}
     </div>
   )
 }
