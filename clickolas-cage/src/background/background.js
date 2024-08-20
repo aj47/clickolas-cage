@@ -99,7 +99,6 @@ const addStepToPlan = async (step) => {
   if (currentState.stopRequested) {
     console.log('Execution stopped, not adding new step to plan')
     updateState({ isExecuting: false, stopRequested: false })
-    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
     return
   }
   const newPlan = [...currentState.currentPlan, step]

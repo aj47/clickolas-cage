@@ -382,6 +382,8 @@ export const SidePanel = () => {
           ...prevMessages,
           { type: 'completion', content: `Goal achieved: ${request.message}` }
         ])
+        setIsExecuting(false)
+        setShowStopButton(false)  // Reset the stop button visibility
         sendResponse({ type: 'ready' })
         break
       default:
