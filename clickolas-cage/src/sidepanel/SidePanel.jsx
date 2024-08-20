@@ -349,9 +349,6 @@ export const SidePanel = () => {
       setCurrentStep(request.currentStep)
     }
     switch (request.type) {
-      case 'ping':
-        sendResponse({ type: 'ready' })
-        break
       case 'showClick':
         showClickIndicator(request.x, request.y)
         sendResponse({ type: 'completed_task' })
@@ -382,7 +379,10 @@ export const SidePanel = () => {
           ...prevMessages,
           { type: 'completion', content: `Goal achieved: ${request.message}` }
         ])
-        sendResponse({ type: 'completed_task' })
+        sendResponse({ type: 'ready' })
+        break
+      default:
+        sendResponse({ type: 'ready' })
         break
     }
   }
