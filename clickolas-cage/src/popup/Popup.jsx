@@ -160,7 +160,7 @@ const Popup = () => {
               </select>
             </div>
             <input
-              type="text"
+              type="password"
               value={apiKey}
               onChange={handleApiKeyChange}
               placeholder="Enter API Key"
