@@ -110,6 +110,7 @@ async function openAiCallWithRetry(call, retryCount = 3) {
  * @param {string} notFoundElement - The aria-label of the element that was not found.
  * @param {string} model - The current model.
  * @param {string} provider - The current provider.
+ * @param {string} userMessage - The user's message to include in the LLM input.
  * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
  */
 export const getNextStepFromLLM = async (
@@ -120,13 +121,17 @@ export const getNextStepFromLLM = async (
   focusedElement,
   notFoundElement = null,
   model,
-  provider
+  provider,
+  userMessage = null
 ) => {
   const systemPrompt = SYSTEM_PROMPT_NEXT_STEP(originalPrompt, currentURL, originalPlan)
 
   let userContent = `nodes: ${JSON.stringify(textOptions)}\n\nfocused element: ${JSON.stringify(focusedElement)}`
   if (notFoundElement !== null) {
     userContent += `\n\nThe element with aria-label "${notFoundElement}" was not found. Please provide an alternative action or suggestion.`
+  }
+  if (userMessage !== null) {
+    userContent += `\n\nUser message: ${userMessage}`
   }
 
   const chatCompletion = await openAiChatCompletionWithLogging([

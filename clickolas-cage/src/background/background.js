@@ -246,6 +246,22 @@ const processResponse = async (request, sender, sendResponse) => {
           currentProvider: currentState.currentProvider || 'google',
         })
         return // Add this line to prevent further execution
+      case 'user_message':
+        console.log('Generating next step based on user message')
+        const nextStepWithElements = await getNextStepFromLLM(
+          currentState.originalPrompt,
+          currentState.currentURL,
+          request.plan,
+          request.elements,
+          request.focusedElement,
+          null, // notFoundElement
+          currentState.currentModel,
+          currentState.currentProvider,
+          request.message // Add the user's message to the LLM input
+        )
+        console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
+        await addStepToPlan(nextStepWithElements)
+        break;
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {

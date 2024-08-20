@@ -22,6 +22,9 @@ export const SidePanel = () => {
 
   const [isMinimized, setIsMinimized] = useState(false)
 
+  const [userInput, setUserInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
   const handleMouseDown = (e) => {
     console.log('Mouse down event triggered')
     setIsDragging(true)
@@ -459,6 +462,30 @@ export const SidePanel = () => {
   }
   //----------  end DOM change check --------
 
+  const handleUserInput = async (e) => {
+    e.preventDefault()
+    if (!userInput.trim()) return
+
+    setIsLoading(true)
+    const { clickableElementLabels, focusedElement } = getClickableElements()
+
+    try {
+      await sendMessageToBackgroundScript({
+        type: 'user_message',
+        message: userInput,
+        elements: clickableElementLabels.slice(0, 200),
+        focusedElement: focusedElement,
+        plan: messages.filter(m => m.type === 'step').map(m => m.content),
+      })
+      setUserInput('')
+    } catch (error) {
+      console.error('Error sending user message:', error)
+      setMessages(prevMessages => [...prevMessages, { type: 'error', content: 'Failed to send message' }])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div
       className={`sidePanel ${isMinimized ? 'minimized' : ''}`}
@@ -490,6 +517,18 @@ export const SidePanel = () => {
           <h2>Thinking...</h2>
         )}
       </div>
+      <form onSubmit={handleUserInput} className="user-input-form">
+        <input
+          type="text"
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          placeholder="Type your message..."
+          disabled={isLoading}
+        />
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Sending...' : 'Send'}
+        </button>
+      </form>
     </div>
   )
 }
