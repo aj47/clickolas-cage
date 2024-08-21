@@ -34,8 +34,8 @@ const Popup = () => {
       try {
         setIsLoadingSettings(true)
         const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ type: 'getModelAndProvider' }, resolve);
-        });
+          chrome.runtime.sendMessage({ type: 'getModelAndProvider' }, resolve)
+        })
         if (response && response.currentModel && response.currentProvider) {
           setModel(response.currentModel)
           setProvider(response.currentProvider)
@@ -186,42 +186,49 @@ const Popup = () => {
             </div>
           )
         ) : !isLoading ? (
-          <>
-            <img src={logo} className="App-logo" alt="logo" />
-            <p>HELLO! I AM CLICKOLAS CAGE!</p>
-            <textarea
-              ref={promptRef}
-              placeholder="Add event x to google calendar"
-              className="input-common input-large expandable-textarea"
-              onChange={handleTextareaChange}
-              rows="1"
-            />
-            <input
-              onClick={async () => {
-                console.log('submit clicked.')
-                if (promptRef.current.value.trim().length === 0) return
-                sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
-                setIsLoading(true)
-              }}
-              type="button"
-              value="Submit"
-              className="input-common input-large"
-            />
-            <button
-              className="input-common input-small"
-              style={{ marginTop: 15 }}
-              onClick={async () => {
-                const prompt =
-                  "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
-                promptRef.current.value = prompt
-                console.log('submit clicked.')
-                sendMessageToBackgroundScript({ type: 'new_goal', prompt })
-                setIsLoading(true)
-              }}
-            >
-              Quick Add Event
-            </button>
-          </>
+          apiKey.length > 5 ? (
+            <>
+              <img src={logo} className="App-logo" alt="logo" />
+              <p>HELLO! I AM CLICKOLAS CAGE!</p>
+              <textarea
+                ref={promptRef}
+                placeholder="Add event x to google calendar"
+                className="input-common input-large expandable-textarea"
+                onChange={handleTextareaChange}
+                rows="1"
+              />
+              <input
+                onClick={async () => {
+                  console.log('submit clicked.')
+                  if (promptRef.current.value.trim().length === 0) return
+                  sendMessageToBackgroundScript({
+                    type: 'new_goal',
+                    prompt: promptRef.current.value,
+                  })
+                  setIsLoading(true)
+                }}
+                type="button"
+                value="Submit"
+                className="input-common input-large"
+              />
+              <button
+                className="input-common input-small"
+                style={{ marginTop: 15 }}
+                onClick={async () => {
+                  const prompt =
+                    "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
+                  promptRef.current.value = prompt
+                  console.log('submit clicked.')
+                  sendMessageToBackgroundScript({ type: 'new_goal', prompt })
+                  setIsLoading(true)
+                }}
+              >
+                Quick Add Event
+              </button>
+            </>
+          ) : (
+            <p>Please enter an API key in settings </p>
+          )
         ) : (
           <p>Thinking...</p>
         )}
