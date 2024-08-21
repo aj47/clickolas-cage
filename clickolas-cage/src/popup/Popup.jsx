@@ -22,8 +22,8 @@ const getProviderFromModel = (model) => {
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [model, setModel] = useState('gemini-1.5-flash-latest')
-  const [provider, setProvider] = useState('google')
+  const [model, setModel] = useState('gpt-4o')
+  const [provider, setProvider] = useState('openai')
   const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
@@ -133,10 +133,10 @@ const Popup = () => {
                   onChange={handleModelChange}
                   className="input-common input-small"
                 >
-                  <optgroup label="Google">
+                  {/* <optgroup label="Google">
                     <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                     <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                  </optgroup>
+                  </optgroup> */}
                   <optgroup label="OpenAI">
                     <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
                     <option value="gpt-4">GPT-4</option>
@@ -144,11 +144,11 @@ const Popup = () => {
                     <option value="gpt-4o-mini">GPT-4o-mini</option>
                     <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                   </optgroup>
-                  <optgroup label="Groq">
+                  {/* <optgroup label="Groq">
                     <option value="llama2-70b-4096">LLaMA2 70B</option>
                     <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
                   </optgroup>
-                  <option value="custom">Custom</option>
+                  <option value="custom">Custom</option> */}
                 </select>
                 {model === 'custom' && (
                   <input
@@ -164,10 +164,10 @@ const Popup = () => {
                   onChange={handleProviderChange}
                   className="input-common input-small"
                 >
-                  <option value="google">Google</option>
+                  {/* <option value="google">Google</option> */}
                   <option value="openai">OpenAI</option>
-                  <option value="groq">Groq</option>
-                  <option value="custom">Custom</option>
+                  {/* <option value="groq">Groq</option> */}
+                  {/* <option value="custom">Custom</option> */}
                 </select>
               </div>
               <input

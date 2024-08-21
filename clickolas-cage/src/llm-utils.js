@@ -1,31 +1,21 @@
 import OpenAI from 'openai'
-import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
 
-const DEFAULT_MODEL = 'gemini-1.5-flash-latest'
-const DEFAULT_PROVIDER = 'google'
+const DEFAULT_MODEL = 'gpt-4o'
 
 let openai;
 let currentApiKey = null;
 let currentModel = DEFAULT_MODEL;
-let currentProvider = DEFAULT_PROVIDER;
 
-export const initializeOpenAI = (apiKey, model, provider) => {
+export const initializeOpenAI = (apiKey, model) => {
   currentApiKey = apiKey;
   currentModel = model;
-  currentProvider = provider;
 
-  const effectiveApiKey = currentApiKey || (provider === 'openai'
-    ? import.meta.env.VITE_OPENAI_API_KEY
-    : provider === 'groq'
-    ? import.meta.env.VITE_GROQ_API_KEY
-    : import.meta.env.VITE_GEMINI_API_KEY);
+  const effectiveApiKey = currentApiKey || import.meta.env.VITE_OPENAI_API_KEY;
 
   openai = new OpenAI({
     apiKey: effectiveApiKey,
-    baseURL: 'http://localhost:8787/v1',
     dangerouslyAllowBrowser: true,
-    defaultHeaders: createHeaders({ provider }),
   });
 };
 
@@ -47,8 +37,7 @@ const openAiChatCompletionWithLogging = async (messages) => {
       seed: 1,
       response_format: { type: 'json_object' },
       messages: messages,
-      // Add temperature parameter for OpenAI models
-      ...(currentProvider === 'openai' && { temperature: 0.7 }),
+      temperature: 0.7,
     }),
   )
   chrome.storage.local.get({ logs: [] }, (result) => {
@@ -113,7 +102,6 @@ async function openAiCallWithRetry(call, retryCount = 3) {
  * @param {Object} focusedElement - The focused element.
  * @param {string} notFoundElement - The aria-label of the element that was not found.
  * @param {string} model - The current model.
- * @param {string} provider - The current provider.
  * @param {string} userMessage - The user's message to include in the LLM input.
  * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
  */
@@ -125,7 +113,6 @@ export const getNextStepFromLLM = async (
   focusedElement,
   notFoundElement = null,
   model,
-  provider,
   userMessage = null
 ) => {
   const systemPrompt = SYSTEM_PROMPT_NEXT_STEP(originalPrompt, currentURL, originalPlan)
@@ -155,10 +142,9 @@ export const getNextStepFromLLM = async (
  * Sends a prompt to the OpenAI API and returns the first step in achieving the goal as a URL or Google search URL.
  * @param {string} prompt - The user's prompt describing the goal.
  * @param {string} model - The current model.
- * @param {string} provider - The current provider.
  * @returns {Promise<object>} - A promise that resolves to an object containing the thought and URL parameter.
  */
-export const promptToFirstStep = async (prompt, model, provider) => {
+export const promptToFirstStep = async (prompt, model) => {
   const chatCompletion = await openAiChatCompletionWithLogging([
     {
       role: 'system',
