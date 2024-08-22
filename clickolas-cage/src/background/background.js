@@ -107,7 +107,6 @@ const addStepToPlan = async (step) => {
   updateState({ currentPlan: newPlan })
   if (!currentState.isExecuting) {
     updateState({ isExecuting: true })
-    sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
   }
   await executeCurrentStep()
 }
@@ -201,7 +200,6 @@ const processResponse = async (request, sender, sendResponse) => {
           isExecuting: true,
           stopRequested: false,
         })
-        sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         const responseJSON = await promptToFirstStep(
           request.prompt,
           currentState.currentModel,
