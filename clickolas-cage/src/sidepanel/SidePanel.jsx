@@ -83,18 +83,20 @@ export const SidePanel = () => {
   async function showClickIndicator(x, y) {
     const clickIndicator = document.createElement('img')
     clickIndicator.src = chrome.runtime.getURL('img/logo-48.png')
-    clickIndicator.style.opacity = 0.9
+    clickIndicator.style.opacity = '0.9'
     clickIndicator.style.position = 'absolute'
-    clickIndicator.style.left = `${x - 17}px` // Center the 34px image
-    clickIndicator.style.top = `${y - 17}px` // Center the 34px image
+    clickIndicator.style.left = `${x - 17}px`
+    clickIndicator.style.top = `${y - 17}px`
     clickIndicator.style.zIndex = '9999'
-    clickIndicator.style.pointerEvents = 'none' // Ensure it doesn't interfere with clicks
+    clickIndicator.style.pointerEvents = 'none'
     document.body.appendChild(clickIndicator)
 
     // Remove the indicator after a short delay
     setTimeout(() => {
-      document.body.removeChild(clickIndicator)
-    }, 2000) // Adjust this value to change how long the indicator stays visible
+      if (document.body.contains(clickIndicator)) {
+        document.body.removeChild(clickIndicator)
+      }
+    }, 2000)
   }
 
   /**
