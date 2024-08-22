@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 
 import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from '../utils'
 
-import logo48 from '../assets/logo-48.png'
-
 import './SidePanel.css'
 
 export const SidePanel = () => {
@@ -84,7 +82,7 @@ export const SidePanel = () => {
    */
   async function showClickIndicator(x, y) {
     const clickIndicator = document.createElement('img')
-    clickIndicator.src = logo48
+    clickIndicator.src = chrome.runtime.getURL('img/logo-48.png')
     clickIndicator.style.opacity = 0.9
     clickIndicator.style.position = 'absolute'
     clickIndicator.style.left = `${x - 17}px` // Center the 34px image
