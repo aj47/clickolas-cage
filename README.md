@@ -69,3 +69,43 @@ Now, the content of `build` folder will be the extension ready to be submitted t
 
 ---
 
+## Using Clickolas Cage
+
+### Opening the Extension
+
+There are two ways to open the Clickolas Cage extension:
+
+1. Click on the extension icon in your Chrome toolbar.
+2. Use the keyboard shortcut: 
+   - Windows/Linux: `Ctrl+Shift+L`
+   - Mac: `Command+Shift+L`
+
+### How to Use
+
+1. Once the extension popup opens, you'll see a text area where you can enter your goal or task.
+2. You can type your goal directly or use the speech-to-text feature:
+   - Click the "Start Listening" button to activate speech recognition.
+   - Speak your goal clearly.
+   - Click "Stop Listening" when you're done.
+3. Click the "Submit" button or press Enter to start the automation process.
+4. A side panel will appear on the webpage, showing the steps Clickolas Cage is taking to complete your task.
+5. You can interact with the side panel to provide additional input or stop the execution if needed.
+
+### API Keys
+
+To use Clickolas Cage, you'll need to provide API keys for the language models. The extension supports multiple providers:
+
+1. Click the "Show Settings" button in the popup.
+2. Select your desired model and provider.
+3. Enter the corresponding API key in the input field.
+
+Supported providers:
+- Google (Gemini models)
+- OpenAI (GPT models)
+- Groq (LLaMA and Mixtral models)
+- Custom (for other providers)
+
+Make sure to keep your API keys secure and never share them publicly.
+
+---
+
