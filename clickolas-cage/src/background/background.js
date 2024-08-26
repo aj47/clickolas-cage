@@ -164,6 +164,7 @@ const executeCurrentStep = async () => {
       })
     } else if (currentAction.action === 'GOAL_ACHIEVED') {
       console.log('Goal achieved. Execution completed.')
+      updateState({ currentStep: currentState.currentStep + 1 })
       await sendMessageToTab(currentState.targetTab, {
         type: 'goalCompleted',
         message: currentAction.thought,

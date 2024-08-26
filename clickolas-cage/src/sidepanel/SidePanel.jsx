@@ -485,6 +485,9 @@ export const SidePanel = () => {
     setIsLoading(true)
     const { clickableElementLabels, focusedElement } = getClickableElements()
 
+    // Add user message to the message log
+    setMessages(prevMessages => [...prevMessages, { type: 'user', content: userInput }])
+
     try {
       await sendMessageToBackgroundScript({
         type: 'user_message',
@@ -534,7 +537,7 @@ export const SidePanel = () => {
         <div className="messages-list" ref={messagesListRef}>
           {messages.map((message, i) => (
             <div
-              className={`message ${message.type === 'completion' ? 'completion' : ''}`}
+              className={`message ${message.type}`}
               key={i}
             >
               {message.content}
