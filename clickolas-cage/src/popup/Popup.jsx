@@ -22,8 +22,6 @@ const getProviderFromModel = (model) => {
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [transcript, setTranscript] = useState('')
   const [model, setModel] = useState('gemini-1.5-flash-latest')
   const [provider, setProvider] = useState('google')
   const [customModel, setCustomModel] = useState('')
@@ -108,37 +106,6 @@ const Popup = () => {
   const handleTextareaChange = (e) => {
     e.target.style.height = 'auto'
     e.target.style.height = `${e.target.scrollHeight}px`
-    setTranscript(e.target.value)
-  }
-
-  const startListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    const recognition = new SpeechRecognition()
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.lang = 'en-US'
-
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript
-      setTranscript(transcript)
-      promptRef.current.value = transcript
-      promptRef.current.style.height = 'auto'
-      promptRef.current.style.height = `${promptRef.current.scrollHeight}px`
-    }
-
-    recognition.onend = () => {
-      setIsListening(false)
-    }
-
-    recognition.start()
-    setIsListening(true)
-  }
-
-  const stopListening = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    const recognition = new SpeechRecognition()
-    recognition.stop()
-    setIsListening(false)
   }
 
   const toggleSettings = () => {
@@ -228,21 +195,13 @@ const Popup = () => {
               className="input-common input-large expandable-textarea"
               onChange={handleTextareaChange}
               rows="1"
-              value={transcript}
             />
-            <button
-              className="input-common input-small"
-              onClick={isListening ? stopListening : startListening}
-            >
-              {isListening ? 'Stop Listening' : 'Start Listening'}
-            </button>
             <input
               onClick={async () => {
                 console.log('submit clicked.')
                 if (promptRef.current.value.trim().length === 0) return
                 sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
                 setIsLoading(true)
-                // Ask follow-up questions logic can be added here
               }}
               type="button"
               value="Submit"
