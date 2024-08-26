@@ -30,6 +30,10 @@ export const SidePanel = () => {
 
   const [disablePointerEvents, setDisablePointerEvents] = useState(false)
 
+  const [isListening, setIsListening] = useState(false)
+  const [transcript, setTranscript] = useState('')
+  const recognitionRef = useRef(null)
+
   const handleMouseDown = (e) => {
     console.log('Mouse down event triggered')
     setIsDragging(true)
@@ -486,15 +490,81 @@ export const SidePanel = () => {
   }
   //----------  end DOM change check --------
 
-  const handleUserInput = async (e) => {
-    e.preventDefault()
-    if (!userInput.trim()) return
+  useEffect(() => {
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = true
+      recognitionRef.current.interimResults = true
 
-    setIsLoading(true)
-    const { clickableElementLabels, focusedElement } = getClickableElements()
+      recognitionRef.current.onresult = (event) => {
+        const currentTranscript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('')
+        setTranscript(currentTranscript)
+        setUserInput(currentTranscript)
+      }
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error)
+        setIsListening(false)
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+      }
+    }
+
+    // Add global keydown event listener for voice input
+    const handleGlobalKeyDown = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+        e.preventDefault()
+        toggleListening()
+      }
+    }
+
+    document.addEventListener('keydown', handleGlobalKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown)
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  const toggleListening = async () => {
+    if (isExecuting) {
+      // Stop execution if it's in progress
+      await handleStopExecution();
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
+      setTranscript('');
+    }
+    setIsListening(!isListening);
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleUserInput(e);
+    }
+  }
+
+  const handleUserInput = async (e) => {
+    e.preventDefault();
+    if (!userInput.trim()) return;
+
+    setIsLoading(true);
+    const { clickableElementLabels, focusedElement } = getClickableElements();
 
     // Add user message to the message log
-    setMessages(prevMessages => [...prevMessages, { type: 'user', content: userInput }])
+    setMessages(prevMessages => [...prevMessages, { type: 'user', content: userInput }]);
 
     try {
       await sendMessageToBackgroundScript({
@@ -503,13 +573,17 @@ export const SidePanel = () => {
         elements: clickableElementLabels.slice(0, 200),
         focusedElement: focusedElement,
         plan: messages.filter(m => m.type === 'step').map(m => m.content),
-      })
-      setUserInput('')
+      });
+      setUserInput('');
+      setTranscript(''); // Clear transcript after sending
+      if (isListening) {
+        toggleListening(); // Stop listening after sending the message
+      }
     } catch (error) {
-      console.error('Error sending user message:', error)
-      setMessages(prevMessages => [...prevMessages, { type: 'error', content: 'Failed to send message' }])
+      console.error('Error sending user message:', error);
+      setMessages(prevMessages => [...prevMessages, { type: 'error', content: 'Failed to send message' }]);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -554,24 +628,33 @@ export const SidePanel = () => {
           ))}
         </div>
       </div>
-      {showStopButton ? (
-        <button onClick={handleStopExecution} className="stop-execution-button">
-          Stop Execution
-        </button>
-      ) : (
+      <div className="input-area">
+        {isExecuting && (
+          <button onClick={handleStopExecution} className="stop-execution-button">
+            Stop Execution
+          </button>
+        )}
         <form onSubmit={handleUserInput} className="user-input-form">
           <input
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your message..."
+            onKeyDown={handleKeyDown}
+            placeholder={isListening ? 'Listening...' : 'Type your message...'}
             disabled={isLoading}
           />
           <button type="submit" disabled={isLoading}>
             {isLoading ? 'Sending...' : 'Send'}
           </button>
+          <button
+            type="button"
+            onClick={toggleListening}
+            className={`voice-input-button ${isListening ? 'listening' : ''}`}
+          >
+            {isListening ? 'Stop' : 'Voice'} (Ctrl+Shift+K)
+          </button>
         </form>
-      )}
+      </div>
     </div>
   )
 }
