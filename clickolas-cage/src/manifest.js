@@ -34,8 +34,8 @@ export default defineManifest({
   },
   web_accessible_resources: [
     {
-      resources: ['img/logo-16.png', 'img/logo-34.png', 'img/logo-48.png', 'img/logo-128.png'],
-      matches: [],
+      resources: ['img/logo-*.png'],
+      matches: ['<all_urls>']
     },
   ],
   permissions: ['activeTab', 'sidePanel', 'storage', 'debugger', 'scripting'],
