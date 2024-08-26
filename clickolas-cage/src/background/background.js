@@ -13,7 +13,12 @@ let state = {
   allowedTabs: new Set(),
   currentModel: 'gemini-1.5-flash-latest',
   currentProvider: 'google',
-  currentApiKey: null,
+  apiKeys: {
+    google: null,
+    openai: null,
+    groq: null,
+    custom: null
+  },
   isExecuting: false,
   stopRequested: false,
 }
@@ -263,15 +268,15 @@ const processResponse = async (request, sender, sendResponse) => {
         await addStepToPlan(nextStepAfterFailure)
         break
       case 'updateModelAndProvider':
-        await updateModelAndProvider(request.model, request.provider, request.apiKey)
+        await updateModelAndProvider(request.model, request.provider, request.apiKeys)
         break
       case 'getModelAndProvider':
-        const apiKey = await getApiKey()
-        await initializeOpenAI(apiKey, currentState.currentModel, currentState.currentProvider)
+        const apiKeys = await getApiKeys()
+        await initializeOpenAI(apiKeys[currentState.currentProvider], currentState.currentModel, currentState.currentProvider)
         sendResponse({
           currentModel: currentState.currentModel,
           currentProvider: currentState.currentProvider,
-          currentApiKey: apiKey,
+          apiKeys: apiKeys,
         })
         return true // Indicate that we're sending a response asynchronously
       case 'user_message':
@@ -316,35 +321,61 @@ const processResponse = async (request, sender, sendResponse) => {
 }
 
 // Add these functions for handling secure storage
-const saveApiKey = (apiKey) => {
+const saveApiKeys = (apiKeys) => {
   return new Promise((resolve) => {
-    chrome.storage.sync.set({ apiKey: apiKey }, resolve)
+    chrome.storage.sync.set({ apiKeys: apiKeys }, resolve)
   })
 }
 
-const getApiKey = () => {
+const getApiKeys = () => {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['apiKey'], (result) => {
-      resolve(result.apiKey || null)
+    chrome.storage.sync.get(['apiKeys'], (result) => {
+      resolve(result.apiKeys || {
+        google: null,
+        openai: null,
+        groq: null,
+        custom: null
+      })
     })
   })
 }
 
 // Modify the updateModelAndProvider function
-const updateModelAndProvider = async (model, provider, apiKey) => {
+const updateModelAndProvider = async (model, provider, newApiKeys) => {
   updateState({ currentModel: model, currentProvider: provider })
-  if (apiKey) {
-    await saveApiKey(apiKey)
-    updateState({ currentApiKey: apiKey })
+
+  if (newApiKeys) {
+    const currentApiKeys = await getApiKeys()
+    const updatedApiKeys = { ...currentApiKeys, ...newApiKeys }
+    await saveApiKeys(updatedApiKeys)
+    updateState({ apiKeys: updatedApiKeys })
+    console.log('API Keys updated:', updatedApiKeys)
+  } else {
+    console.log('No new API keys provided, using existing keys')
   }
-  console.log(apiKey, 'apiKey - updated')
+
+  const apiKeys = await getApiKeys()
+  const apiKey = apiKeys[provider]
+
+  if (!apiKey) {
+    console.warn(`No API key found for provider: ${provider}`)
+  }
+
   await initializeOpenAI(apiKey, model, provider)
 }
 
-// Initialize the state with the API key on startup
+// Initialize the state with the API keys on startup
 ;(async () => {
-  const apiKey = await getApiKey()
-  updateState({ currentApiKey: apiKey })
+  const apiKeys = await getApiKeys()
+  updateState({ apiKeys: apiKeys })
+
+  // Initialize OpenAI with the default or stored settings
+  const currentState = getState()
+  initializeOpenAI(
+    apiKeys[currentState.currentProvider],
+    currentState.currentModel,
+    currentState.currentProvider
+  )
 })()
 
 chrome.commands.onCommand.addListener((command) => {

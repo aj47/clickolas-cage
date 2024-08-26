@@ -21,6 +21,12 @@ export const initializeOpenAI = (apiKey, model, provider) => {
     ? import.meta.env.VITE_GROQ_API_KEY
     : import.meta.env.VITE_GEMINI_API_KEY);
 
+  if (!effectiveApiKey) {
+    console.warn(`No API key available for provider: ${provider}. OpenAI client not initialized.`);
+    openai = null;
+    return;
+  }
+
   openai = new OpenAI({
     apiKey: effectiveApiKey,
     baseURL: 'http://localhost:8787/v1',
