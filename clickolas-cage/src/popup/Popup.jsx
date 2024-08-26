@@ -3,6 +3,7 @@ import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript } from '../utils'
 import { exportLogs, clearLogs } from '../llm-utils'
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from '../config.js'
 
 const handleExportLogs = () => {
   exportLogs()
@@ -22,8 +23,8 @@ const getProviderFromModel = (model) => {
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [model, setModel] = useState('gemini-1.5-flash-latest')
-  const [provider, setProvider] = useState('google')
+  const [model, setModel] = useState(DEFAULT_MODEL)
+  const [provider, setProvider] = useState(DEFAULT_PROVIDER)
   const [customModel, setCustomModel] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [apiKeys, setApiKeys] = useState({
@@ -53,14 +54,14 @@ const Popup = () => {
         } else {
           console.error('Invalid response from background script:', response)
           // Set default values if the response is invalid
-          setModel('gemini-1.5-flash-latest')
-          setProvider('google')
+          setModel(DEFAULT_MODEL)
+          setProvider(DEFAULT_PROVIDER)
         }
       } catch (error) {
         console.error('Error loading model and provider:', error)
         // Set default values if there's an error
-        setModel('gemini-1.5-flash-latest')
-        setProvider('google')
+        setModel(DEFAULT_MODEL)
+        setProvider(DEFAULT_PROVIDER)
       } finally {
         setIsLoadingSettings(false)
       }

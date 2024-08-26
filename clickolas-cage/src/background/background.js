@@ -1,5 +1,6 @@
 import { sendMessageToContentScript, sleep } from '../utils'
 import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI } from '../llm-utils'
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from '../config.js'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -11,8 +12,8 @@ let state = {
   originalPrompt: '',
   currentURL: '',
   allowedTabs: new Set(),
-  currentModel: 'gemini-1.5-flash-latest',
-  currentProvider: 'google',
+  currentModel: DEFAULT_MODEL,
+  currentProvider: DEFAULT_PROVIDER,
   apiKeys: {
     google: null,
     openai: null,
@@ -272,10 +273,11 @@ const processResponse = async (request, sender, sendResponse) => {
         break
       case 'getModelAndProvider':
         const apiKeys = await getApiKeys()
-        await initializeOpenAI(apiKeys[currentState.currentProvider], currentState.currentModel, currentState.currentProvider)
+        const { currentModel, currentProvider } = await getModelAndProvider()
+        await initializeOpenAI(apiKeys[currentProvider], currentModel, currentProvider)
         sendResponse({
-          currentModel: currentState.currentModel,
-          currentProvider: currentState.currentProvider,
+          currentModel: currentModel,
+          currentProvider: currentProvider,
           apiKeys: apiKeys,
         })
         return true // Indicate that we're sending a response asynchronously
@@ -340,8 +342,27 @@ const getApiKeys = () => {
   })
 }
 
+// Add these new functions to save and get model and provider
+const saveModelAndProvider = (model, provider) => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.set({ currentModel: model, currentProvider: provider }, resolve)
+  })
+}
+
+const getModelAndProvider = () => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['currentModel', 'currentProvider'], (result) => {
+      resolve({
+        currentModel: result.currentModel || DEFAULT_MODEL,
+        currentProvider: result.currentProvider || DEFAULT_PROVIDER
+      })
+    })
+  })
+}
+
 // Modify the updateModelAndProvider function
 const updateModelAndProvider = async (model, provider, newApiKeys) => {
+  await saveModelAndProvider(model, provider)
   updateState({ currentModel: model, currentProvider: provider })
 
   if (newApiKeys) {
@@ -364,17 +385,21 @@ const updateModelAndProvider = async (model, provider, newApiKeys) => {
   await initializeOpenAI(apiKey, model, provider)
 }
 
-// Initialize the state with the API keys on startup
+// Modify the initialization part
 ;(async () => {
   const apiKeys = await getApiKeys()
-  updateState({ apiKeys: apiKeys })
+  const { currentModel, currentProvider } = await getModelAndProvider()
+  updateState({
+    apiKeys: apiKeys,
+    currentModel: currentModel,
+    currentProvider: currentProvider
+  })
 
-  // Initialize OpenAI with the default or stored settings
-  const currentState = getState()
+  // Initialize OpenAI with the stored settings
   initializeOpenAI(
-    apiKeys[currentState.currentProvider],
-    currentState.currentModel,
-    currentState.currentProvider
+    apiKeys[currentProvider],
+    currentModel,
+    currentProvider
   )
 })()
 

@@ -1,9 +1,7 @@
 import OpenAI from 'openai'
 import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
-
-const DEFAULT_MODEL = 'gemini-1.5-flash-latest'
-const DEFAULT_PROVIDER = 'google'
+import { DEFAULT_MODEL, DEFAULT_PROVIDER } from './config.js'
 
 let openai;
 let currentApiKey = null;
