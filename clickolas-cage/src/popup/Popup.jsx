@@ -34,6 +34,10 @@ const Popup = () => {
     custom: ''
   })
   const [isLoadingSettings, setIsLoadingSettings] = useState(true)
+  const [isListening, setIsListening] = useState(true) // Changed to true
+  const [transcript, setTranscript] = useState('') // Add this line
+
+  const recognitionRef = useRef(null)
 
   useEffect(() => {
     const loadModelAndProvider = async () => {
@@ -68,6 +72,56 @@ const Popup = () => {
     }
     loadModelAndProvider()
   }, [])
+
+  useEffect(() => {
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = true
+      recognitionRef.current.interimResults = true
+
+      recognitionRef.current.onresult = (event) => {
+        const currentTranscript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('')
+        setTranscript(currentTranscript)
+        if (promptRef.current) {
+          promptRef.current.value = currentTranscript
+          handleTextareaChange({ target: promptRef.current })
+        }
+      }
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error)
+        setIsListening(false)
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+      }
+
+      // Start listening immediately
+      recognitionRef.current.start()
+    }
+
+    // Add global keydown event listener
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !showSettings && !isLoading) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [showSettings, isLoading]) // Add dependencies
 
   const handleModelChange = async (e) => {
     const selectedModel = e.target.value
@@ -122,6 +176,23 @@ const Popup = () => {
   const toggleSettings = () => {
     setShowSettings(!showSettings)
   }
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current.stop()
+    } else {
+      recognitionRef.current.start()
+    }
+    setIsListening(!isListening)
+  }
+
+  const handleSubmit = async () => {
+    console.log('submit clicked.')
+    if (promptRef.current.value.trim().length === 0) return
+    sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
+    setIsLoading(true)
+    setTranscript('') // Clear the transcript after submitting
+  };
 
   return (
     <div className="App">
@@ -200,20 +271,24 @@ const Popup = () => {
           <>
             <img src={logo} className="App-logo" alt="logo" />
             <p>HELLO! I AM CLICKOLAS CAGE!</p>
-            <textarea
-              ref={promptRef}
-              placeholder="Add event x to google calendar"
-              className="input-common input-large expandable-textarea"
-              onChange={handleTextareaChange}
-              rows="1"
-            />
+            <div className="input-container">
+              <textarea
+                ref={promptRef}
+                placeholder="Add event x to google calendar"
+                className="input-common input-large expandable-textarea"
+                onChange={handleTextareaChange}
+                rows="1"
+                value={transcript}
+              />
+              <button
+                onClick={toggleListening}
+                className={`input-common input-small microphone-button ${isListening ? 'listening' : ''}`}
+              >
+                {isListening ? 'Stop' : 'Start'} Listening
+              </button>
+            </div>
             <input
-              onClick={async () => {
-                console.log('submit clicked.')
-                if (promptRef.current.value.trim().length === 0) return
-                sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
-                setIsLoading(true)
-              }}
+              onClick={handleSubmit}
               type="button"
               value="Submit"
               className="input-common input-large"
@@ -225,6 +300,7 @@ const Popup = () => {
                 const prompt =
                   "Create a google calendar event for august 12 labeled 'Win Gemini Competition'"
                 promptRef.current.value = prompt
+                setTranscript(prompt) // Update transcript state
                 console.log('submit clicked.')
                 sendMessageToBackgroundScript({ type: 'new_goal', prompt })
                 setIsLoading(true)

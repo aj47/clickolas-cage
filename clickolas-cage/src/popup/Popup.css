@@ -111,6 +111,8 @@
   transition: height 0.1s ease;
   padding: 8px 12px;
   line-height: 1.5;
+  flex-grow: 1;
+  margin-right: 10px;
 }
 
 .settings-menu {
@@ -131,5 +133,20 @@
 .settings-menu button {
   width: 100%;
   margin-bottom: 5px;
+}
+
+.input-container {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.microphone-button {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.microphone-button.listening {
+  background-color: #f44336;
 }
 
