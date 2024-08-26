@@ -28,6 +28,8 @@ export const SidePanel = () => {
   const [isExecuting, setIsExecuting] = useState(false)
   const [showStopButton, setShowStopButton] = useState(false)
 
+  const [disablePointerEvents, setDisablePointerEvents] = useState(false)
+
   const handleMouseDown = (e) => {
     console.log('Mouse down event triggered')
     setIsDragging(true)
@@ -345,6 +347,9 @@ export const SidePanel = () => {
   }, [])
 
   const handleRequest = async (request, sender, sendResponse) => {
+    // Re-enable pointer events when any message is received
+    setDisablePointerEvents(false)
+
     if (request.plan && request.currentStep) {
       const newMessages = request.plan.map((step, index) => ({
         type: 'step',
@@ -359,6 +364,9 @@ export const SidePanel = () => {
         sendResponse({ type: 'completed_task' })
         break
       case 'locateElement':
+        if (request.action === 'CLICKBTN') {
+          setDisablePointerEvents(true)
+        }
         const result = locateCorrectElement(request.ariaLabel)
         if (typeof result === 'string') {
           sendResponse({
@@ -525,6 +533,7 @@ export const SidePanel = () => {
         top: `${position.y}px`,
         left: `${position.x}px`,
         right: 'auto',
+        pointerEvents: disablePointerEvents ? 'none' : 'auto',
       }}
     >
       <div className="topBar" onMouseDown={handleMouseDown}>
