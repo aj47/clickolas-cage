@@ -85,7 +85,6 @@
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 15px;
   flex-wrap: wrap;
 }
 
@@ -133,6 +132,7 @@
   gap: 15px;
   margin-top: 60px;
   width: 90%;
+  max-width: 400px; // Add this line to limit the maximum width
   background-color: #3a3f4b;
   padding: 20px;
   border-radius: 10px;
@@ -156,6 +156,7 @@
   color: white;
   padding: 10px;
   font-size: 14px;
+  box-sizing: border-box; // Add this line to include padding in the width calculation
 }
 
 .settings-menu button {

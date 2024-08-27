@@ -268,17 +268,16 @@ const Popup = () => {
                   onChange={handleApiKeyChange}
                   placeholder={`Enter ${provider.toUpperCase()} API Key`}
                 />
-                <h3>Log Management</h3>
+                {/* <h3>Log Management</h3>
                 <button onClick={handleExportLogs}>
                   Export Logs
                 </button>
                 <button onClick={handleClearLogs}>
                   Clear Logs
-                </button>
-                <h3>Speech Recognition</h3>
+                </button> */}
                 <div className="setting-row">
                   <label htmlFor="speech-recognition-toggle">
-                    Enable on Load:
+                    Enable Speech Recognition on Load:
                   </label>
                   <input
                     id="speech-recognition-toggle"
@@ -292,7 +291,7 @@ const Popup = () => {
           ) : !isLoading ? (
             <>
               <img src={logo} className="App-logo" alt="logo" />
-              <h2>HELLO! I AM CLICKOLAS CAGE!</h2>
+              <h2>Whats today's Plan?</h2>
               <div className="input-container">
                 <textarea
                   ref={promptRef}
