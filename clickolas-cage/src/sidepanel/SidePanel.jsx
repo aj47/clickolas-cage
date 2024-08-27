@@ -4,6 +4,8 @@ import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from
 
 import './SidePanel.css'
 
+import { chrome } from '@mocks/chrome';
+
 export const SidePanel = () => {
   const [messages, setMessages] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
@@ -342,10 +344,10 @@ export const SidePanel = () => {
   }
 
   useEffect(() => {
-    if (!socketRef.current) {
+    if (!socketRef.current && chrome && chrome.runtime) {
       socketRef.current = chrome.runtime.onMessage.addListener(
         async function (request, sender, sendResponse) {
-          console.log('recieved request', JSON.stringify(request))
+          console.log('received request', JSON.stringify(request))
           handleRequest(request, sender, sendResponse)
           return true // Indicate that the response is asynchronous
         },
