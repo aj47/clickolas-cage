@@ -20,7 +20,7 @@ const getProviderFromModel = (model) => {
   return 'custom'
 }
 
-export default const Popup = () => {
+const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
   const [model, setModel] = useState(DEFAULT_MODEL)
@@ -337,3 +337,4 @@ export default const Popup = () => {
 }
 
 export default Popup
+export default Popup;
