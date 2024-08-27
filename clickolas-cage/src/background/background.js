@@ -1,6 +1,6 @@
 import { sendMessageToContentScript, sleep } from '../utils'
 import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI } from '../llm-utils'
-import { DEFAULT_MODEL, DEFAULT_PROVIDER } from '../config.js'
+import { DEFAULT_MODEL, DEFAULT_PROVIDER, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -22,6 +22,7 @@ let state = {
   },
   isExecuting: false,
   stopRequested: false,
+  speechRecognitionEnabled: DEFAULT_SPEECH_RECOGNITION,
 }
 
 // Function to get the current state
@@ -313,6 +314,13 @@ const processResponse = async (request, sender, sendResponse) => {
         // Cancel any ongoing tasks or timers here
         sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
         break
+      case 'getSettings':
+        const settings = await getSettings()
+        sendResponse(settings)
+        return true // Indicate that we're sending a response asynchronously
+      case 'updateSettings':
+        await updateSettings(request)
+        break
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
@@ -386,21 +394,48 @@ const updateModelAndProvider = async (model, provider, newApiKeys) => {
   await initializeOpenAI(apiKey, model, provider)
 }
 
+const saveSettings = (settings) => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.set(settings, resolve)
+  })
+}
+
+const getSettings = () => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['currentModel', 'currentProvider', 'apiKeys', 'speechRecognitionEnabled'], (result) => {
+      resolve({
+        currentModel: result.currentModel || DEFAULT_MODEL,
+        currentProvider: result.currentProvider || DEFAULT_PROVIDER,
+        apiKeys: result.apiKeys || {
+          google: null,
+          openai: null,
+          groq: null,
+          custom: null
+        },
+        speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION
+      })
+    })
+  })
+}
+
+const updateSettings = async (newSettings) => {
+  const currentSettings = await getSettings()
+  const updatedSettings = { ...currentSettings, ...newSettings }
+  await saveSettings(updatedSettings)
+  updateState(updatedSettings)
+  console.log('Settings updated:', updatedSettings)
+}
+
 // Modify the initialization part
 ;(async () => {
-  const apiKeys = await getApiKeys()
-  const { currentModel, currentProvider } = await getModelAndProvider()
-  updateState({
-    apiKeys: apiKeys,
-    currentModel: currentModel,
-    currentProvider: currentProvider
-  })
+  const settings = await getSettings()
+  updateState(settings)
 
   // Initialize OpenAI with the stored settings
   initializeOpenAI(
-    apiKeys[currentProvider],
-    currentModel,
-    currentProvider
+    settings.apiKeys[settings.currentProvider],
+    settings.currentModel,
+    settings.currentProvider
   )
 })()
 
