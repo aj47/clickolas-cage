@@ -73,24 +73,20 @@
 
 .user-input-form {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  background-color: #f0f0f0;
-  /* Remove any margin-top if present */
+  flex-direction: column;
+  width: 100%;
 }
 
 .user-input-form input {
-  flex-grow: 1;
-  margin-right: 5px;
-  padding: 5px;
+  padding: 8px;
   border: 1px solid #ccc;
   border-radius: 3px;
+  margin-bottom: 5px;
 }
 
-.user-input-form button {
-  margin-left: 5px;
-  padding: 5px 10px;
+.user-input-form button[type="submit"] {
+  width: 100%;
+  padding: 8px;
   background-color: #4CAF50;
   color: white;
   border: none;
@@ -104,16 +100,17 @@
 }
 
 .voice-input-button {
+  width: 100%;
   background-color: #4CAF50;
   color: white;
   border: none;
-  padding: 5px 10px;
+  padding: 8px;
   text-align: center;
   text-decoration: none;
-  display: inline-block;
+  display: block;
   font-size: 14px;
-  margin: 4px 2px;
   cursor: pointer;
+  margin-bottom: 5px;
 }
 
 .voice-input-button.listening {
@@ -128,11 +125,12 @@
 }
 
 .stop-execution-button {
-  margin-bottom: 10px;
-  padding: 5px 10px;
+  width: 100%;
+  padding: 8px;
   background-color: #f44336;
   color: white;
   border: none;
   border-radius: 3px;
   cursor: pointer;
+  margin-bottom: 5px;
 }

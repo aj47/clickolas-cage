@@ -109,3 +109,34 @@ Make sure to keep your API keys secure and never share them publicly.
 
 ---
 
+### Sidepanel Controls
+
+Once Clickolas Cage starts executing your task, a sidepanel will appear on the right side of the webpage. This panel provides the following controls and information:
+
+1. **Minimize/Maximize**: Click the '▼' or '▲' button in the top-right corner to minimize or maximize the sidepanel.
+
+2. **Drag and Move**: You can click and drag the top bar of the sidepanel to reposition it on the page.
+
+3. **Message List**: The main area of the sidepanel displays messages, including:
+   - Steps being executed
+   - User inputs
+   - System messages
+   - Completion messages
+
+4. **Stop Execution**: When Clickolas Cage is actively executing a task, a "Stop Execution" button will appear. Click this to halt the current operation.
+
+5. **Input Area**: When not executing, you'll see an input field where you can:
+   - Type additional instructions or queries
+   - Use voice input for hands-free interaction
+
+6. **Voice Input**: 
+   - Click the "Voice" button or use the keyboard shortcut (Ctrl+Shift+K) to start/stop voice recognition.
+   - When active, it will display "Stop" and the button will highlight.
+   - Speak your instruction clearly, then click "Stop" or use the shortcut again to submit.
+
+7. **Send Button**: Click "Send" or press Enter to submit your typed or voice-transcribed input.
+
+The sidepanel allows you to monitor the progress of your task, provide additional input when needed, and control the execution of Clickolas Cage directly from the webpage.
+
+---
+

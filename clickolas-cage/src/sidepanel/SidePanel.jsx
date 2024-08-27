@@ -47,8 +47,8 @@ export const SidePanel = () => {
   }
 
   const [position, setPosition] = useState({
-    x: window.innerWidth - 260, // 10px margin from the right edge
-    y: window.innerHeight - 410, // 10px margin from the bottom edge when not minimized
+    x: window.innerWidth - 260,
+    y: window.innerHeight / 2 - 200, // Position in the middle of the window height
   })
   const handleMouseMove = (e) => {
     if (isDragging) {
@@ -550,33 +550,33 @@ export const SidePanel = () => {
   const toggleListening = async () => {
     return new Promise((resolve) => {
       setIsListening((prevIsListening) => {
-        const newState = !prevIsListening;
-        isListeningRef.current = newState;
-        console.log('isListening (in toggle)', newState);
+        const newState = !prevIsListening
+        isListeningRef.current = newState
+        console.log('isListening (in toggle)', newState)
 
         if (isExecutingRef.current) {
           handleStopExecution().then(() => {
             if (newState) {
-              recognitionRef.current.start();
-              setTranscript('');
+              recognitionRef.current.start()
+              setTranscript('')
             } else {
-              recognitionRef.current.stop();
+              recognitionRef.current.stop()
             }
-            resolve();
-          });
+            resolve()
+          })
         } else {
           if (newState) {
-            recognitionRef.current.start();
-            setTranscript('');
+            recognitionRef.current.start()
+            setTranscript('')
           } else {
-            recognitionRef.current.stop();
+            recognitionRef.current.stop()
           }
-          setTimeout(resolve, 0);
+          setTimeout(resolve, 0)
         }
 
-        return newState;
-      });
-    });
+        return newState
+      })
+    })
   }
 
   const handleUserInput = async (e, overrideInput = null) => {
@@ -664,28 +664,32 @@ export const SidePanel = () => {
       <div className="input-area">
         {isExecutingRef.current ? (
           <button onClick={handleStopExecution} className="stop-execution-button">
-            Stop Execution
+            Stop Execution <p style={{fontSize: '0.7em', marginBottom: '0'}}> (Ctrl+Shift+K for Voice)</p>
           </button>
         ) : (
-          <form onSubmit={(e) => handleUserInput(e)} className="user-input-form">
-            <input
-              type="text"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              placeholder={isListening ? 'Listening...' : 'Type your message...'}
-              disabled={isLoading}
-            />
-            <button type="submit" disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Send'}
-            </button>
-            <button
-              type="button"
-              onClick={toggleListening}
-              className={`voice-input-button ${isListening ? 'listening' : ''}`}
-            >
-              {isListening ? 'Stop' : 'Voice'} (Ctrl+Shift+K)
-            </button>
-          </form>
+          <>
+            <form onSubmit={(e) => handleUserInput(e)} className="user-input-form">
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder={isListening ? 'Listening...' : 'Type your message...'}
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                onClick={toggleListening}
+                className={`voice-input-button ${isListening ? 'listening' : ''}`}
+              >
+                {isListening ? (isLoading ? 'Sending...' : 'Send') : 'Voice'} (Ctrl+Shift+K)
+              </button>
+              {!isListening && (
+                <button type="submit" disabled={isLoading}>
+                  {isLoading ? 'Sending...' : 'Send'}
+                </button>
+              )}
+            </form>
+          </>
         )}
       </div>
     </div>
