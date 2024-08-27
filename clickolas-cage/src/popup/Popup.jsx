@@ -291,7 +291,7 @@ const Popup = () => {
           ) : !isLoading ? (
             <>
               <img src={logo} className="App-logo" alt="logo" />
-              <h2>Whats today's Plan?</h2>
+              <h2>What's today's Plan?</h2>
               <div className="input-container">
                 <textarea
                   ref={promptRef}
