@@ -62,16 +62,23 @@
   opacity: 0.5;
 }
 
-.input-common[type="button"] {
+.input-common[type='button'] {
   background: linear-gradient(270deg, #000000, #2f2f2f, #5e5e5e, #8d8d8d, #bcbcbc);
   background-size: 1400% 1400%;
-  width: calc(80% + 26px);
+  width: 100%;
+  margin-top: 15px;
 }
 
 @keyframes rainbow {
-  0%{background-position:0% 82%}
-  50%{background-position:100% 19%}
-  100%{background-position:0% 82%}
+  0% {
+    background-position: 0% 82%;
+  }
+  50% {
+    background-position: 100% 19%;
+  }
+  100% {
+    background-position: 0% 82%;
+  }
 }
 
 .model-provider-selector {
@@ -142,11 +149,12 @@
 }
 
 .microphone-button {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
+  width: 66px;
+  height: 67px;
 }
 
 .microphone-button.listening {
   background-color: #f44336;
 }
-
