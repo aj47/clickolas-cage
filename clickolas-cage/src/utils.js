@@ -1,4 +1,3 @@
-
 export const getDomain = (url) => {
   try {
     const parsedUrl = new URL(url)
@@ -46,5 +45,17 @@ export const runFunctionXTimesWithDelay = async (func, times, delay) => {
       await sleep(delay) // Wait for the specified delay
     }
     resolve() // Resolve the promise when finished
+  })
+}
+
+export function getSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['currentModel', 'currentProvider', 'speechRecognitionEnabled'], (result) => {
+      resolve({
+        currentModel: result.currentModel,
+        currentProvider: result.currentProvider,
+        speechRecognitionEnabled: result.speechRecognitionEnabled
+      })
+    })
   })
 }

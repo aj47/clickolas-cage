@@ -73,21 +73,20 @@
 
 .user-input-form {
   display: flex;
-  padding: 10px;
-  background-color: #f0f0f0;
-  /* Remove any margin-top if present */
+  flex-direction: column;
+  width: 100%;
 }
 
 .user-input-form input {
-  flex-grow: 1;
-  padding: 5px;
+  padding: 8px;
   border: 1px solid #ccc;
   border-radius: 3px;
+  margin-bottom: 5px;
 }
 
-.user-input-form button {
-  margin-left: 5px;
-  padding: 5px 10px;
+.user-input-form button[type="submit"] {
+  width: 100%;
+  padding: 8px;
   background-color: #4CAF50;
   color: white;
   border: none;
@@ -98,4 +97,40 @@
 .user-input-form button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+.voice-input-button {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+.voice-input-button.listening {
+  background-color: #f44336;
+}
+
+.input-area {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background-color: #f0f0f0;
+}
+
+.stop-execution-button {
+  width: 100%;
+  padding: 8px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-bottom: 5px;
 }

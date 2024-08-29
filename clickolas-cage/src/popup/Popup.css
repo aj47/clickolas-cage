@@ -62,23 +62,29 @@
   opacity: 0.5;
 }
 
-.input-common[type="button"] {
+.input-common[type='button'] {
   background: linear-gradient(270deg, #000000, #2f2f2f, #5e5e5e, #8d8d8d, #bcbcbc);
   background-size: 1400% 1400%;
-  width: calc(80% + 26px);
+  width: 100%;
+  margin-top: 15px;
 }
 
 @keyframes rainbow {
-  0%{background-position:0% 82%}
-  50%{background-position:100% 19%}
-  100%{background-position:0% 82%}
+  0% {
+    background-position: 0% 82%;
+  }
+  50% {
+    background-position: 100% 19%;
+  }
+  100% {
+    background-position: 0% 82%;
+  }
 }
 
 .model-provider-selector {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 15px;
   flex-wrap: wrap;
 }
 
@@ -109,16 +115,28 @@
   min-height: 38px;
   max-height: 150px;
   transition: height 0.1s ease;
-  padding: 8px 12px;
+  padding: 10px;
   line-height: 1.5;
+  flex-grow: 1;
+  margin-right: 10px;
+  border-radius: 5px;
+  border: 1px solid #61dafb;
+  background-color: #282c34;
+  color: white;
+  font-size: 14px;
 }
 
 .settings-menu {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   margin-top: 60px;
-  width: 80%;
+  width: 90%;
+  max-width: 400px; // Add this line to limit the maximum width
+  background-color: #3a3f4b;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .settings-menu .model-provider-selector {
@@ -127,9 +145,147 @@
 }
 
 .settings-menu .model-provider-selector select,
-.settings-menu input,
+.settings-menu input[type="text"],
+.settings-menu input[type="password"],
 .settings-menu button {
   width: 100%;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #61dafb;
+  background-color: #282c34;
+  color: white;
+  padding: 10px;
+  font-size: 14px;
+  box-sizing: border-box; // Add this line to include padding in the width calculation
 }
 
+.settings-menu button {
+  background-color: #61dafb;
+  color: #282c34;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.settings-menu button:hover {
+  background-color: #4fa8c9;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-row label {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.setting-row input[type="checkbox"] {
+  width: auto;
+  margin-left: 10px;
+}
+
+.microphone-button {
+  background-color: #4caf50;
+  color: white;
+  width: 66px;
+  height: 67px;
+  border-radius: 5px;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.microphone-button.listening {
+  background-color: #f44336;
+}
+
+.microphone-button:hover {
+  opacity: 0.9;
+}
+
+.submit-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  background-color: #3a3f4b;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.input-container {
+  display: flex;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.submit-button {
+  background-color: #61dafb;
+  color: #282c34;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+.submit-button:hover {
+  background-color: #4fa8c9;
+}
+
+.quick-add-button {
+  background-color: #3a3f4b;
+  color: #61dafb;
+  border: 1px solid #61dafb;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.quick-add-button:hover {
+  background-color: #61dafb;
+  color: #282c34;
+}
+
+.settings-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #282c34;
+  color: #61dafb;
+  border: 1px solid #61dafb;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  z-index: 10;
+}
+
+.settings-toggle:hover {
+  background-color: #61dafb;
+  color: #282c34;
+}
+
+.content-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  background-color: #3a3f4b;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}

@@ -13,6 +13,12 @@ export const initializeOpenAI = (apiKey, model) => {
 
   const effectiveApiKey = currentApiKey || import.meta.env.VITE_OPENAI_API_KEY;
 
+  if (!effectiveApiKey) {
+    console.warn(`No API key available for provider: ${provider}. OpenAI client not initialized.`);
+    openai = null;
+    return;
+  }
+
   openai = new OpenAI({
     apiKey: effectiveApiKey,
     dangerouslyAllowBrowser: true,

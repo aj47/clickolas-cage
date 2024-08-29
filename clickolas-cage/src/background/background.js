@@ -1,5 +1,6 @@
 import { sendMessageToContentScript, sleep } from '../utils'
 import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI } from '../llm-utils'
+import { DEFAULT_MODEL, DEFAULT_PROVIDER, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -16,6 +17,7 @@ let state = {
   currentApiKey: null,
   isExecuting: false,
   stopRequested: false,
+  speechRecognitionEnabled: DEFAULT_SPEECH_RECOGNITION,
 }
 
 // Function to get the current state
@@ -157,6 +159,7 @@ const executeCurrentStep = async () => {
       })
     } else if (currentAction.action === 'GOAL_ACHIEVED') {
       console.log('Goal achieved. Execution completed.')
+      updateState({ currentStep: currentState.currentStep + 1 })
       await sendMessageToTab(currentState.targetTab, {
         type: 'goalCompleted',
         message: currentAction.thought,
@@ -261,15 +264,16 @@ const processResponse = async (request, sender, sendResponse) => {
         await addStepToPlan(nextStepAfterFailure)
         break
       case 'updateModelAndProvider':
-        await updateModelAndProvider(request.model, request.provider, request.apiKey)
+        await updateModelAndProvider(request.model, request.provider, request.apiKeys)
         break
       case 'getModelAndProvider':
-        const apiKey = await getApiKey()
-        await initializeOpenAI(apiKey, currentState.currentModel, currentState.currentProvider)
+        const apiKeys = await getApiKeys()
+        const { currentModel, currentProvider } = await getModelAndProvider()
+        await initializeOpenAI(apiKeys[currentProvider], currentModel, currentProvider)
         sendResponse({
-          currentModel: currentState.currentModel,
-          currentProvider: currentState.currentProvider,
-          currentApiKey: apiKey,
+          currentModel: currentModel,
+          currentProvider: currentProvider,
+          apiKeys: apiKeys,
         })
         return true // Indicate that we're sending a response asynchronously
       case 'user_message':
@@ -303,6 +307,13 @@ const processResponse = async (request, sender, sendResponse) => {
         // Cancel any ongoing tasks or timers here
         sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
         break
+      case 'getSettings':
+        const settings = await getSettings()
+        sendResponse(settings)
+        return true // Indicate that we're sending a response asynchronously
+      case 'updateSettings':
+        await updateSettings(request)
+        break
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
@@ -314,35 +325,111 @@ const processResponse = async (request, sender, sendResponse) => {
 }
 
 // Add these functions for handling secure storage
-const saveApiKey = (apiKey) => {
+const saveApiKeys = (apiKeys) => {
   return new Promise((resolve) => {
-    chrome.storage.sync.set({ apiKey: apiKey }, resolve)
+    chrome.storage.sync.set({ apiKeys: apiKeys }, resolve)
   })
 }
 
-const getApiKey = () => {
+const getApiKeys = () => {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['apiKey'], (result) => {
-      resolve(result.apiKey || null)
+    chrome.storage.sync.get(['apiKeys'], (result) => {
+      resolve(result.apiKeys || {
+        google: null,
+        openai: null,
+        groq: null,
+        custom: null
+      })
+    })
+  })
+}
+
+// Add these new functions to save and get model and provider
+const saveModelAndProvider = (model, provider) => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.set({ currentModel: model, currentProvider: provider }, resolve)
+  })
+}
+
+const getModelAndProvider = () => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['currentModel', 'currentProvider'], (result) => {
+      resolve({
+        currentModel: result.currentModel || DEFAULT_MODEL,
+        currentProvider: result.currentProvider || DEFAULT_PROVIDER
+      })
     })
   })
 }
 
 // Modify the updateModelAndProvider function
-const updateModelAndProvider = async (model, provider, apiKey) => {
+const updateModelAndProvider = async (model, provider, newApiKeys) => {
+  await saveModelAndProvider(model, provider)
   updateState({ currentModel: model, currentProvider: provider })
-  if (apiKey) {
-    await saveApiKey(apiKey)
-    updateState({ currentApiKey: apiKey })
+
+  if (newApiKeys) {
+    const currentApiKeys = await getApiKeys()
+    const updatedApiKeys = { ...currentApiKeys, ...newApiKeys }
+    await saveApiKeys(updatedApiKeys)
+    updateState({ apiKeys: updatedApiKeys })
+    console.log('API Keys updated:', updatedApiKeys)
+  } else {
+    console.log('No new API keys provided, using existing keys')
   }
-  console.log(apiKey, 'apiKey - updated')
+
+  const apiKeys = await getApiKeys()
+  const apiKey = apiKeys[provider]
+
+  if (!apiKey) {
+    console.warn(`No API key found for provider: ${provider}`)
+  }
+
   await initializeOpenAI(apiKey, model, provider)
 }
 
-// Initialize the state with the API key on startup
+const saveSettings = (settings) => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.set(settings, resolve)
+  })
+}
+
+const getSettings = () => {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(['currentModel', 'currentProvider', 'apiKeys', 'speechRecognitionEnabled'], (result) => {
+      resolve({
+        currentModel: result.currentModel || DEFAULT_MODEL,
+        currentProvider: result.currentProvider || DEFAULT_PROVIDER,
+        apiKeys: result.apiKeys || {
+          google: null,
+          openai: null,
+          groq: null,
+          custom: null
+        },
+        speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION
+      })
+    })
+  })
+}
+
+const updateSettings = async (newSettings) => {
+  const currentSettings = await getSettings()
+  const updatedSettings = { ...currentSettings, ...newSettings }
+  await saveSettings(updatedSettings)
+  updateState(updatedSettings)
+  console.log('Settings updated:', updatedSettings)
+}
+
+// Modify the initialization part
 ;(async () => {
-  const apiKey = await getApiKey()
-  updateState({ currentApiKey: apiKey })
+  const settings = await getSettings()
+  updateState(settings)
+
+  // Initialize OpenAI with the stored settings
+  initializeOpenAI(
+    settings.apiKeys[settings.currentProvider],
+    settings.currentModel,
+    settings.currentProvider
+  )
 })()
 
 chrome.commands.onCommand.addListener((command) => {

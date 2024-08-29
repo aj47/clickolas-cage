@@ -23,10 +23,19 @@ export const SidePanel = () => {
   const [isMinimized, setIsMinimized] = useState(false)
 
   const [userInput, setUserInput] = useState('')
+  const [transcript, setTranscript] = useState('')
+  const transcriptRef = useRef('')
   const [isLoading, setIsLoading] = useState(false)
 
   const [isExecuting, setIsExecuting] = useState(false)
+  const isExecutingRef = useRef(false)
   const [showStopButton, setShowStopButton] = useState(false)
+
+  const [disablePointerEvents, setDisablePointerEvents] = useState(false)
+
+  const [isListening, setIsListening] = useState(false)
+  const isListeningRef = useRef(false)
+  const recognitionRef = useRef(null)
 
   const handleMouseDown = (e) => {
     console.log('Mouse down event triggered')
@@ -38,12 +47,12 @@ export const SidePanel = () => {
   }
 
   const [position, setPosition] = useState({
-    x: window.innerWidth - 260, // 10px margin from the right edge
-    y: window.innerHeight - 410, // 10px margin from the bottom edge when not minimized
+    x: window.innerWidth - 260,
+    y: window.innerHeight / 2 - 200, // Position in the middle of the window height
   })
   const handleMouseMove = (e) => {
     if (isDragging) {
-      const panelHeight = isMinimized ? 30 : 400; // Use the actual height of the panel
+      const panelHeight = isMinimized ? 30 : 400 // Use the actual height of the panel
       const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 250))
       const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - panelHeight))
       setPosition({
@@ -196,7 +205,7 @@ export const SidePanel = () => {
     setLastObservedTime(currentTime)
 
     const cleanedArray = clickableElementLabels.filter(
-      (e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY'
+      (e) => e.ariaLabel !== '' && e.ariaLabel !== null && e.role !== 'BODY',
     )
 
     // Sort the array to place new elements at the top
@@ -345,6 +354,9 @@ export const SidePanel = () => {
   }, [])
 
   const handleRequest = async (request, sender, sendResponse) => {
+    // Re-enable pointer events when any message is received
+    setDisablePointerEvents(false)
+
     if (request.plan && request.currentStep) {
       const newMessages = request.plan.map((step, index) => ({
         type: 'step',
@@ -359,6 +371,9 @@ export const SidePanel = () => {
         sendResponse({ type: 'completed_task' })
         break
       case 'locateElement':
+        if (request.action === 'CLICKBTN') {
+          setDisablePointerEvents(true)
+        }
         const result = locateCorrectElement(request.ariaLabel)
         if (typeof result === 'string') {
           sendResponse({
@@ -380,12 +395,13 @@ export const SidePanel = () => {
         })
         break
       case 'goalCompleted':
-        setMessages(prevMessages => [
+        setMessages((prevMessages) => [
           ...prevMessages,
-          { type: 'completion', content: `Goal achieved: ${request.message}` }
+          { type: 'completion', content: `Goal achieved: ${request.message}` },
         ])
         setIsExecuting(false)
-        setShowStopButton(false)  // Reset the stop button visibility
+        isExecutingRef.current = false
+        setShowStopButton(false) // Reset the stop button visibility
         sendResponse({ type: 'ready' })
         break
       default:
@@ -393,11 +409,13 @@ export const SidePanel = () => {
         break
       case 'execution_started':
         setIsExecuting(true)
+        isExecutingRef.current = true
         setShowStopButton(true)
         break
       case 'execution_completed':
         setIsExecuting(false)
-        setShowStopButton(false)  // Reset the stop button visibility
+        isExecutingRef.current = false
+        setShowStopButton(false) // Reset the stop button visibility
         break
     }
   }
@@ -478,25 +496,121 @@ export const SidePanel = () => {
   }
   //----------  end DOM change check --------
 
-  const handleUserInput = async (e) => {
-    e.preventDefault()
-    if (!userInput.trim()) return
+  useEffect(() => {
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = true
+      recognitionRef.current.interimResults = true
+
+      recognitionRef.current.onresult = (event) => {
+        const currentTranscript = Array.from(event.results)
+          .map((result) => result[0].transcript)
+          .join('')
+        setTranscript(currentTranscript)
+        transcriptRef.current = currentTranscript // Update the ref
+        setUserInput(currentTranscript)
+      }
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error)
+        setIsListening(false)
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+      }
+    }
+
+    // Add global keydown event listener for voice input
+    const handleGlobalKeyDown = async (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+        e.preventDefault()
+        const newListeningState = !isListeningRef.current
+        await toggleListening()
+        if (!newListeningState) {
+          // Only submit if we're stopping listening
+          await handleUserInput(e, transcriptRef.current)
+        }
+        console.log('isListening (after toggle)', isListeningRef.current)
+      }
+    }
+
+    document.addEventListener('keydown', handleGlobalKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown)
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  const toggleListening = async () => {
+    return new Promise((resolve) => {
+      setIsListening((prevIsListening) => {
+        const newState = !prevIsListening
+        isListeningRef.current = newState
+        console.log('isListening (in toggle)', newState)
+
+        if (isExecutingRef.current) {
+          handleStopExecution().then(() => {
+            if (newState) {
+              recognitionRef.current.start()
+              setTranscript('')
+            } else {
+              recognitionRef.current.stop()
+            }
+            resolve()
+          })
+        } else {
+          if (newState) {
+            recognitionRef.current.start()
+            setTranscript('')
+          } else {
+            recognitionRef.current.stop()
+          }
+          setTimeout(resolve, 0)
+        }
+
+        return newState
+      })
+    })
+  }
+
+  const handleUserInput = async (e, overrideInput = null) => {
+    if (e) e.preventDefault()
+    const inputToSend = overrideInput || userInput
+    console.log('userInput', inputToSend)
+    if (!inputToSend.trim()) return
 
     setIsLoading(true)
     const { clickableElementLabels, focusedElement } = getClickableElements()
 
+    // Add user message to the message log
+    setMessages((prevMessages) => [...prevMessages, { type: 'user', content: inputToSend }])
+
     try {
       await sendMessageToBackgroundScript({
         type: 'user_message',
-        message: userInput,
+        message: inputToSend,
         elements: clickableElementLabels.slice(0, 200),
         focusedElement: focusedElement,
-        plan: messages.filter(m => m.type === 'step').map(m => m.content),
+        plan: messages.filter((m) => m.type === 'step').map((m) => m.content),
       })
       setUserInput('')
+      setTranscript('') // Clear transcript after sending
+      transcriptRef.current = '' // Clear the transcript ref
+      if (isListeningRef.current) {
+        await toggleListening() // Stop listening after sending the message
+      }
     } catch (error) {
       console.error('Error sending user message:', error)
-      setMessages(prevMessages => [...prevMessages, { type: 'error', content: 'Failed to send message' }])
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'error', content: 'Failed to send message' },
+      ])
     } finally {
       setIsLoading(false)
     }
@@ -504,14 +618,21 @@ export const SidePanel = () => {
 
   const handleStopExecution = async () => {
     try {
+      setIsExecuting(false)
+      isExecutingRef.current = false
       await sendMessageToBackgroundScript({
         type: 'stop_execution',
       })
-      // Don't set isExecuting or showStopButton here, wait for the 'execution_completed' message
-      setMessages(prevMessages => [...prevMessages, { type: 'system', content: 'Execution stopped.' }])
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'system', content: 'Execution stopped.' },
+      ])
     } catch (error) {
       console.error('Error stopping execution:', error)
-      setMessages(prevMessages => [...prevMessages, { type: 'error', content: 'Failed to stop execution.' }])
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'error', content: 'Failed to stop execution.' },
+      ])
     }
   }
 
@@ -522,6 +643,7 @@ export const SidePanel = () => {
         top: `${position.y}px`,
         left: `${position.x}px`,
         right: 'auto',
+        pointerEvents: disablePointerEvents ? 'none' : 'auto',
       }}
     >
       <div className="topBar" onMouseDown={handleMouseDown}>
@@ -533,33 +655,43 @@ export const SidePanel = () => {
       <div className="plan">
         <div className="messages-list" ref={messagesListRef}>
           {messages.map((message, i) => (
-            <div
-              className={`message ${message.type === 'completion' ? 'completion' : ''}`}
-              key={i}
-            >
+            <div className={`message ${message.type}`} key={i}>
               {message.content}
             </div>
           ))}
         </div>
       </div>
-      {showStopButton ? (
-        <button onClick={handleStopExecution} className="stop-execution-button">
-          Stop Execution
-        </button>
-      ) : (
-        <form onSubmit={handleUserInput} className="user-input-form">
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your message..."
-            disabled={isLoading}
-          />
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Sending...' : 'Send'}
+      <div className="input-area">
+        {isExecutingRef.current ? (
+          <button onClick={handleStopExecution} className="stop-execution-button">
+            Stop Execution <p style={{fontSize: '0.7em', marginBottom: '0'}}> (Ctrl+Shift+K for Voice)</p>
           </button>
-        </form>
-      )}
+        ) : (
+          <>
+            <form onSubmit={(e) => handleUserInput(e)} className="user-input-form">
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder={isListening ? 'Listening...' : 'Type your message...'}
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                onClick={toggleListening}
+                className={`voice-input-button ${isListening ? 'listening' : ''}`}
+              >
+                {isListening ? (isLoading ? 'Sending...' : 'Send') : 'Voice'} (Ctrl+Shift+K)
+              </button>
+              {!isListening && (
+                <button type="submit" disabled={isLoading}>
+                  {isLoading ? 'Sending...' : 'Send'}
+                </button>
+              )}
+            </form>
+          </>
+        )}
+      </div>
     </div>
   )
 }
