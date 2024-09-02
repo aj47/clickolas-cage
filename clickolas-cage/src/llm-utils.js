@@ -103,7 +103,10 @@ async function openAiCallWithRetry(call, retryCount = 3) {
       return response
     } catch (error) {
       console.error(`Attempt ${i + 1} failed with error: ${error}`)
-      if (i === retryCount - 1) throw error
+      if (i === retryCount - 1) {
+        chrome.runtime.sendMessage({ type: 'error', message: error.message }) // Add this line
+        throw error
+      }
     }
   }
 }

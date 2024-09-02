@@ -37,6 +37,7 @@ const Popup = () => {
   const [isListening, setIsListening] = useState(true) // Changed to true
   const [transcript, setTranscript] = useState('') // Add this line
   const [speechRecognitionEnabled, setSpeechRecognitionEnabled] = useState(DEFAULT_SPEECH_RECOGNITION)
+  const [error, setError] = useState(null) // Add this line
 
   const recognitionRef = useRef(null)
 
@@ -59,14 +60,14 @@ const Popup = () => {
           setSpeechRecognitionEnabled(response.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION)
         } else {
           console.error('Invalid response from background script:', response)
-          // Set default values if the response is invalid
+          setError('Invalid response from background script')
           setModel(DEFAULT_MODEL)
           setProvider(DEFAULT_PROVIDER)
           setSpeechRecognitionEnabled(DEFAULT_SPEECH_RECOGNITION)
         }
       } catch (error) {
         console.error('Error loading settings:', error)
-        // Set default values if there's an error
+        setError('Error loading settings')
         setModel(DEFAULT_MODEL)
         setProvider(DEFAULT_PROVIDER)
         setSpeechRecognitionEnabled(DEFAULT_SPEECH_RECOGNITION)
@@ -75,6 +76,18 @@ const Popup = () => {
       }
     }
     loadSettings()
+
+    const handleErrorMessage = (message) => {
+      if (message.type === 'error') {
+        setError(message.message)
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(handleErrorMessage)
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleErrorMessage)
+    }
   }, [])
 
   useEffect(() => {
@@ -328,7 +341,10 @@ const Popup = () => {
               </button>
             </>
           ) : (
-            <p>Thinking...</p>
+            <>
+              <p>Thinking...</p>
+              {error && <p style={{ color: 'red' }}>{error}</p>} {/* Add this line */}
+            </>
           )}
         </div>
       </header>
