@@ -80,6 +80,7 @@ const Popup = () => {
     const handleErrorMessage = (message) => {
       if (message.type === 'error') {
         setError(message.message)
+        setIsLoading(false)
       }
     }
 
@@ -303,6 +304,7 @@ const Popup = () => {
             <>
               <img src={logo} className="App-logo" alt="logo" />
               <h2>What's today's Plan?</h2>
+              {error && <p style={{ color: 'red' }}>{error}</p>}
               <div className="input-container">
                 <textarea
                   ref={promptRef}
@@ -343,7 +345,6 @@ const Popup = () => {
           ) : (
             <>
               <p>Thinking...</p>
-              {error && <p style={{ color: 'red' }}>{error}</p>} {/* Add this line */}
             </>
           )}
         </div>

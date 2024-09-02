@@ -333,7 +333,7 @@ const processResponse = async (request, sender, sendResponse) => {
     console.error('Error in processResponse:', error)
     updateState({ isExecuting: false, stopRequested: false })
     sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
-    chrome.runtime.sendMessage({ type: 'error', message: error.message }) // Add this line
+    chrome.runtime.sendMessage({ type: 'error', message: error.message }) // Ensure this line is present
     return sendResponse('error')
   }
 }
