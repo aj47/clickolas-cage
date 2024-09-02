@@ -145,36 +145,42 @@ const executeCurrentStep = async () => {
       return
     }
     console.log('Current action:', currentAction.action)
-    if (currentAction.action === 'NAVURL') {
-      await navURL(currentAction.param)
-      await completedTask()
-    } else if (currentAction.action === 'CLICKBTN') {
-      console.log('Executing CLICKBTN action:', currentAction.ariaLabel)
-      await sendMessageToTab(currentState.targetTab, {
-        type: 'locateElement',
-        ariaLabel: currentAction.ariaLabel,
-        action: currentAction.action,
-      })
-    } else if (currentAction.action === 'TYPETEXT') {
-      console.log('Executing TYPETEXT action:', currentAction.text)
-      await sendMessageToTab(currentState.targetTab, {
-        type: 'locateElement',
-        ariaLabel: currentAction.ariaLabel,
-        action: currentAction.action,
-        text: currentAction.text,
-      })
-    } else if (currentAction.action === 'GOAL_ACHIEVED') {
-      console.log('Goal achieved. Execution completed.')
-      updateState({ currentStep: currentState.currentStep + 1 })
-      await sendMessageToTab(currentState.targetTab, {
-        type: 'goalCompleted',
-        message: currentAction.thought,
-      })
-      // Don't call completedTask() here, as we want to stop execution
-    } else if (currentAction.action === 'ASKUSER') {
-      // TODO: Handle ASKUSER
-    } else {
-      console.error('Unknown action type:', currentAction.action)
+    switch (currentAction.action) {
+      case 'NAVURL':
+        await navURL(currentAction.param)
+        await completedTask()
+        break
+      case 'CLICKBTN':
+        console.log('Executing CLICKBTN action:', currentAction.ariaLabel)
+        await sendMessageToTab(currentState.targetTab, {
+          type: 'locateElement',
+          ariaLabel: currentAction.ariaLabel,
+          action: currentAction.action,
+        })
+        break
+      case 'TYPETEXT':
+        console.log('Executing TYPETEXT action:', currentAction.text)
+        await sendMessageToTab(currentState.targetTab, {
+          type: 'locateElement',
+          ariaLabel: currentAction.ariaLabel,
+          action: currentAction.action,
+          text: currentAction.text,
+        })
+        break
+      case 'GOAL_ACHIEVED':
+        console.log('Goal achieved. Execution completed.')
+        updateState({ currentStep: currentState.currentStep + 1 })
+        await sendMessageToTab(currentState.targetTab, {
+          type: 'goalCompleted',
+          message: currentAction.thought,
+        })
+        // Don't call completedTask() here, as we want to stop execution
+        break
+      case 'ASKUSER':
+        // TODO: Handle ASKUSER
+        break
+      default:
+        console.error('Unknown action type:', currentAction.action)
     }
   } catch (error) {
     console.error('Error executing current step:', error)
