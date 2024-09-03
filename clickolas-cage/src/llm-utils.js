@@ -1,6 +1,9 @@
+import OpenAI from 'openai'
+import { PORTKEY_GATEWAY_URL, createHeaders } from 'portkey-ai'
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
 import { DEFAULT_MODEL, DEFAULT_PROVIDER } from './config.js'
 
+let openai;
 let currentApiKey = null;
 let currentModel = DEFAULT_MODEL;
 let currentProvider = DEFAULT_PROVIDER;
@@ -10,36 +13,48 @@ export const initializeOpenAI = (apiKey, model, provider) => {
   currentModel = model;
   currentProvider = provider;
 
-  // ... existing code ...
+  const effectiveApiKey = currentApiKey || (provider === 'openai'
+    ? import.meta.env.VITE_OPENAI_API_KEY
+    : provider === 'groq'
+    ? import.meta.env.VITE_GROQ_API_KEY
+    : import.meta.env.VITE_GEMINI_API_KEY);
+
+  if (!effectiveApiKey) {
+    console.warn(`No API key available for provider: ${provider}. OpenAI client not initialized.`);
+    openai = null;
+    return;
+  }
+
+  openai = new OpenAI({
+    apiKey: effectiveApiKey,
+    baseURL: 'http://localhost:8787/v1',
+    dangerouslyAllowBrowser: true,
+    defaultHeaders: createHeaders({ provider }),
+  });
 };
 
-const openRouterChatCompletionWithLogging = async (messages) => {
+/**
+ * Wrapper function for OpenAI chat completion calls with logging.
+ * @param {Object} messages - The messages payload to send to the OpenAI API.
+ * @returns {Promise<Object>} - The response from the OpenAI API.
+ */
+const openAiChatCompletionWithLogging = async (messages) => {
   chrome.storage.local.get({ logs: [] }, (result) => {
     const logs = result.logs
     logs.push({ messages })
     chrome.storage.local.set({ logs })
   })
-
-  const response = await openRouterCallWithRetry(() =>
-    fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${currentApiKey}`,
-        "HTTP-Referer": `${chrome.runtime.getURL('')}`,
-        "X-Title": "Clickolas Cage",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        "model": currentModel,
-        "messages": messages,
-        "frequency_penalty": 0.5,
-        "seed": 1,
-        "response_format": { "type": "json_object" },
-        ...(currentProvider === 'openai' && { temperature: 0.7 }),
-      })
-    }).then(res => res.json())
+  const response = await openAiCallWithRetry(() =>
+    openai.chat.completions.create({
+      model: currentModel,
+      frequency_penalty: 0.5,
+      seed: 1,
+      response_format: { type: 'json_object' },
+      messages: messages,
+      // Add temperature parameter for OpenAI models
+      ...(currentProvider === 'openai' && { temperature: 0.7 }),
+    }),
   )
-
   chrome.storage.local.get({ logs: [] }, (result) => {
     const logs = result.logs
     logs.push({ response })
@@ -81,13 +96,10 @@ const extractJsonObject = (str) => {
  * @param {number} [retryCount=3] - The number of times to retry the API call if it fails.
  * @returns {Promise} A promise that resolves with the response from the successful API call.
  */
-async function openRouterCallWithRetry(call, retryCount = 3) {
+async function openAiCallWithRetry(call, retryCount = 3) {
   for (let i = 0; i < retryCount; i++) {
     try {
       const response = await call()
-      if (response.error) {
-        throw new Error(response.error.message)
-      }
       return response
     } catch (error) {
       console.error(`Attempt ${i + 1} failed with error: ${error}`)
@@ -133,7 +145,7 @@ export const getNextStepFromLLM = async (
     userContent += `\n\nUser message: ${userMessage}`
   }
 
-  const chatCompletion = await openRouterChatCompletionWithLogging([
+  const chatCompletion = await openAiChatCompletionWithLogging([
     {
       role: 'system',
       content: systemPrompt,
@@ -154,7 +166,7 @@ export const getNextStepFromLLM = async (
  * @returns {Promise<object>} - A promise that resolves to an object containing the thought and URL parameter.
  */
 export const promptToFirstStep = async (prompt, model, provider) => {
-  const chatCompletion = await openRouterChatCompletionWithLogging([
+  const chatCompletion = await openAiChatCompletionWithLogging([
     {
       role: 'system',
       content: SYSTEM_PROMPT_FIRST_STEP,
