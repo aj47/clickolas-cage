@@ -3,7 +3,7 @@ import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript } from '../utils'
 import { exportLogs, clearLogs } from '../llm-utils'
-import { DEFAULT_MODEL, DEFAULT_PROVIDER, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
+import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
 
 const handleExportLogs = () => {
   exportLogs()
@@ -13,31 +13,17 @@ const handleClearLogs = () => {
   clearLogs()
 }
 
-const getProviderFromModel = (model) => {
-  if (model.startsWith('gemini')) return 'google'
-  if (model.startsWith('gpt')) return 'openai'
-  if (model.startsWith('llama2') || model.startsWith('mixtral')) return 'groq'
-  return 'custom'
-}
-
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
   const [model, setModel] = useState(DEFAULT_MODEL)
-  const [provider, setProvider] = useState(DEFAULT_PROVIDER)
-  const [customModel, setCustomModel] = useState('')
+  const [apiKey, setApiKey] = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  const [apiKeys, setApiKeys] = useState({
-    google: '',
-    openai: '',
-    groq: '',
-    custom: ''
-  })
   const [isLoadingSettings, setIsLoadingSettings] = useState(true)
-  const [isListening, setIsListening] = useState(true) // Changed to true
-  const [transcript, setTranscript] = useState('') // Add this line
+  const [isListening, setIsListening] = useState(true)
+  const [transcript, setTranscript] = useState('')
   const [speechRecognitionEnabled, setSpeechRecognitionEnabled] = useState(DEFAULT_SPEECH_RECOGNITION)
-  const [error, setError] = useState(null) // Add this line
+  const [error, setError] = useState(null)
 
   const recognitionRef = useRef(null)
 
@@ -78,26 +64,18 @@ const Popup = () => {
         });
         if (response) {
           setModel(response.currentModel || DEFAULT_MODEL)
-          setProvider(response.currentProvider || DEFAULT_PROVIDER)
-          setApiKeys(response.apiKeys || {
-            google: '',
-            openai: '',
-            groq: '',
-            custom: ''
-          })
+          setApiKey(response.apiKey || '')
           setSpeechRecognitionEnabled(response.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION)
         } else {
           console.error('Invalid response from background script:', response)
           setError('Invalid response from background script')
           setModel(DEFAULT_MODEL)
-          setProvider(DEFAULT_PROVIDER)
           setSpeechRecognitionEnabled(DEFAULT_SPEECH_RECOGNITION)
         }
       } catch (error) {
         console.error('Error loading settings:', error)
         setError('Error loading settings')
         setModel(DEFAULT_MODEL)
-        setProvider(DEFAULT_PROVIDER)
         setSpeechRecognitionEnabled(DEFAULT_SPEECH_RECOGNITION)
       } finally {
         setIsLoadingSettings(false)
@@ -116,7 +94,7 @@ const Popup = () => {
 
     return () => {
       chrome.runtime.onMessage.removeListener(handleErrorMessage)
-      setIsListening(false); // Reset listening state when component unmounts
+      setIsListening(false);
     }
   }, [])
 
@@ -158,50 +136,25 @@ const Popup = () => {
   const handleModelChange = async (e) => {
     const selectedModel = e.target.value
     setModel(selectedModel)
-    if (selectedModel !== 'custom') {
-      const newProvider = getProviderFromModel(selectedModel)
-      setProvider(newProvider)
-      await sendMessageToBackgroundScript({
-        type: 'updateModelAndProvider',
-        model: selectedModel,
-        provider: newProvider,
-      })
-    }
-  }
-
-  const handleCustomModelChange = (e) => {
-    const customModelValue = e.target.value
-    setCustomModel(customModelValue)
-    sendMessageToBackgroundScript({
-      type: 'updateModelAndProvider',
-      model: customModelValue,
-      provider,
-    })
-  }
-
-  const handleProviderChange = async (e) => {
-    const newProvider = e.target.value
-    setProvider(newProvider)
     await sendMessageToBackgroundScript({
-      type: 'updateModelAndProvider',
-      model: model === 'custom' ? customModel : model,
-      provider: newProvider,
+      type: 'updateModelAndApiKey',
+      model: selectedModel,
+      apiKey,
     })
   }
 
   const handleApiKeyChange = (e) => {
-    const newApiKeys = { ...apiKeys, [provider]: e.target.value };
-    setApiKeys(newApiKeys);
+    const newApiKey = e.target.value
+    setApiKey(newApiKey)
     sendMessageToBackgroundScript({
-      type: 'updateModelAndProvider',
-      model: model === 'custom' ? customModel : model,
-      provider,
-      apiKeys: newApiKeys,
+      type: 'updateModelAndApiKey',
+      model,
+      apiKey: newApiKey,
     })
   }
 
   const handleTextareaChange = (e) => {
-    setTranscript(e.target.value) // Update transcript state when typing
+    setTranscript(e.target.value)
     e.target.style.height = 'auto'
     e.target.style.height = `${e.target.scrollHeight}px`
   }
@@ -224,7 +177,7 @@ const Popup = () => {
     if (promptRef.current.value.trim().length === 0) return
     sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
     setIsLoading(true)
-    setTranscript('') // Clear the transcript after submitting
+    setTranscript('')
   };
 
   const handleSpeechRecognitionToggle = async () => {
@@ -251,57 +204,30 @@ const Popup = () => {
             ) : (
               <div className="settings-menu">
                 <h3>Model Settings</h3>
-                <div className="model-provider-selector">
-                  <select
-                    value={model}
-                    onChange={handleModelChange}
-                  >
-                    <optgroup label="Google">
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                      <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                    </optgroup>
+                <div className="model-selector">
+                  <select value={model} onChange={handleModelChange}>
                     <optgroup label="OpenAI">
-                      <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
-                      <option value="gpt-4o">GPT-4o</option>
-                      <option value="gpt-4o-mini">GPT-4o-mini</option>
+                      <option value="openai/gpt-4o">GPT-4o</option>
+                      <option value="openai/gpt-4">GPT-4</option>
+                      <option value="openai/gpt-4-32k">GPT-4 32k</option>
                     </optgroup>
-                    <optgroup label="Groq">
-                      <option value="llama2-70b-4096">LLaMA2 70B</option>
-                      <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                    <optgroup label="Anthropic">
                     </optgroup>
-                    <option value="custom">Custom</option>
-                  </select>
-                  {model === 'custom' && (
-                    <input
-                      type="text"
-                      value={customModel}
-                      onChange={handleCustomModelChange}
-                      placeholder="Enter custom model"
-                    />
-                  )}
-                  <select
-                    value={provider}
-                    onChange={handleProviderChange}
-                  >
-                    <option value="google">Google</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="groq">Groq</option>
-                    <option value="custom">Custom</option>
+                    <optgroup label="Google">
+                      <option value="google/gemini-pro">Gemini Pro</option>
+                    </optgroup>
+                    <optgroup label="Meta">
+                      <option value="meta/llama-2-70b-chat">LLaMA v2 70B</option>
+                      <option value="meta-llama/llama-3.1-8b-instruct:free">LLaMA 3.1 8B Instruct (Free)</option>
+                    </optgroup>
                   </select>
                 </div>
                 <input
                   type="password"
-                  value={apiKeys[provider] || ''}
+                  value={apiKey}
                   onChange={handleApiKeyChange}
-                  placeholder={`Enter ${provider.toUpperCase()} API Key`}
+                  placeholder="Enter OpenRouter API Key"
                 />
-                {/* <h3>Log Management</h3>
-                <button onClick={handleExportLogs}>
-                  Export Logs
-                </button>
-                <button onClick={handleClearLogs}>
-                  Clear Logs
-                </button> */}
                 <div className="setting-row">
                   <label htmlFor="speech-recognition-toggle">
                     Enable Speech Recognition on Load:
