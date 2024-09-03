@@ -41,6 +41,34 @@ const Popup = () => {
 
   const recognitionRef = useRef(null)
 
+  const initializeSpeechRecognition = () => {
+    if ('webkitSpeechRecognition' in window && speechRecognitionEnabled) {
+      const SpeechRecognition = window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = true
+      recognitionRef.current.interimResults = true
+
+      recognitionRef.current.onresult = (event) => {
+        const currentTranscript = Array.from(event.results)
+          .map(result => result[0].transcript)
+          .join('')
+        setTranscript(currentTranscript)
+        if (promptRef.current) {
+          promptRef.current.value = currentTranscript
+        }
+      }
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error)
+        setIsListening(false)
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+      }
+    }
+  }
+
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -88,42 +116,13 @@ const Popup = () => {
 
     return () => {
       chrome.runtime.onMessage.removeListener(handleErrorMessage)
+      setIsListening(false); // Reset listening state when component unmounts
     }
   }, [])
 
   useEffect(() => {
-    // Initialize speech recognition
-    if ('webkitSpeechRecognition' in window && speechRecognitionEnabled) {
-      const SpeechRecognition = window.webkitSpeechRecognition
-      recognitionRef.current = new SpeechRecognition()
-      recognitionRef.current.continuous = true
-      recognitionRef.current.interimResults = true
+    initializeSpeechRecognition()
 
-      recognitionRef.current.onresult = (event) => {
-        const currentTranscript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join('')
-        setTranscript(currentTranscript)
-        if (promptRef.current) {
-          promptRef.current.value = currentTranscript
-          handleTextareaChange({ target: promptRef.current })
-        }
-      }
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error', event.error)
-        setIsListening(false)
-      }
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false)
-      }
-
-      // Start listening immediately
-      recognitionRef.current.start()
-    }
-
-    // Add global keydown event listener
     const handleGlobalKeyDown = (e) => {
       if (e.key === 'Enter' && !e.shiftKey && !showSettings && !isLoading) {
         e.preventDefault();
@@ -137,9 +136,24 @@ const Popup = () => {
       document.removeEventListener('keydown', handleGlobalKeyDown);
       if (recognitionRef.current) {
         recognitionRef.current.stop()
+        recognitionRef.current = null
       }
+      setIsListening(false);
     }
-  }, [showSettings, isLoading, speechRecognitionEnabled]) // Add dependencies
+  }, [])
+
+  useEffect(() => {
+    if (isListening && recognitionRef.current) {
+      try {
+        recognitionRef.current.start()
+      } catch (error) {
+        console.error('Error starting speech recognition:', error)
+        setIsListening(false)
+      }
+    } else if (!isListening && recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+  }, [isListening, speechRecognitionEnabled])
 
   const handleModelChange = async (e) => {
     const selectedModel = e.target.value
@@ -187,6 +201,7 @@ const Popup = () => {
   }
 
   const handleTextareaChange = (e) => {
+    setTranscript(e.target.value) // Update transcript state when typing
     e.target.style.height = 'auto'
     e.target.style.height = `${e.target.scrollHeight}px`
   }
@@ -197,11 +212,11 @@ const Popup = () => {
 
   const toggleListening = () => {
     if (isListening) {
-      recognitionRef.current.stop()
+      setIsListening(false)
     } else {
-      recognitionRef.current.start()
+      initializeSpeechRecognition()
+      setIsListening(true)
     }
-    setIsListening(!isListening)
   }
 
   const handleSubmit = async () => {
