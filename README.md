@@ -1,4 +1,4 @@
-discord: https://discord.gg/wD3Ufgmj
+discord: [https://discord.gg/cK9WeQ7jPq](https://discord.gg/cK9WeQ7jPq)
 
 
 [view short explanation](https://www.youtube.com/watch?v=HVevc5XnKJU)
