@@ -3,7 +3,7 @@ import logo from '../assets/logo.png'
 import './Popup.css'
 import { sendMessageToBackgroundScript } from '../utils'
 import { exportLogs, clearLogs } from '../llm-utils'
-import { DEFAULT_MODEL, DEFAULT_PROVIDER, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
+import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
 
 const handleExportLogs = () => {
   exportLogs()
@@ -13,31 +13,85 @@ const handleClearLogs = () => {
   clearLogs()
 }
 
-const getProviderFromModel = (model) => {
-  if (model.startsWith('gemini')) return 'google'
-  if (model.startsWith('gpt')) return 'openai'
-  if (model.startsWith('llama2') || model.startsWith('mixtral')) return 'groq'
-  return 'custom'
+const SearchableDropdown = ({ options, value, onChange, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const dropdownRef = useRef(null)
+
+  const selectedOption = options.find(option => option.id === value) || { name: '' }
+
+  const filteredOptions = options.filter((option) =>
+    option.name.toLowerCase().includes(search.toLowerCase()),
+  )
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  return (
+    <div className="searchable-dropdown" ref={dropdownRef}>
+      <input
+        type="text"
+        value={isOpen ? search : selectedOption.name}
+        onChange={(e) => setSearch(e.target.value)}
+        onFocus={() => {
+          setIsOpen(true)
+          setSearch('')
+        }}
+        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+        placeholder={placeholder}
+      />
+      {isOpen && (
+        <ul className="dropdown-list">
+          {filteredOptions.map((option) => (
+            <li
+              key={option.id}
+              onClick={() => {
+                onChange(option.id)
+                setSearch(option.name)
+                setIsOpen(false)
+              }}
+            >
+              <div className="model-info">
+                <span className="model-name">{option.name}</span>
+                <span className="model-stats">
+                  {option.pricing && typeof option.pricing.prompt === 'string' &&
+                   typeof option.pricing.completion === 'string' &&
+                   `$${parseFloat(option.pricing.prompt).toFixed(6)} / ${parseFloat(option.pricing.completion).toFixed(6)} | `}
+                  {option.context_length && `${option.context_length} tokens`}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 const Popup = () => {
   const promptRef = useRef(null)
   const [isLoading, setIsLoading] = useState(false)
   const [model, setModel] = useState(DEFAULT_MODEL)
-  const [provider, setProvider] = useState(DEFAULT_PROVIDER)
-  const [customModel, setCustomModel] = useState('')
+  const [apiKey, setApiKey] = useState('')
   const [showSettings, setShowSettings] = useState(false)
-  const [apiKeys, setApiKeys] = useState({
-    google: '',
-    openai: '',
-    groq: '',
-    custom: ''
-  })
   const [isLoadingSettings, setIsLoadingSettings] = useState(true)
-  const [isListening, setIsListening] = useState(true) // Changed to true
-  const [transcript, setTranscript] = useState('') // Add this line
-  const [speechRecognitionEnabled, setSpeechRecognitionEnabled] = useState(DEFAULT_SPEECH_RECOGNITION)
-  const [error, setError] = useState(null) // Add this line
+  const [isListening, setIsListening] = useState(true)
+  const [transcript, setTranscript] = useState('')
+  const [speechRecognitionEnabled, setSpeechRecognitionEnabled] = useState(
+    DEFAULT_SPEECH_RECOGNITION,
+  )
+  const [error, setError] = useState(null)
+  const [availableModels, setAvailableModels] = useState([])
 
   const recognitionRef = useRef(null)
 
@@ -50,7 +104,7 @@ const Popup = () => {
 
       recognitionRef.current.onresult = (event) => {
         const currentTranscript = Array.from(event.results)
-          .map(result => result[0].transcript)
+          .map((result) => result[0].transcript)
           .join('')
         setTranscript(currentTranscript)
         if (promptRef.current) {
@@ -74,30 +128,30 @@ const Popup = () => {
       try {
         setIsLoadingSettings(true)
         const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ type: 'getSettings' }, resolve);
-        });
+          chrome.runtime.sendMessage({ type: 'getSettings' }, resolve)
+        })
         if (response) {
-          setModel(response.currentModel || DEFAULT_MODEL)
-          setProvider(response.currentProvider || DEFAULT_PROVIDER)
-          setApiKeys(response.apiKeys || {
-            google: '',
-            openai: '',
-            groq: '',
-            custom: ''
-          })
-          setSpeechRecognitionEnabled(response.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION)
+          const savedModel = response.currentModel || DEFAULT_MODEL
+          setModel(savedModel)
+          setApiKey(response.apiKey || '')
+          setSpeechRecognitionEnabled(
+            response.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION,
+          )
+
+          // Fetch available models
+          if (response.apiKey) {
+            fetchAvailableModels(response.apiKey)
+          }
         } else {
           console.error('Invalid response from background script:', response)
           setError('Invalid response from background script')
           setModel(DEFAULT_MODEL)
-          setProvider(DEFAULT_PROVIDER)
           setSpeechRecognitionEnabled(DEFAULT_SPEECH_RECOGNITION)
         }
       } catch (error) {
         console.error('Error loading settings:', error)
         setError('Error loading settings')
         setModel(DEFAULT_MODEL)
-        setProvider(DEFAULT_PROVIDER)
         setSpeechRecognitionEnabled(DEFAULT_SPEECH_RECOGNITION)
       } finally {
         setIsLoadingSettings(false)
@@ -116,7 +170,7 @@ const Popup = () => {
 
     return () => {
       chrome.runtime.onMessage.removeListener(handleErrorMessage)
-      setIsListening(false); // Reset listening state when component unmounts
+      setIsListening(false)
     }
   }, [])
 
@@ -125,20 +179,20 @@ const Popup = () => {
 
     const handleGlobalKeyDown = (e) => {
       if (e.key === 'Enter' && !e.shiftKey && !showSettings && !isLoading) {
-        e.preventDefault();
-        handleSubmit();
+        e.preventDefault()
+        handleSubmit()
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleGlobalKeyDown);
+    document.addEventListener('keydown', handleGlobalKeyDown)
 
     return () => {
-      document.removeEventListener('keydown', handleGlobalKeyDown);
+      document.removeEventListener('keydown', handleGlobalKeyDown)
       if (recognitionRef.current) {
         recognitionRef.current.stop()
         recognitionRef.current = null
       }
-      setIsListening(false);
+      setIsListening(false)
     }
   }, [])
 
@@ -155,53 +209,42 @@ const Popup = () => {
     }
   }, [isListening, speechRecognitionEnabled])
 
-  const handleModelChange = async (e) => {
-    const selectedModel = e.target.value
-    setModel(selectedModel)
-    if (selectedModel !== 'custom') {
-      const newProvider = getProviderFromModel(selectedModel)
-      setProvider(newProvider)
-      await sendMessageToBackgroundScript({
-        type: 'updateModelAndProvider',
-        model: selectedModel,
-        provider: newProvider,
+  const fetchAvailableModels = async (apiKey) => {
+    try {
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'fetchModels', apiKey }, resolve)
       })
+      if (response && response.models) {
+        setAvailableModels(response.models)
+      }
+    } catch (error) {
+      console.error('Error fetching models:', error)
+      setError('Error fetching models')
     }
   }
 
-  const handleCustomModelChange = (e) => {
-    const customModelValue = e.target.value
-    setCustomModel(customModelValue)
-    sendMessageToBackgroundScript({
-      type: 'updateModelAndProvider',
-      model: customModelValue,
-      provider,
-    })
-  }
-
-  const handleProviderChange = async (e) => {
-    const newProvider = e.target.value
-    setProvider(newProvider)
+  const handleModelChange = async (selectedModelId) => {
+    setModel(selectedModelId)
     await sendMessageToBackgroundScript({
-      type: 'updateModelAndProvider',
-      model: model === 'custom' ? customModel : model,
-      provider: newProvider,
+      type: 'updateModelAndApiKey',
+      model: selectedModelId,
+      apiKey,
     })
   }
 
   const handleApiKeyChange = (e) => {
-    const newApiKeys = { ...apiKeys, [provider]: e.target.value };
-    setApiKeys(newApiKeys);
+    const newApiKey = e.target.value
+    setApiKey(newApiKey)
     sendMessageToBackgroundScript({
-      type: 'updateModelAndProvider',
-      model: model === 'custom' ? customModel : model,
-      provider,
-      apiKeys: newApiKeys,
+      type: 'updateModelAndApiKey',
+      model,
+      apiKey: newApiKey,
     })
+    fetchAvailableModels(newApiKey)
   }
 
   const handleTextareaChange = (e) => {
-    setTranscript(e.target.value) // Update transcript state when typing
+    setTranscript(e.target.value)
     e.target.style.height = 'auto'
     e.target.style.height = `${e.target.scrollHeight}px`
   }
@@ -224,8 +267,8 @@ const Popup = () => {
     if (promptRef.current.value.trim().length === 0) return
     sendMessageToBackgroundScript({ type: 'new_goal', prompt: promptRef.current.value })
     setIsLoading(true)
-    setTranscript('') // Clear the transcript after submitting
-  };
+    setTranscript('')
+  }
 
   const handleSpeechRecognitionToggle = async () => {
     const newValue = !speechRecognitionEnabled
@@ -251,57 +294,20 @@ const Popup = () => {
             ) : (
               <div className="settings-menu">
                 <h3>Model Settings</h3>
-                <div className="model-provider-selector">
-                  <select
+                <div className="model-selector">
+                  <SearchableDropdown
+                    options={availableModels}
                     value={model}
                     onChange={handleModelChange}
-                  >
-                    <optgroup label="Google">
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                      <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
-                    </optgroup>
-                    <optgroup label="OpenAI">
-                      <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
-                      <option value="gpt-4o">GPT-4o</option>
-                      <option value="gpt-4o-mini">GPT-4o-mini</option>
-                    </optgroup>
-                    <optgroup label="Groq">
-                      <option value="llama2-70b-4096">LLaMA2 70B</option>
-                      <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
-                    </optgroup>
-                    <option value="custom">Custom</option>
-                  </select>
-                  {model === 'custom' && (
-                    <input
-                      type="text"
-                      value={customModel}
-                      onChange={handleCustomModelChange}
-                      placeholder="Enter custom model"
-                    />
-                  )}
-                  <select
-                    value={provider}
-                    onChange={handleProviderChange}
-                  >
-                    <option value="google">Google</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="groq">Groq</option>
-                    <option value="custom">Custom</option>
-                  </select>
+                    placeholder="Select or search for a model"
+                  />
                 </div>
                 <input
                   type="password"
-                  value={apiKeys[provider] || ''}
+                  value={apiKey}
                   onChange={handleApiKeyChange}
-                  placeholder={`Enter ${provider.toUpperCase()} API Key`}
+                  placeholder="Enter OpenRouter API Key"
                 />
-                {/* <h3>Log Management</h3>
-                <button onClick={handleExportLogs}>
-                  Export Logs
-                </button>
-                <button onClick={handleClearLogs}>
-                  Clear Logs
-                </button> */}
                 <div className="setting-row">
                   <label htmlFor="speech-recognition-toggle">
                     Enable Speech Recognition on Load:
@@ -336,10 +342,7 @@ const Popup = () => {
                   {isListening ? 'Stop' : 'Start'} Listening
                 </button>
               </div>
-              <button
-                onClick={handleSubmit}
-                className="submit-button"
-              >
+              <button onClick={handleSubmit} className="submit-button">
                 Submit
               </button>
               <button
