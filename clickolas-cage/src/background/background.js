@@ -231,16 +231,15 @@ const processResponse = async (request, sender, sendResponse) => {
           await executeCurrentStep()
         } else {
           console.log('Generating next step')
-          const nextStepWithElements = await getNextStepFromLLM({
-            originalPrompt: currentState.originalPrompt,
-            currentURL: currentState.currentURL,
-            originalPlan: currentState.currentPlan,
-            textOptions: request.elements,
-            focusedElement: request.focusedElement,
-            notFoundElement: null,
-            model: currentState.currentModel,
-            provider: currentState.currentProvider
-          })
+          const nextStepWithElements = await getNextStepFromLLM(
+            currentState.originalPrompt,
+            currentState.currentURL,
+            currentState.currentPlan,
+            request.elements,
+            request.focusedElement,
+            null, // notFoundElement
+            currentState.currentModel,
+          )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           await addStepToPlan(nextStepWithElements)
         }
@@ -258,16 +257,15 @@ const processResponse = async (request, sender, sendResponse) => {
         updateState({ currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
         updateState({ currentStep: currentState.currentStep + 1 })
-        const nextStepAfterFailure = await getNextStepFromLLM({
-          originalPrompt: currentState.originalPrompt,
-          currentURL: currentState.currentURL,
-          originalPlan: currentState.currentPlan,
-          textOptions: request.elements,
-          focusedElement: request.focusedElement,
-          notFoundElement: request.ariaLabel, // Pass the aria-label of the element that wasn't found
-          model: currentState.currentModel,
-          provider: currentState.currentProvider
-        })
+        const nextStepAfterFailure = await getNextStepFromLLM(
+          currentState.originalPrompt,
+          currentState.currentURL,
+          currentState.currentPlan,
+          request.elements,
+          request.focusedElement,
+          request.ariaLabel, // Pass the aria-label of the element that wasn't found
+          currentState.currentModel,
+        )
         console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
         await addStepToPlan(nextStepAfterFailure)
         break
@@ -289,17 +287,16 @@ const processResponse = async (request, sender, sendResponse) => {
           sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         }
         console.log('Generating next step based on user message')
-        const nextStepWithElements = await getNextStepFromLLM({
-          originalPrompt: currentState.originalPrompt,
-          currentURL: currentState.currentURL,
-          originalPlan: request.plan,
-          textOptions: request.elements,
-          focusedElement: request.focusedElement,
-          notFoundElement: null,
-          model: currentState.currentModel,
-          provider: currentState.currentProvider,
-          userMessage: request.message // Add the user's message to the LLM input
-        })
+        const nextStepWithElements = await getNextStepFromLLM(
+          currentState.originalPrompt,
+          currentState.currentURL,
+          request.plan,
+          request.elements,
+          request.focusedElement,
+          null, // notFoundElement
+          currentState.currentModel,
+          request.message, // Add the user's message to the LLM input
+        )
         // Check if stop was requested while waiting for LLM response
         if (getState().stopRequested) {
           console.log('Execution stopped, discarding LLM response')
