@@ -5,36 +5,29 @@ import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION} from '../config.js'
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
 
-let tabStates = new Map()
-
-// Function to get the state for a specific tab
-const getState = (tabId) => {
-  if (!tabStates.has(tabId)) {
-    tabStates.set(tabId, {
-      currentPlan: [],
-      targetTab: tabId,
-      currentStep: 0,
-      originalPrompt: '',
-      currentURL: '',
-      allowedTabs: new Set(),
-      currentModel: DEFAULT_MODEL,
-      apiKey: null,
-      isExecuting: false,
-      stopRequested: false,
-      speechRecognitionEnabled: DEFAULT_SPEECH_RECOGNITION,
-      customModels: [],
-      availableModels: [],
-    })
-  }
-  return tabStates.get(tabId)
+let state = {
+  currentPlan: [],
+  targetTab: null,
+  currentStep: 0,
+  originalPrompt: '',
+  currentURL: '',
+  allowedTabs: new Set(),
+  currentModel: DEFAULT_MODEL,
+  apiKey: null,
+  isExecuting: false,
+  stopRequested: false,
+  speechRecognitionEnabled: DEFAULT_SPEECH_RECOGNITION,
+  customModels: [],
+  availableModels: [],
 }
 
-// Function to update the state for a specific tab
-const updateState = (tabId, newState) => {
-  const currentState = getState(tabId)
-  const updatedState = { ...currentState, ...newState }
-  tabStates.set(tabId, updatedState)
-  // console.log('State updated:', updatedState)
+// Function to get the current state
+const getState = () => ({ ...state })
+
+// Function to update the state
+const updateState = (newState) => {
+  state = { ...state, ...newState }
+  // console.log('State updated:', state)
 }
 
 /**
@@ -44,6 +37,7 @@ const updateState = (tabId, newState) => {
  */
 const navURL = (url) => {
   console.log('navigating to', url)
+  updateState({ currentURL: url })
   //Needs http otherwise does not go to absolute URL
   if (url.indexOf('http') !== 0) {
     url = 'http://' + url
@@ -54,14 +48,13 @@ const navURL = (url) => {
         // If there's an error during tab creation, reject the promise
         reject(new Error(chrome.runtime.lastError))
       } else {
-        const newAllowedTabs = new Set(getState(tab.id).allowedTabs)
+        const newAllowedTabs = new Set(getState().allowedTabs)
         newAllowedTabs.add(tab.id)
-        updateState(tab.id, {
+        updateState({
           allowedTabs: newAllowedTabs,
           targetTab: tab.id,
-          currentURL: url,
-          isExecuting: true,
         })
+        updateState({ isExecuting: true })
         sendMessageToTab(tab.id, { type: 'execution_started' })
         resolve(tab) // Resolve the promise with the tab object
       }
@@ -201,17 +194,17 @@ const executeCurrentStep = async () => {
  */
 const processResponse = async (request, sender, sendResponse) => {
   console.log('received', JSON.stringify(request))
-  let currentState = getState(sender.tab.id)
+  let currentState = getState()
   try {
     switch (request.type) {
       case 'checkTabAllowed':
         const isAllowed = currentState.allowedTabs.has(sender.tab.id)
         return sendResponse({ isAllowed: isAllowed })
       case 'completed_task':
-        completedTask(sender.tab.id)
+        completedTask()
         break
       case 'new_goal':
-        updateState(sender.tab.id, {
+        updateState({
           currentStep: 0,
           currentPlan: [],
           originalPrompt: request.prompt,
@@ -225,17 +218,17 @@ const processResponse = async (request, sender, sendResponse) => {
         )
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
-        await addStepToPlan(sender.tab.id, responseJSON)
+        await addStepToPlan(responseJSON)
         break
       case 'click_element':
-        clickElement(currentState.targetTab, request.selector)
+        clickElement(state.targetTab, request.selector)
         break
       case 'press_tab_key':
-        await pressTabKey(currentState.targetTab)
+        await pressTabKey(state.targetTab)
         break
       case 'next_step_with_elements':
         if (currentState.currentStep < currentState.currentPlan.length) {
-          await executeCurrentStep(sender.tab.id)
+          await executeCurrentStep()
         } else {
           console.log('Generating next step')
           const nextStepWithElements = await getNextStepFromLLM(
@@ -248,7 +241,7 @@ const processResponse = async (request, sender, sendResponse) => {
             currentState.currentModel,
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
-          await addStepToPlan(sender.tab.id, nextStepWithElements)
+          await addStepToPlan(nextStepWithElements)
         }
         break
       case 'element_located':
@@ -256,14 +249,14 @@ const processResponse = async (request, sender, sendResponse) => {
           await clickElement(currentState.targetTab, request.selector)
         } else if (request.action === 'TYPETEXT') {
           await typeText(currentState.targetTab, request.selector, request.text)
-          completedTask(sender.tab.id)
+          completedTask()
         }
         break
       case 'element_not_found':
         // Handle the case when an element is not found
-        updateState(sender.tab.id, { currentStep: currentState.currentStep + 1 })
+        updateState({ currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
-        updateState(sender.tab.id, { currentStep: currentState.currentStep + 1 })
+        updateState({ currentStep: currentState.currentStep + 1 })
         const nextStepAfterFailure = await getNextStepFromLLM(
           currentState.originalPrompt,
           currentState.currentURL,
@@ -274,7 +267,7 @@ const processResponse = async (request, sender, sendResponse) => {
           currentState.currentModel,
         )
         console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
-        await addStepToPlan(sender.tab.id, nextStepAfterFailure)
+        await addStepToPlan(nextStepAfterFailure)
         break
       case 'updateModelAndApiKey':
         await updateModelAndApiKey(request.model, request.apiKey, request.customModels)
@@ -290,7 +283,7 @@ const processResponse = async (request, sender, sendResponse) => {
         return true // Indicate that we're sending a response asynchronously
       case 'user_message':
         if (!currentState.isExecuting) {
-          updateState(sender.tab.id, { isExecuting: true, stopRequested: false })
+          updateState({ isExecuting: true, stopRequested: false })
           sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         }
         console.log('Generating next step based on user message')
@@ -305,16 +298,16 @@ const processResponse = async (request, sender, sendResponse) => {
           request.message, // Add the user's message to the LLM input
         )
         // Check if stop was requested while waiting for LLM response
-        if (getState(sender.tab.id).stopRequested) {
+        if (getState().stopRequested) {
           console.log('Execution stopped, discarding LLM response')
-          updateState(sender.tab.id, { stopRequested: false })
+          updateState({ stopRequested: false })
           break
         }
         console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
-        await addStepToPlan(sender.tab.id, nextStepWithElements)
+        await addStepToPlan(nextStepWithElements)
         break
       case 'stop_execution':
-        updateState(sender.tab.id, { isExecuting: false, stopRequested: true })
+        updateState({ isExecuting: false, stopRequested: true })
         // Cancel any ongoing tasks or timers here
         sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
         break
@@ -327,14 +320,14 @@ const processResponse = async (request, sender, sendResponse) => {
         break
       case 'fetchModels':
         const models = await fetchModels(currentState.apiKey)
-        updateState(sender.tab.id, { availableModels: models })
+        updateState({ availableModels: models })
         sendResponse({ models })
         return true
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
     console.error('Error in processResponse:', error)
-    updateState(sender.tab.id, { isExecuting: false, stopRequested: false })
+    updateState({ isExecuting: false, stopRequested: false })
     sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
     chrome.runtime.sendMessage({ type: 'error', message: error.message }) // Ensure this line is present
     return sendResponse('error')
@@ -728,5 +721,8 @@ async function dispatchKeyEvent(tabId, type, key) {
  * Listens for tab removal events and removes the closed tab from the allowedTabs set.
  */
 chrome.tabs.onRemoved.addListener(function (tabId) {
-  tabStates.delete(tabId)
+  const currentState = getState()
+  const newAllowedTabs = new Set(currentState.allowedTabs)
+  newAllowedTabs.delete(tabId)
+  updateState({ allowedTabs: newAllowedTabs })
 })
