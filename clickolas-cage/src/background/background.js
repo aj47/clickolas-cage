@@ -1,6 +1,6 @@
 import { sendMessageToContentScript, sleep } from '../utils'
 import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI, fetchModels } from '../llm-utils'
-import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION} from '../config.js'
+import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -212,10 +212,7 @@ const processResponse = async (request, sender, sendResponse) => {
           stopRequested: false,
         })
         sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
-        const responseJSON = await promptToFirstStep(
-          request.prompt,
-          currentState.currentModel,
-        )
+        const responseJSON = await promptToFirstStep(request.prompt, currentState.currentModel)
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
         await addStepToPlan(responseJSON)
@@ -231,15 +228,7 @@ const processResponse = async (request, sender, sendResponse) => {
           await executeCurrentStep()
         } else {
           console.log('Generating next step')
-          const nextStepWithElements = await getNextStepFromLLM(
-            currentState.originalPrompt,
-            currentState.currentURL,
-            currentState.currentPlan,
-            request.elements,
-            request.focusedElement,
-            null, // notFoundElement
-            currentState.currentModel,
-          )
+          const nextStepWithElements = await getNextStepFromLLM(currentState, request)
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           await addStepToPlan(nextStepWithElements)
         }
@@ -257,15 +246,7 @@ const processResponse = async (request, sender, sendResponse) => {
         updateState({ currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
         updateState({ currentStep: currentState.currentStep + 1 })
-        const nextStepAfterFailure = await getNextStepFromLLM(
-          currentState.originalPrompt,
-          currentState.currentURL,
-          currentState.currentPlan,
-          request.elements,
-          request.focusedElement,
-          request.ariaLabel, // Pass the aria-label of the element that wasn't found
-          currentState.currentModel,
-        )
+        const nextStepAfterFailure = await getNextStepFromLLM(currentState, request)
         console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
         await addStepToPlan(nextStepAfterFailure)
         break
@@ -287,16 +268,7 @@ const processResponse = async (request, sender, sendResponse) => {
           sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         }
         console.log('Generating next step based on user message')
-        const nextStepWithElements = await getNextStepFromLLM(
-          currentState.originalPrompt,
-          currentState.currentURL,
-          request.plan,
-          request.elements,
-          request.focusedElement,
-          null, // notFoundElement
-          currentState.currentModel,
-          request.message, // Add the user's message to the LLM input
-        )
+        const nextStepWithElements = await getNextStepFromLLM(currentState, request)
         // Check if stop was requested while waiting for LLM response
         if (getState().stopRequested) {
           console.log('Execution stopped, discarding LLM response')
@@ -348,14 +320,17 @@ const saveSettings = (settings) => {
 
 const getSettings = () => {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['currentModel', 'apiKey', 'speechRecognitionEnabled', 'customModels'], (result) => {
-      resolve({
-        currentModel: result.currentModel || DEFAULT_MODEL,
-        apiKey: result.apiKey || null,
-        speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION,
-        customModels: result.customModels || []
-      })
-    })
+    chrome.storage.sync.get(
+      ['currentModel', 'apiKey', 'speechRecognitionEnabled', 'customModels'],
+      (result) => {
+        resolve({
+          currentModel: result.currentModel || DEFAULT_MODEL,
+          apiKey: result.apiKey || null,
+          speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION,
+          customModels: result.customModels || [],
+        })
+      },
+    )
   })
 }
 
@@ -373,10 +348,7 @@ const updateSettings = async (newSettings) => {
   updateState(settings)
 
   // Initialize OpenAI with the stored settings
-  initializeOpenAI(
-    settings.apiKey,
-    settings.currentModel
-  )
+  initializeOpenAI(settings.apiKey, settings.currentModel)
 })()
 
 chrome.commands.onCommand.addListener((command) => {
