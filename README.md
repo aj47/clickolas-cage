@@ -53,21 +53,9 @@ There are two ways to open the Clickolas Cage extension:
 4. A side panel will appear on the webpage, showing the steps Clickolas Cage is taking to complete your task.
 5. You can interact with the side panel to provide additional input or stop the execution if needed.
 
-### API Keys
+### API Keys [OpenRouter](https://openrouter.ai/) API key
 
-To use Clickolas Cage, you'll need to provide API keys for the language models. The extension supports multiple providers:
-
-1. Click the "Show Settings" button in the popup.
-2. Select your desired model and provider.
-3. Enter the corresponding API key in the input field.
-
-Supported providers:
-- Google (Gemini models)
-- OpenAI (GPT models)
-- Groq (LLaMA and Mixtral models)
-- Custom (for other providers)
-
-Make sure to keep your API keys secure and never share them publicly.
+To use Clickolas Cage, you'll need to provide [OpenRouter](https://openrouter.ai/) API key for the language models. The extension supports multiple providers:
 
 ---
 
