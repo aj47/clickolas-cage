@@ -5,25 +5,6 @@ import { runFunctionXTimesWithDelay, sendMessageToBackgroundScript, sleep } from
 import './SidePanel.css'
 
 export const SidePanel = () => {
-  const [tabId, setTabId] = useState(null)
-
-  useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        setTabId(tabs[0].id)
-      }
-    })
-
-    const handleTabChange = (activeInfo) => {
-      setTabId(activeInfo.tabId)
-    }
-
-    chrome.tabs.onActivated.addListener(handleTabChange)
-
-    return () => {
-      chrome.tabs.onActivated.removeListener(handleTabChange)
-    }
-  }, [])
   const [messages, setMessages] = useState([])
   const [currentStep, setCurrentStep] = useState(0)
   const socketRef = useRef(null)
@@ -613,7 +594,6 @@ export const SidePanel = () => {
     try {
       await sendMessageToBackgroundScript({
         type: 'user_message',
-        tabId: tabId,
         message: inputToSend,
         elements: clickableElementLabels.slice(0, 200),
         focusedElement: focusedElement,
@@ -642,7 +622,6 @@ export const SidePanel = () => {
       isExecutingRef.current = false
       await sendMessageToBackgroundScript({
         type: 'stop_execution',
-        tabId: tabId,
       })
       setMessages((prevMessages) => [
         ...prevMessages,
