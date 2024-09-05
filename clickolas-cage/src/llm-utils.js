@@ -178,3 +178,21 @@ export const clearLogs = () => {
     console.log('Logs have been cleared.')
   })
 }
+
+export const fetchModels = async (apiKey) => {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/models", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": `${chrome.runtime.getURL('')}`,
+        "X-Title": "Clickolas Cage",
+      }
+    });
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    throw error;
+  }
+};

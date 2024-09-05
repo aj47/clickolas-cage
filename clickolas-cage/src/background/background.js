@@ -1,5 +1,5 @@
 import { sendMessageToContentScript, sleep } from '../utils'
-import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI } from '../llm-utils'
+import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI, fetchModels } from '../llm-utils'
 import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION} from '../config.js'
 
 chrome.storage.local.set({ logs: [] })
@@ -17,6 +17,8 @@ let state = {
   isExecuting: false,
   stopRequested: false,
   speechRecognitionEnabled: DEFAULT_SPEECH_RECOGNITION,
+  customModels: [],
+  availableModels: [],
 }
 
 // Function to get the current state
@@ -268,14 +270,15 @@ const processResponse = async (request, sender, sendResponse) => {
         await addStepToPlan(nextStepAfterFailure)
         break
       case 'updateModelAndApiKey':
-        await updateModelAndApiKey(request.model, request.apiKey)
+        await updateModelAndApiKey(request.model, request.apiKey, request.customModels)
         break
       case 'getModelAndApiKey':
-        const { currentModel, apiKey } = await getModelAndApiKey()
+        const { currentModel, apiKey, customModels } = await getSettings()
         await initializeOpenAI(apiKey, currentModel)
         sendResponse({
           currentModel: currentModel,
           apiKey: apiKey,
+          customModels: customModels,
         })
         return true // Indicate that we're sending a response asynchronously
       case 'user_message':
@@ -315,6 +318,11 @@ const processResponse = async (request, sender, sendResponse) => {
       case 'updateSettings':
         await updateSettings(request)
         break
+      case 'fetchModels':
+        const models = await fetchModels(currentState.apiKey)
+        updateState({ availableModels: models })
+        sendResponse({ models })
+        return true
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
@@ -326,27 +334,10 @@ const processResponse = async (request, sender, sendResponse) => {
   }
 }
 
-const updateModelAndApiKey = async (model, apiKey) => {
-  await saveModelAndApiKey(model, apiKey)
-  updateState({ currentModel: model, apiKey })
+const updateModelAndApiKey = async (model, apiKey, customModels) => {
+  await saveSettings({ currentModel: model, apiKey, customModels })
+  updateState({ currentModel: model, apiKey, customModels })
   await initializeOpenAI(apiKey, model)
-}
-
-const saveModelAndApiKey = (model, apiKey) => {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set({ currentModel: model, apiKey }, resolve)
-  })
-}
-
-const getModelAndApiKey = () => {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(['currentModel', 'apiKey'], (result) => {
-      resolve({
-        currentModel: result.currentModel || DEFAULT_MODEL,
-        apiKey: result.apiKey || null
-      })
-    })
-  })
 }
 
 const saveSettings = (settings) => {
@@ -357,11 +348,12 @@ const saveSettings = (settings) => {
 
 const getSettings = () => {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['currentModel', 'apiKey', 'speechRecognitionEnabled'], (result) => {
+    chrome.storage.sync.get(['currentModel', 'apiKey', 'speechRecognitionEnabled', 'customModels'], (result) => {
       resolve({
         currentModel: result.currentModel || DEFAULT_MODEL,
         apiKey: result.apiKey || null,
-        speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION
+        speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION,
+        customModels: result.customModels || []
       })
     })
   })
