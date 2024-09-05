@@ -413,7 +413,7 @@ async function sendMessageToTab(tabId, message) {
  * Checks if a tab is ready by listening for the 'complete' status update.
  * @param {number} tabId - The ID of the tab to check.
  */
-function checkTabReady(tabId) {
+const checkTabReady = (tabId) => {
   return new Promise((resolve, reject) => {
     console.log('waiting tab ready...')
     chrome.tabs.sendMessage(tabId, { type: 'ping' }, function (response) {
@@ -433,7 +433,7 @@ function checkTabReady(tabId) {
  * @param {number} tabId - The ID of the tab to attach the debugger to.
  * @returns {Promise<void>} A promise that resolves when the debugger is attached.
  */
-async function attachDebugger(tabId) {
+const attachDebugger = async (tabId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.attach({ tabId }, '1.2', () => {
       if (chrome.runtime.lastError) {
@@ -450,7 +450,7 @@ async function attachDebugger(tabId) {
  * @param {number} tabId - The ID of the tab to get the root DOM node from.
  * @returns {Promise<Object>} A promise that resolves with the root DOM node.
  */
-async function getDocumentRoot(tabId) {
+const getDocumentRoot = async (tabId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand({ tabId }, 'DOM.getDocument', {}, (result) => {
       if (chrome.runtime.lastError) {
@@ -469,7 +469,7 @@ async function getDocumentRoot(tabId) {
  * @param {string} selector - The CSS selector of the node to find.
  * @returns {Promise<number>} A promise that resolves with the node ID of the found element.
  */
-async function querySelectorNode(tabId, root, selector) {
+const querySelectorNode = async (tabId, root, selector) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },
@@ -492,7 +492,7 @@ async function querySelectorNode(tabId, root, selector) {
  * @param {number} nodeId - The ID of the node to get the box model for.
  * @returns {Promise<Object>} A promise that resolves with the box model of the node.
  */
-async function getBoxModelForNode(tabId, nodeId) {
+const getBoxModelForNode = async (tabId, nodeId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand({ tabId }, 'DOM.getBoxModel', { nodeId }, (result) => {
       if (chrome.runtime.lastError) {
@@ -514,7 +514,7 @@ async function getBoxModelForNode(tabId, nodeId) {
  * @param {number} clickCount - The number of times the button is clicked.
  * @returns {Promise<void>} A promise that resolves when the event has been dispatched.
  */
-async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
+const dispatchMouseEvent = async (tabId, type, x, y, button, clickCount) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },
@@ -543,7 +543,7 @@ async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
  * @param {number} x - The x coordinate of the click location.
  * @param {number} y - The y coordinate of the click location.
  */
-async function clickElementAt(tabId, x, y) {
+const clickElementAt = async (tabId, x, y) => {
   await dispatchMouseEvent(tabId, 'mousePressed', x, y, 'left', 1)
   await dispatchMouseEvent(tabId, 'mouseReleased', x, y, 'left', 1)
   const messagePayload = {
@@ -559,7 +559,7 @@ async function clickElementAt(tabId, x, y) {
  * @param {number} tabId - The ID of the tab where the element resides.
  * @param {string} selector - The CSS selector of the element to click.
  */
-async function clickElement(tabId, selector) {
+const clickElement = async (tabId, selector) => {
   try {
     console.log('Clicking element with selector:', selector)
     await attachDebugger(tabId)
@@ -582,7 +582,7 @@ async function clickElement(tabId, selector) {
  * Simulates pressing the Tab key within a tab.
  * @param {number} tabId - The ID of the tab to press the Tab key in.
  */
-async function pressTabKey(tabId) {
+const pressTabKey = async (tabId) => {
   try {
     await attachDebugger(tabId)
     await dispatchTabKeyPress(tabId)
@@ -597,7 +597,7 @@ async function pressTabKey(tabId) {
  * @param {number} tabId - The ID of the tab to dispatch the Tab key press to.
  * @returns {Promise<void>} A promise that resolves when the Tab key press event has been dispatched.
  */
-async function dispatchTabKeyPress(tabId) {
+const dispatchTabKeyPress = async (tabId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },
@@ -638,7 +638,7 @@ async function dispatchTabKeyPress(tabId) {
   })
 }
 
-async function typeText(tabId, selector, text) {
+const typeText = async (tabId, selector, text) => {
   try {
     if (selector) {
       console.log('Typing text into element with selector:', selector)
@@ -662,7 +662,7 @@ async function typeText(tabId, selector, text) {
   }
 }
 
-async function dispatchKeyEvent(tabId, type, key) {
+const dispatchKeyEvent = async (tabId, type, key) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },
