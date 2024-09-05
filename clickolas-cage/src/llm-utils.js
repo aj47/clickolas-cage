@@ -99,7 +99,7 @@ async function openRouterCallWithRetry(call, retryCount = 3) {
  * @param {string} userMessage - The user's message to include in the LLM input.
  * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
  */
-export const getNextStepFromLLM = async (
+export const getNextStepFromLLM = async ({
   originalPrompt,
   currentURL,
   originalPlan,
@@ -109,7 +109,7 @@ export const getNextStepFromLLM = async (
   model,
   provider,
   userMessage = null
-) => {
+}) => {
   const systemPrompt = SYSTEM_PROMPT_NEXT_STEP(originalPrompt, currentURL, originalPlan)
 
   let userContent = `nodes: ${JSON.stringify(textOptions)}\n\nfocused element: ${JSON.stringify(focusedElement)}`
