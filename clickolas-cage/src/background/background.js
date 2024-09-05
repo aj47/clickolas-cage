@@ -5,6 +5,12 @@ import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
 
+// Error handling function
+const handleError = (error, context) => {
+  console.error(`Error in ${context}:`, error)
+  chrome.runtime.sendMessage({ type: 'error', message: `Error in ${context}: ${error.message}` })
+}
+
 let state = {
   currentPlan: [],
   targetTab: null,
@@ -43,22 +49,27 @@ const navURL = (url) => {
     url = 'http://' + url
   }
   return new Promise((resolve, reject) => {
-    chrome.tabs.create({ url: url }, (tab) => {
-      if (chrome.runtime.lastError) {
-        // If there's an error during tab creation, reject the promise
-        reject(new Error(chrome.runtime.lastError))
-      } else {
-        const newAllowedTabs = new Set(getState().allowedTabs)
-        newAllowedTabs.add(tab.id)
-        updateState({
-          allowedTabs: newAllowedTabs,
-          targetTab: tab.id,
-        })
-        updateState({ isExecuting: true })
-        sendMessageToTab(tab.id, { type: 'execution_started' })
-        resolve(tab) // Resolve the promise with the tab object
-      }
-    })
+    try {
+      chrome.tabs.create({ url: url }, (tab) => {
+        if (chrome.runtime.lastError) {
+          // If there's an error during tab creation, reject the promise
+          reject(new Error(chrome.runtime.lastError.message))
+        } else {
+          const newAllowedTabs = new Set(getState().allowedTabs)
+          newAllowedTabs.add(tab.id)
+          updateState({
+            allowedTabs: newAllowedTabs,
+            targetTab: tab.id,
+          })
+          updateState({ isExecuting: true })
+          sendMessageToTab(tab.id, { type: 'execution_started' })
+          resolve(tab) // Resolve the promise with the tab object
+        }
+      })
+    } catch (error) {
+      handleError(error, 'navURL')
+      reject(error)
+    }
   })
 }
 
@@ -201,7 +212,7 @@ const processResponse = async (request, sender, sendResponse) => {
         const isAllowed = currentState.allowedTabs.has(sender.tab.id)
         return sendResponse({ isAllowed: isAllowed })
       case 'completed_task':
-        completedTask()
+        await completedTask()
         break
       case 'new_goal':
         updateState({
@@ -211,14 +222,14 @@ const processResponse = async (request, sender, sendResponse) => {
           isExecuting: true,
           stopRequested: false,
         })
-        sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
+        await sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         const responseJSON = await promptToFirstStep(request.prompt, currentState.currentModel)
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
         await addStepToPlan(responseJSON)
         break
       case 'click_element':
-        clickElement(state.targetTab, request.selector)
+        await clickElement(state.targetTab, request.selector)
         break
       case 'press_tab_key':
         await pressTabKey(state.targetTab)
@@ -238,7 +249,7 @@ const processResponse = async (request, sender, sendResponse) => {
           await clickElement(currentState.targetTab, request.selector)
         } else if (request.action === 'TYPETEXT') {
           await typeText(currentState.targetTab, request.selector, request.text)
-          completedTask()
+          await completedTask()
         }
         break
       case 'element_not_found':
@@ -265,7 +276,7 @@ const processResponse = async (request, sender, sendResponse) => {
       case 'user_message':
         if (!currentState.isExecuting) {
           updateState({ isExecuting: true, stopRequested: false })
-          sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
+          await sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         }
         console.log('Generating next step based on user message')
         const nextStepWithElements = await getNextStepFromLLM(currentState, request)
@@ -281,7 +292,7 @@ const processResponse = async (request, sender, sendResponse) => {
       case 'stop_execution':
         updateState({ isExecuting: false, stopRequested: true })
         // Cancel any ongoing tasks or timers here
-        sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
+        await sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
         break
       case 'getSettings':
         const settings = await getSettings()
@@ -295,13 +306,14 @@ const processResponse = async (request, sender, sendResponse) => {
         updateState({ availableModels: models })
         sendResponse({ models })
         return true
+      default:
+        throw new Error(`Unknown request type: ${request.type}`)
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
-    console.error('Error in processResponse:', error)
+    handleError(error, 'processResponse')
     updateState({ isExecuting: false, stopRequested: false })
-    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
-    chrome.runtime.sendMessage({ type: 'error', message: error.message }) // Ensure this line is present
+    await sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
     return sendResponse('error')
   }
 }
