@@ -65,13 +65,13 @@ const navURL = (url) => {
 /**
  * Marks the current task as completed and sends a message to the target tab to proceed with the next step.
  */
-const completedTask = async () => {
-  const currentState = getState()
+const completedTask = async (tabId) => {
+  const currentState = getTabState(tabId)
   console.log('Completed task. Step:', currentState.currentStep)
-  updateState({ currentStep: currentState.currentStep + 1 })
+  updateTabState(tabId, { currentStep: currentState.currentStep + 1 })
   console.log('sleeping 1s...')
   await sleep(1000)
-  const updatedState = getState()
+  const updatedState = getTabState(tabId)
   console.log('Moving to next step:', updatedState.currentStep)
 
   // Check if the last action was GOAL_ACHIEVED
@@ -83,14 +83,14 @@ const completedTask = async () => {
 
   if (updatedState.currentStep >= updatedState.currentPlan.length) {
     console.log('Current plan completed. Generating next step.')
-    sendMessageToTab(updatedState.targetTab, {
+    sendMessageToTab(tabId, {
       type: 'generateNextStep',
       currentStep: updatedState.currentStep,
       plan: updatedState.currentPlan,
     })
   } else {
     console.log('Executing next step in current plan.')
-    await executeCurrentStep()
+    await executeCurrentStep(tabId)
   }
 }
 
@@ -98,36 +98,36 @@ const completedTask = async () => {
  * Adds a new step to the current plan and executes it.
  * @param {Object} step - The step to add to the plan.
  */
-const addStepToPlan = async (step) => {
-  const currentState = getState()
+const addStepToPlan = async (step, tabId) => {
+  const currentState = getTabState(tabId)
   if (currentState.stopRequested) {
     console.log('Execution stopped, not adding new step to plan')
-    updateState({ isExecuting: false, stopRequested: false })
+    updateTabState(tabId, { isExecuting: false, stopRequested: false })
     return
   }
   const newPlan = [...currentState.currentPlan, step]
   console.log('new plan', newPlan)
-  updateState({ currentPlan: newPlan })
+  updateTabState(tabId, { currentPlan: newPlan })
   if (!currentState.isExecuting) {
-    updateState({ isExecuting: true })
-    sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
+    updateTabState(tabId, { isExecuting: true })
+    sendMessageToTab(tabId, { type: 'execution_started' })
   }
-  await executeCurrentStep()
+  await executeCurrentStep(tabId)
 }
 
 /**
  * Executes the current step in the plan based on its action type.
  */
-const executeCurrentStep = async () => {
-  const currentState = getState()
+const executeCurrentStep = async (tabId) => {
+  const currentState = getTabState(tabId)
   if (!currentState.isExecuting) {
     console.log('Execution is not in progress')
     return
   }
   if (currentState.stopRequested) {
     console.log('Execution stopped due to user request')
-    updateState({ isExecuting: false, stopRequested: false })
-    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
+    updateTabState(tabId, { isExecuting: false, stopRequested: false })
+    sendMessageToTab(tabId, { type: 'execution_completed' })
     return
   }
   console.log('Executing current step')
@@ -137,18 +137,18 @@ const executeCurrentStep = async () => {
     const currentAction = currentState.currentPlan[currentState.currentStep]
     if (!currentAction) {
       console.error('No action found for current step')
-      updateState({ isExecuting: false })
+      updateTabState(tabId, { isExecuting: false })
       return
     }
     console.log('Current action:', currentAction.action)
     switch (currentAction.action) {
       case 'NAVURL':
-        await navURL(currentAction.param)
-        await completedTask()
+        await navURL(currentAction.param, tabId)
+        await completedTask(tabId)
         break
       case 'CLICKBTN':
         console.log('Executing CLICKBTN action:', currentAction.ariaLabel)
-        await sendMessageToTab(currentState.targetTab, {
+        await sendMessageToTab(tabId, {
           type: 'locateElement',
           ariaLabel: currentAction.ariaLabel,
           action: currentAction.action,
@@ -156,7 +156,7 @@ const executeCurrentStep = async () => {
         break
       case 'TYPETEXT':
         console.log('Executing TYPETEXT action:', currentAction.text)
-        await sendMessageToTab(currentState.targetTab, {
+        await sendMessageToTab(tabId, {
           type: 'locateElement',
           ariaLabel: currentAction.ariaLabel,
           action: currentAction.action,
@@ -165,8 +165,8 @@ const executeCurrentStep = async () => {
         break
       case 'GOAL_ACHIEVED':
         console.log('Goal achieved. Execution completed.')
-        updateState({ currentStep: currentState.currentStep + 1 })
-        await sendMessageToTab(currentState.targetTab, {
+        updateTabState(tabId, { currentStep: currentState.currentStep + 1 })
+        await sendMessageToTab(tabId, {
           type: 'goalCompleted',
           message: currentAction.thought,
         })
@@ -180,8 +180,8 @@ const executeCurrentStep = async () => {
     }
   } catch (error) {
     console.error('Error executing current step:', error)
-    updateState({ isExecuting: false })
-    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
+    updateTabState(tabId, { isExecuting: false })
+    sendMessageToTab(tabId, { type: 'execution_completed' })
   }
 }
 
@@ -194,41 +194,42 @@ const executeCurrentStep = async () => {
  */
 const processResponse = async (request, sender, sendResponse) => {
   console.log('received', JSON.stringify(request))
-  let currentState = getState()
+  const tabId = sender.tab ? sender.tab.id : request.tabId
+  let currentState = getTabState(tabId)
   try {
     switch (request.type) {
       case 'checkTabAllowed':
-        const isAllowed = currentState.allowedTabs.has(sender.tab.id)
+        const isAllowed = globalState.allowedTabs.has(tabId)
         return sendResponse({ isAllowed: isAllowed })
       case 'completed_task':
-        completedTask()
+        completedTask(tabId)
         break
       case 'new_goal':
-        updateState({
+        updateTabState(tabId, {
           currentStep: 0,
           currentPlan: [],
           originalPrompt: request.prompt,
           isExecuting: true,
           stopRequested: false,
         })
-        sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
+        sendMessageToTab(tabId, { type: 'execution_started' })
         const responseJSON = await promptToFirstStep(
           request.prompt,
-          currentState.currentModel,
+          globalState.currentModel,
         )
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
-        await addStepToPlan(responseJSON)
+        await addStepToPlan(responseJSON, tabId)
         break
       case 'click_element':
-        clickElement(state.targetTab, request.selector)
+        clickElement(tabId, request.selector)
         break
       case 'press_tab_key':
-        await pressTabKey(state.targetTab)
+        await pressTabKey(tabId)
         break
       case 'next_step_with_elements':
         if (currentState.currentStep < currentState.currentPlan.length) {
-          await executeCurrentStep()
+          await executeCurrentStep(tabId)
         } else {
           console.log('Generating next step')
           const nextStepWithElements = await getNextStepFromLLM(
@@ -238,25 +239,24 @@ const processResponse = async (request, sender, sendResponse) => {
             request.elements,
             request.focusedElement,
             null, // notFoundElement
-            currentState.currentModel,
+            globalState.currentModel,
           )
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
-          await addStepToPlan(nextStepWithElements)
+          await addStepToPlan(nextStepWithElements, tabId)
         }
         break
       case 'element_located':
         if (request.action === 'CLICKBTN') {
-          await clickElement(currentState.targetTab, request.selector)
+          await clickElement(tabId, request.selector)
         } else if (request.action === 'TYPETEXT') {
-          await typeText(currentState.targetTab, request.selector, request.text)
-          completedTask()
+          await typeText(tabId, request.selector, request.text)
+          completedTask(tabId)
         }
         break
       case 'element_not_found':
         // Handle the case when an element is not found
-        updateState({ currentStep: currentState.currentStep + 1 })
+        updateTabState(tabId, { currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
-        updateState({ currentStep: currentState.currentStep + 1 })
         const nextStepAfterFailure = await getNextStepFromLLM(
           currentState.originalPrompt,
           currentState.currentURL,
@@ -264,10 +264,10 @@ const processResponse = async (request, sender, sendResponse) => {
           request.elements,
           request.focusedElement,
           request.ariaLabel, // Pass the aria-label of the element that wasn't found
-          currentState.currentModel,
+          globalState.currentModel,
         )
         console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
-        await addStepToPlan(nextStepAfterFailure)
+        await addStepToPlan(nextStepAfterFailure, tabId)
         break
       case 'updateModelAndApiKey':
         await updateModelAndApiKey(request.model, request.apiKey, request.customModels)
@@ -283,8 +283,8 @@ const processResponse = async (request, sender, sendResponse) => {
         return true // Indicate that we're sending a response asynchronously
       case 'user_message':
         if (!currentState.isExecuting) {
-          updateState({ isExecuting: true, stopRequested: false })
-          sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
+          updateTabState(tabId, { isExecuting: true, stopRequested: false })
+          sendMessageToTab(tabId, { type: 'execution_started' })
         }
         console.log('Generating next step based on user message')
         const nextStepWithElements = await getNextStepFromLLM(
@@ -294,22 +294,22 @@ const processResponse = async (request, sender, sendResponse) => {
           request.elements,
           request.focusedElement,
           null, // notFoundElement
-          currentState.currentModel,
+          globalState.currentModel,
           request.message, // Add the user's message to the LLM input
         )
         // Check if stop was requested while waiting for LLM response
-        if (getState().stopRequested) {
+        if (getTabState(tabId).stopRequested) {
           console.log('Execution stopped, discarding LLM response')
-          updateState({ stopRequested: false })
+          updateTabState(tabId, { stopRequested: false })
           break
         }
         console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
-        await addStepToPlan(nextStepWithElements)
+        await addStepToPlan(nextStepWithElements, tabId)
         break
       case 'stop_execution':
-        updateState({ isExecuting: false, stopRequested: true })
+        updateTabState(tabId, { isExecuting: false, stopRequested: true })
         // Cancel any ongoing tasks or timers here
-        sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
+        sendMessageToTab(tabId, { type: 'execution_completed' })
         break
       case 'getSettings':
         const settings = await getSettings()
@@ -319,16 +319,16 @@ const processResponse = async (request, sender, sendResponse) => {
         await updateSettings(request)
         break
       case 'fetchModels':
-        const models = await fetchModels(currentState.apiKey)
-        updateState({ availableModels: models })
+        const models = await fetchModels(globalState.apiKey)
+        updateGlobalState({ availableModels: models })
         sendResponse({ models })
         return true
     }
     if (sendResponse) sendResponse('completed')
   } catch (error) {
     console.error('Error in processResponse:', error)
-    updateState({ isExecuting: false, stopRequested: false })
-    sendMessageToTab(currentState.targetTab, { type: 'execution_completed' })
+    updateTabState(tabId, { isExecuting: false, stopRequested: false })
+    sendMessageToTab(tabId, { type: 'execution_completed' })
     chrome.runtime.sendMessage({ type: 'error', message: error.message }) // Ensure this line is present
     return sendResponse('error')
   }
