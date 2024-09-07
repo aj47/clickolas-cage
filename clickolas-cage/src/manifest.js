@@ -38,7 +38,7 @@ export default defineManifest({
       matches: ['<all_urls>']
     },
   ],
-  permissions: ['activeTab', 'sidePanel', 'storage', 'debugger', 'scripting'],
+  permissions: ['activeTab', 'sidePanel', 'storage', 'debugger'],
   commands: {
     "open-extension": {
       suggested_key: {

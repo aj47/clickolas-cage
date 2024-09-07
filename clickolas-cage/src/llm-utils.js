@@ -1,34 +1,34 @@
 import { SYSTEM_PROMPT_NEXT_STEP, SYSTEM_PROMPT_FIRST_STEP } from './prompts.js'
 import { DEFAULT_MODEL } from './config.js'
 
-let currentApiKey = null;
-let currentModel = DEFAULT_MODEL;
+let currentApiKey = null
+let currentModel = DEFAULT_MODEL
 
 export const initializeOpenAI = (apiKey, model) => {
-  currentApiKey = apiKey;
-  currentModel = model;
-};
+  currentApiKey = apiKey
+  currentModel = model
+}
 
 const openRouterChatCompletionWithLogging = async (messages) => {
   // ... (logging code remains the same)
 
   const response = await openRouterCallWithRetry(() =>
-    fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${currentApiKey}`,
-        "HTTP-Referer": `${chrome.runtime.getURL('')}`,
-        "X-Title": "Clickolas Cage",
-        "Content-Type": "application/json"
+        Authorization: `Bearer ${currentApiKey}`,
+        'HTTP-Referer': `${chrome.runtime.getURL('')}`,
+        'X-Title': 'Clickolas Cage',
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        "model": currentModel,
-        "messages": messages,
-        "frequency_penalty": 0.5,
-        "seed": 1,
-        "response_format": { "type": "json_object" },
-      })
-    }).then(res => res.json())
+        model: currentModel,
+        messages: messages,
+        frequency_penalty: 0.5,
+        seed: 1,
+        response_format: { type: 'json_object' },
+      }),
+    }).then((res) => res.json()),
   )
 
   // ... (logging code remains the same)
@@ -88,36 +88,26 @@ async function openRouterCallWithRetry(call, retryCount = 3) {
 
 /**
  * Sends a prompt to the Plan Reviser to get a revised plan based on the current step and available text options.
- * @param {string} originalPrompt - The original prompt given to the AI.
- * @param {string} currentURL - The current URL.
- * @param {string} originalPlan - The original plan created by the AI.
- * @param {any[]} textOptions - An array of user-provided node aria-labels.
- * @param {Object} focusedElement - The focused element.
- * @param {string} notFoundElement - The aria-label of the element that was not found.
- * @param {string} model - The current model.
- * @param {string} provider - The current provider.
- * @param {string} userMessage - The user's message to include in the LLM input.
+ * @param {Object} currentState - The current state of the application.
+ * @param {Object} request - The request object containing additional information.
  * @returns {Promise<Object>} - A promise that resolves to the revised plan in JSON format.
  */
-export const getNextStepFromLLM = async (
-  originalPrompt,
-  currentURL,
-  originalPlan,
-  textOptions,
-  focusedElement,
-  notFoundElement = null,
-  model,
-  provider,
-  userMessage = null
-) => {
-  const systemPrompt = SYSTEM_PROMPT_NEXT_STEP(originalPrompt, currentURL, originalPlan)
+export const getNextStepFromLLM = async (currentState, request) => {
+  console.log('currentState', currentState, request)
+  const systemPrompt = SYSTEM_PROMPT_NEXT_STEP(
+    currentState.originalPrompt,
+    currentState.currentURL,
+    currentState.currentPlan,
+  )
 
-  let userContent = `nodes: ${JSON.stringify(textOptions)}\n\nfocused element: ${JSON.stringify(focusedElement)}`
-  if (notFoundElement !== null) {
-    userContent += `\n\nThe element with aria-label "${notFoundElement}" was not found. Please provide an alternative action or suggestion.`
+  let userContent = `nodes: ${JSON.stringify(
+    request.elements,
+  )}\n\nfocused element: ${JSON.stringify(request.focusedElement)}`
+  if (request.ariaLabel) {
+    userContent += `\n\nThe element with aria-label "${request.ariaLabel}" was not found. Please provide an alternative action or suggestion.`
   }
-  if (userMessage !== null) {
-    userContent += `\n\nUser message: ${userMessage}`
+  if (request.message) {
+    userContent += `\n\nUser message: ${request.message}`
   }
 
   const chatCompletion = await openRouterChatCompletionWithLogging([
@@ -181,18 +171,18 @@ export const clearLogs = () => {
 
 export const fetchModels = async (apiKey) => {
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/models", {
-      method: "GET",
+    const response = await fetch('https://openrouter.ai/api/v1/models', {
+      method: 'GET',
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": `${chrome.runtime.getURL('')}`,
-        "X-Title": "Clickolas Cage",
-      }
-    });
-    const data = await response.json();
-    return data.data;
+        Authorization: `Bearer ${apiKey}`,
+        'HTTP-Referer': `${chrome.runtime.getURL('')}`,
+        'X-Title': 'Clickolas Cage',
+      },
+    })
+    const data = await response.json()
+    return data.data
   } catch (error) {
-    console.error('Error fetching models:', error);
-    throw error;
+    console.error('Error fetching models:', error)
+    throw error
   }
-};
+}

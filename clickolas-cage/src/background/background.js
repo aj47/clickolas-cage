@@ -1,6 +1,6 @@
 import { sendMessageToContentScript, sleep } from '../utils'
 import { getNextStepFromLLM, promptToFirstStep, initializeOpenAI, fetchModels } from '../llm-utils'
-import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION} from '../config.js'
+import { DEFAULT_MODEL, DEFAULT_SPEECH_RECOGNITION } from '../config.js'
 
 chrome.storage.local.set({ logs: [] })
 console.log('background is running')
@@ -212,10 +212,7 @@ const processResponse = async (request, sender, sendResponse) => {
           stopRequested: false,
         })
         sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
-        const responseJSON = await promptToFirstStep(
-          request.prompt,
-          currentState.currentModel,
-        )
+        const responseJSON = await promptToFirstStep(request.prompt, currentState.currentModel)
         //TODO: if failed to give valid json retry
         responseJSON.action = 'NAVURL' // Hard coded for now
         await addStepToPlan(responseJSON)
@@ -231,15 +228,7 @@ const processResponse = async (request, sender, sendResponse) => {
           await executeCurrentStep()
         } else {
           console.log('Generating next step')
-          const nextStepWithElements = await getNextStepFromLLM(
-            currentState.originalPrompt,
-            currentState.currentURL,
-            currentState.currentPlan,
-            request.elements,
-            request.focusedElement,
-            null, // notFoundElement
-            currentState.currentModel,
-          )
+          const nextStepWithElements = await getNextStepFromLLM(currentState, request)
           console.log('Next step from LLM:', JSON.stringify(nextStepWithElements))
           await addStepToPlan(nextStepWithElements)
         }
@@ -257,15 +246,7 @@ const processResponse = async (request, sender, sendResponse) => {
         updateState({ currentStep: currentState.currentStep + 1 })
         console.log('Element not found:', request.ariaLabel)
         updateState({ currentStep: currentState.currentStep + 1 })
-        const nextStepAfterFailure = await getNextStepFromLLM(
-          currentState.originalPrompt,
-          currentState.currentURL,
-          currentState.currentPlan,
-          request.elements,
-          request.focusedElement,
-          request.ariaLabel, // Pass the aria-label of the element that wasn't found
-          currentState.currentModel,
-        )
+        const nextStepAfterFailure = await getNextStepFromLLM(currentState, request)
         console.log('Next step from LLM:', JSON.stringify(nextStepAfterFailure))
         await addStepToPlan(nextStepAfterFailure)
         break
@@ -287,16 +268,7 @@ const processResponse = async (request, sender, sendResponse) => {
           sendMessageToTab(currentState.targetTab, { type: 'execution_started' })
         }
         console.log('Generating next step based on user message')
-        const nextStepWithElements = await getNextStepFromLLM(
-          currentState.originalPrompt,
-          currentState.currentURL,
-          request.plan,
-          request.elements,
-          request.focusedElement,
-          null, // notFoundElement
-          currentState.currentModel,
-          request.message, // Add the user's message to the LLM input
-        )
+        const nextStepWithElements = await getNextStepFromLLM(currentState, request)
         // Check if stop was requested while waiting for LLM response
         if (getState().stopRequested) {
           console.log('Execution stopped, discarding LLM response')
@@ -348,14 +320,17 @@ const saveSettings = (settings) => {
 
 const getSettings = () => {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['currentModel', 'apiKey', 'speechRecognitionEnabled', 'customModels'], (result) => {
-      resolve({
-        currentModel: result.currentModel || DEFAULT_MODEL,
-        apiKey: result.apiKey || null,
-        speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION,
-        customModels: result.customModels || []
-      })
-    })
+    chrome.storage.sync.get(
+      ['currentModel', 'apiKey', 'speechRecognitionEnabled', 'customModels'],
+      (result) => {
+        resolve({
+          currentModel: result.currentModel || DEFAULT_MODEL,
+          apiKey: result.apiKey || null,
+          speechRecognitionEnabled: result.speechRecognitionEnabled ?? DEFAULT_SPEECH_RECOGNITION,
+          customModels: result.customModels || [],
+        })
+      },
+    )
   })
 }
 
@@ -373,10 +348,7 @@ const updateSettings = async (newSettings) => {
   updateState(settings)
 
   // Initialize OpenAI with the stored settings
-  initializeOpenAI(
-    settings.apiKey,
-    settings.currentModel
-  )
+  initializeOpenAI(settings.apiKey, settings.currentModel)
 })()
 
 chrome.commands.onCommand.addListener((command) => {
@@ -441,7 +413,7 @@ async function sendMessageToTab(tabId, message) {
  * Checks if a tab is ready by listening for the 'complete' status update.
  * @param {number} tabId - The ID of the tab to check.
  */
-function checkTabReady(tabId) {
+const checkTabReady = (tabId) => {
   return new Promise((resolve, reject) => {
     console.log('waiting tab ready...')
     chrome.tabs.sendMessage(tabId, { type: 'ping' }, function (response) {
@@ -461,7 +433,7 @@ function checkTabReady(tabId) {
  * @param {number} tabId - The ID of the tab to attach the debugger to.
  * @returns {Promise<void>} A promise that resolves when the debugger is attached.
  */
-async function attachDebugger(tabId) {
+const attachDebugger = async (tabId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.attach({ tabId }, '1.2', () => {
       if (chrome.runtime.lastError) {
@@ -478,7 +450,7 @@ async function attachDebugger(tabId) {
  * @param {number} tabId - The ID of the tab to get the root DOM node from.
  * @returns {Promise<Object>} A promise that resolves with the root DOM node.
  */
-async function getDocumentRoot(tabId) {
+const getDocumentRoot = async (tabId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand({ tabId }, 'DOM.getDocument', {}, (result) => {
       if (chrome.runtime.lastError) {
@@ -497,7 +469,7 @@ async function getDocumentRoot(tabId) {
  * @param {string} selector - The CSS selector of the node to find.
  * @returns {Promise<number>} A promise that resolves with the node ID of the found element.
  */
-async function querySelectorNode(tabId, root, selector) {
+const querySelectorNode = async (tabId, root, selector) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },
@@ -520,7 +492,7 @@ async function querySelectorNode(tabId, root, selector) {
  * @param {number} nodeId - The ID of the node to get the box model for.
  * @returns {Promise<Object>} A promise that resolves with the box model of the node.
  */
-async function getBoxModelForNode(tabId, nodeId) {
+const getBoxModelForNode = async (tabId, nodeId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand({ tabId }, 'DOM.getBoxModel', { nodeId }, (result) => {
       if (chrome.runtime.lastError) {
@@ -542,7 +514,7 @@ async function getBoxModelForNode(tabId, nodeId) {
  * @param {number} clickCount - The number of times the button is clicked.
  * @returns {Promise<void>} A promise that resolves when the event has been dispatched.
  */
-async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
+const dispatchMouseEvent = async (tabId, type, x, y, button, clickCount) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },
@@ -571,7 +543,7 @@ async function dispatchMouseEvent(tabId, type, x, y, button, clickCount) {
  * @param {number} x - The x coordinate of the click location.
  * @param {number} y - The y coordinate of the click location.
  */
-async function clickElementAt(tabId, x, y) {
+const clickElementAt = async (tabId, x, y) => {
   await dispatchMouseEvent(tabId, 'mousePressed', x, y, 'left', 1)
   await dispatchMouseEvent(tabId, 'mouseReleased', x, y, 'left', 1)
   const messagePayload = {
@@ -587,7 +559,7 @@ async function clickElementAt(tabId, x, y) {
  * @param {number} tabId - The ID of the tab where the element resides.
  * @param {string} selector - The CSS selector of the element to click.
  */
-async function clickElement(tabId, selector) {
+const clickElement = async (tabId, selector) => {
   try {
     console.log('Clicking element with selector:', selector)
     await attachDebugger(tabId)
@@ -610,7 +582,7 @@ async function clickElement(tabId, selector) {
  * Simulates pressing the Tab key within a tab.
  * @param {number} tabId - The ID of the tab to press the Tab key in.
  */
-async function pressTabKey(tabId) {
+const pressTabKey = async (tabId) => {
   try {
     await attachDebugger(tabId)
     await dispatchTabKeyPress(tabId)
@@ -625,7 +597,7 @@ async function pressTabKey(tabId) {
  * @param {number} tabId - The ID of the tab to dispatch the Tab key press to.
  * @returns {Promise<void>} A promise that resolves when the Tab key press event has been dispatched.
  */
-async function dispatchTabKeyPress(tabId) {
+const dispatchTabKeyPress = async (tabId) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },
@@ -666,7 +638,7 @@ async function dispatchTabKeyPress(tabId) {
   })
 }
 
-async function typeText(tabId, selector, text) {
+const typeText = async (tabId, selector, text) => {
   try {
     if (selector) {
       console.log('Typing text into element with selector:', selector)
@@ -690,7 +662,7 @@ async function typeText(tabId, selector, text) {
   }
 }
 
-async function dispatchKeyEvent(tabId, type, key) {
+const dispatchKeyEvent = async (tabId, type, key) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(
       { tabId },

@@ -172,6 +172,17 @@ export const SidePanel = () => {
     const elements = getAllElements(document.documentElement)
     const currentTime = Date.now()
     const focusedElement = document.activeElement
+    const focusedElementRole = focusedElement.getAttribute('role') || focusedElement.tagName
+    let focusedElementInfo = null
+
+    if (focusedElement && focusedElement.tagName !== 'BODY') {
+      focusedElementInfo = {
+        role: focusedElementRole,
+        ariaLabel: focusedElement.getAttribute('aria-label') || focusedElement.innerText,
+        tabIndex: focusedElement.tabIndex,
+        value: focusedElement.value || focusedElement.textContent
+      }
+    }
 
     for (const element of elements) {
       const isClickable = isElementClickable(element)
@@ -214,17 +225,10 @@ export const SidePanel = () => {
       if (!a.isNew && b.isNew) return 1
       return 0
     })
-
     return {
       clickableElements,
       clickableElementLabels: cleanedArray,
-      focusedElement: focusedElement
-        ? {
-            role: focusedElement.getAttribute('role') || focusedElement.tagName,
-            ariaLabel: focusedElement.getAttribute('aria-label') || focusedElement.innerText,
-            tabIndex: focusedElement.tabIndex,
-          }
-        : null,
+      focusedElement: focusedElementInfo
     }
   }
 
