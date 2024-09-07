@@ -1,10 +1,11 @@
 discord: [https://discord.gg/cK9WeQ7jPq](https://discord.gg/cK9WeQ7jPq)
 
+[quick demo](https://youtu.be/JKBv1uUnrSk)
+
 [v0.0.2 install guide](https://www.youtube.com/watch?v=bL6tV_LojOk)
 
-[view short explanation](https://www.youtube.com/watch?v=HVevc5XnKJU)
+[gemini hackathon submission](https://www.youtube.com/watch?v=HVevc5XnKJU)
 
-[more video](https://youtu.be/JKBv1uUnrSk)
 
 # clickolas-cage
 
