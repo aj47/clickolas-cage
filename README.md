@@ -9,7 +9,9 @@ discord: [https://discord.gg/cK9WeQ7jPq](https://discord.gg/cK9WeQ7jPq)
 > a chrome extension that performs web browsing actions autonomously to complete a given goal/task (using LLM as a brain).
 )
 
-
+## Run built
+follow instructions on the latest release:
+https://github.com/aj47/clickolas-cage/releases
 
 ## Run from source
 
