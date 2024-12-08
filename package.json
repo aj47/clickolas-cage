@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@crxjs/vite-plugin": "^1.0.14",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^2.9.0"
+  }
+}
